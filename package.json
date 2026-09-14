@@ -31,7 +31,7 @@
     "@stryker-mutator/core": "10.0.0",
     "@stryker-mutator/tap-runner": "10.0.0",
     "acorn": "8.18.0",
-    "eslint": "10.9.1"
+    "eslint": "10.10.0"
   },
   "overrides": {
     "qs": "6.16.0"
