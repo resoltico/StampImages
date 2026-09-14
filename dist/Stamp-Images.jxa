@@ -1,0 +1,4760 @@
+/*
+ * Stamp Images 1.0.0
+ * https://github.com/resoltico/StampImages
+ *
+ * Copyright (c) 2026 Ervins Strauhmanis
+ * SPDX-License-Identifier: MIT
+ *
+ * Generated file. Edit the sources and rebuild; changes made to this copy are
+ * overwritten and are not covered by any test. Comments are stripped on build:
+ * the sources they came from are at the address above.
+ *
+ * Requires macOS 12.3 or later, and the command-line tools:
+ *     brew install exiftool vips
+ */
+
+"use strict";
+
+/* ===== src/core/version.js ===== */
+
+const APP_NAME = "Stamp Images";
+const VERSION = "1.0.0";
+
+/* ===== src/core/executables.js ===== */
+
+
+const CAT = "/bin/cat";
+const CMP = "/usr/bin/cmp";
+const CP = "/bin/cp";
+const LN = "/bin/ln";
+const MKDIR = "/bin/mkdir";
+const MV = "/bin/mv";
+const RM = "/bin/rm";
+const RMDIR = "/bin/rmdir";
+const TEST = "/bin/test";
+const MKTEMP = "/usr/bin/mktemp";
+const PRINTENV = "/usr/bin/printenv";
+const STAT = "/usr/bin/stat";
+
+const EXECUTABLES = [
+    CAT, CMP, CP, LN, MKDIR, MV, RM, RMDIR, TEST, MKTEMP, PRINTENV, STAT
+];
+
+/* ===== src/core/numbers.js ===== */
+
+
+const MILLISECONDS_PER_SECOND = 1000;
+const SECONDS_PER_MINUTE = 60;
+
+function parseInteger(value, minimum, maximum, label) {
+    const numeric = Number(value);
+
+    if (
+        !isFinite(numeric) ||
+        Math.floor(numeric) !== numeric ||
+        numeric < minimum ||
+        numeric > maximum
+    ) {
+        throw new Error(
+            `${label} must be a whole number from ${minimum} to ${maximum}.`
+        );
+    }
+
+    return numeric;
+}
+
+function zeroPad(value, width) {
+    let text = String(value);
+
+    while (text.length < width) {
+        text = `0${text}`;
+    }
+
+    return text;
+}
+
+function plural(count, singular, pluralForm) {
+    return `${count} ${count === 1 ? singular : pluralForm ?? `${singular}s`}`;
+}
+
+function formatDuration(milliseconds) {
+    const totalSeconds = Math.max(0, Math.round(Number(milliseconds) / MILLISECONDS_PER_SECOND));
+    const minutes = Math.floor(totalSeconds / SECONDS_PER_MINUTE);
+    const seconds = totalSeconds % SECONDS_PER_MINUTE;
+
+    if (minutes <= 0) {
+        return `${seconds} second(s)`;
+    }
+
+    return `${minutes} minute(s), ${seconds} second(s)`;
+}
+
+const UTF8_WIDTHS = [
+    { below: 0x80, bytes: 1 },
+    { below: 0x800, bytes: 2 },
+    { below: 0x10000, bytes: 3 }
+];
+const UTF8_WIDEST = 4;
+
+function utf8Length(text) {
+    let bytes = 0;
+
+    for (const character of String(text)) {
+        const code = character.codePointAt(0);
+        const width = UTF8_WIDTHS.find((step) => code < step.below);
+
+        bytes += width ? width.bytes : UTF8_WIDEST;
+    }
+
+    return bytes;
+}
+
+function truncateToBytes(text, budget) {
+    let bytes = 0;
+    let kept = "";
+
+    for (const character of String(text)) {
+        bytes += utf8Length(character);
+
+        if (bytes > budget) {
+            return kept;
+        }
+
+        kept += character;
+    }
+
+    return kept;
+}
+
+/* ===== src/core/errors.js ===== */
+
+
+const CANCEL_ERROR_NUMBER = -128;
+const MAX_COMMAND_LENGTH = 4000;
+const COMMAND_HEAD_LENGTH = 2000;
+const COMMAND_TAIL_LENGTH = 1000;
+
+function errorMessage(error) {
+    if (!error) {
+        return "Unknown error";
+    }
+
+    if (error.message) {
+        return String(error.message);
+    }
+
+    return String(error);
+}
+
+const MAXIMUM_CAUSE_DEPTH = 8;
+
+function causes(error) {
+    const chain = [];
+    let current = error;
+
+    for (let depth = 0; current && depth < MAXIMUM_CAUSE_DEPTH; depth += 1) {
+        chain.push(current);
+        current = current.cause;
+    }
+
+    return chain;
+}
+
+class UserCancelled extends Error {
+    constructor() {
+        super("User cancelled.");
+        this.name = "UserCancelled";
+    }
+}
+
+function isUserCancelled(error) {
+    return causes(error).some((each) => each instanceof UserCancelled ||
+        each.errorNumber === CANCEL_ERROR_NUMBER);
+}
+
+function summarizeCommand(command) {
+    const text = String(command);
+
+    if (text.length <= MAX_COMMAND_LENGTH) {
+        return text;
+    }
+
+    return [
+        text.slice(0, COMMAND_HEAD_LENGTH),
+        "...[command truncated]...",
+        text.slice(text.length - COMMAND_TAIL_LENGTH)
+    ].join("\n\n");
+}
+
+function commandOf(error) {
+    const carried = causes(error).find((each) => each.command);
+
+    return carried ? String(carried.command) : "";
+}
+
+function describeForLog(error) {
+    const command = commandOf(error);
+
+    return command
+        ? `${errorMessage(error)}\n\nCommand:\n${command}`
+        : errorMessage(error);
+}
+
+/* ===== src/core/shell.js ===== */
+
+
+function shellQuote(value) {
+    const text = String(value);
+
+    if (/\x00/u.test(text)) {
+        throw new Error("Shell arguments cannot contain NUL bytes.");
+    }
+
+    return `'${text.replace(/'/gu, "'\\''")}'`;
+}
+
+function shellJoin(argumentsList) {
+    return argumentsList.map(shellQuote).join(" ");
+}
+
+/* ===== src/core/paths.js ===== */
+
+
+const SUPPORTED_FORMATS = [
+    { name: "JPEG", extensions: ["jpg", "jpeg"] },
+    { name: "PNG", extensions: ["png"] },
+    { name: "HEIC", extensions: ["heic", "heif"] },
+    { name: "TIFF", extensions: ["tif", "tiff"] },
+    { name: "WebP", extensions: ["webp"] },
+    { name: "AVIF", extensions: ["avif"] }
+];
+
+const SUPPORTED_EXTENSIONS = SUPPORTED_FORMATS.flatMap(
+    (format) => format.extensions
+);
+
+const SUPPORTED_PATTERN = new RegExp(
+    `\\.(?:${SUPPORTED_EXTENSIONS.join("|")})$`,
+    "iu"
+);
+
+function isSupportedImage(path) {
+    return SUPPORTED_PATTERN.test(String(path));
+}
+
+function supportedFormatList() {
+    const names = SUPPORTED_FORMATS.map((format) => format.name);
+
+    return `${names.slice(0, -1).join(", ")} or ${names.at(-1)}`;
+}
+
+function basename(path) {
+    const normalized = String(path).replace(/\/+$/u, "");
+    const index = normalized.lastIndexOf("/");
+
+    return index >= 0 ? normalized.slice(index + 1) : normalized;
+}
+
+function dirname(path) {
+    const text = String(path);
+    const index = text.lastIndexOf("/");
+
+    return index >= 0 ? text.slice(0, index + 1) : "";
+}
+
+function fileStem(filename) {
+    const value = String(filename);
+    const index = value.lastIndexOf(".");
+
+    return index > 0 ? value.slice(0, index) : value;
+}
+
+function sanitizeFilename(filename) {
+    const safe = String(filename)
+        .replace(/[\x00-\x1f\x7f/:]/gu, "_")
+        .replace(/_+/gu, "_")
+        .replace(/^\.+|\.+$/gu, "")
+        .replace(/^[\s_]+|[\s_]+$/gu, "");
+
+    return safe.length > 0 ? safe : "image";
+}
+
+/* ===== src/core/ordering.js ===== */
+
+
+const EQUAL = 0;
+const LEFT_FIRST = -1;
+const RIGHT_FIRST = 1;
+
+function naturalParts(value) {
+    return String(value).toLowerCase().match(/\d+|\D+/gu) || [""];
+}
+
+function isNumeric(part) {
+    return /^\d+$/u.test(part);
+}
+
+const LEADING_ZEROS = /^0+(?=\d)/u;
+
+function compareNumeric(leftPart, rightPart) {
+    const left = leftPart.replace(LEADING_ZEROS, "");
+    const right = rightPart.replace(LEADING_ZEROS, "");
+
+    if (left.length !== right.length) {
+        return left.length - right.length;
+    }
+
+    if (left !== right) {
+        return left < right ? LEFT_FIRST : RIGHT_FIRST;
+    }
+
+    return leftPart.length - rightPart.length;
+}
+
+function comparePart(leftPart, rightPart) {
+    if (leftPart === undefined) {
+        return LEFT_FIRST;
+    }
+
+    if (rightPart === undefined) {
+        return RIGHT_FIRST;
+    }
+
+    if (leftPart === rightPart) {
+        return EQUAL;
+    }
+
+    if (isNumeric(leftPart) && isNumeric(rightPart)) {
+        return compareNumeric(leftPart, rightPart);
+    }
+
+    return leftPart < rightPart ? LEFT_FIRST : RIGHT_FIRST;
+}
+
+function naturalCompare(left, right) {
+    const leftParts = naturalParts(left);
+    const rightParts = naturalParts(right);
+    const length = Math.max(leftParts.length, rightParts.length);
+
+    for (let index = 0; index < length; index += 1) {
+        const comparison = comparePart(leftParts[index], rightParts[index]);
+
+        if (comparison !== EQUAL) {
+            return comparison;
+        }
+    }
+
+    return EQUAL;
+}
+
+function sortImageRecords(records) {
+    return records.slice().sort(
+        (left, right) => naturalCompare(left.path, right.path)
+    );
+}
+
+/* ===== src/core/colour.js ===== */
+
+
+const HEX_COLOUR =
+    /^#?(?<red>[\da-f]{2})(?<green>[\da-f]{2})(?<blue>[\da-f]{2})$/iu;
+const HEX_RADIX = 16;
+
+const COLOUR_RULE = "must be six hexadecimal digits, for example #C7DAE8. " +
+    "The # is optional, and transparency is not supported.";
+
+function refuse(subject) {
+    return new Error(`${subject} ${COLOUR_RULE}`);
+}
+
+function groupsOf(value) {
+    if (typeof value !== "string") {
+        return null;
+    }
+
+    const match = HEX_COLOUR.exec(value.trim());
+
+    return match ? match.groups : null;
+}
+
+function normalizeColour(value, subject = "A colour") {
+    const groups = groupsOf(value);
+
+    if (!groups) {
+        throw refuse(subject);
+    }
+
+    return `#${groups.red}${groups.green}${groups.blue}`.toUpperCase();
+}
+
+function rgbOf(value, subject = "A colour") {
+    const groups = groupsOf(value);
+
+    if (!groups) {
+        throw refuse(subject);
+    }
+
+    return {
+        red: parseInt(groups.red, HEX_RADIX),
+        green: parseInt(groups.green, HEX_RADIX),
+        blue: parseInt(groups.blue, HEX_RADIX)
+    };
+}
+
+function describeUnconverted(count) {
+    return `${plural(count, "photograph")} carried a colour profile this ` +
+        "could not read, so the stamp was drawn in plain sRGB.";
+}
+
+/* ===== src/core/invocation.js ===== */
+
+
+const HEADLESS_FLAG = "--headless";
+const ARGUMENT_SEPARATOR = "--";
+
+function normalizeInvocationInput(input) {
+    if (input === undefined || input === null) {
+        return [];
+    }
+
+    const items = (Array.isArray(input) ? input : [input]).flat(Infinity);
+
+    while (items.length > 0 && String(items[0]) === ARGUMENT_SEPARATOR) {
+        items.shift();
+    }
+
+    return items;
+}
+
+function isHeadlessInput(input) {
+    const items = normalizeInvocationInput(input);
+
+    return items.length > 0 && String(items[0]) === HEADLESS_FLAG;
+}
+
+const FILE_URL = /^file:\/\/(?<authority>[^/]*)(?<path>\/.*)$/iu;
+const LOCAL_HOST = "localhost";
+
+function isLocalAuthority(authority) {
+    return authority === "" || authority.toLowerCase() === LOCAL_HOST;
+}
+
+const NUL = "\u0000";
+
+function decodePath(path) {
+    try {
+        const decoded = decodeURIComponent(path);
+
+        return decoded.includes(NUL) ? "" : decoded;
+    } catch {
+        return "";
+    }
+}
+
+function decodeFileUrl(value) {
+    const match = FILE_URL.exec(String(value));
+
+    if (!match || !isLocalAuthority(match.groups.authority)) {
+        return "";
+    }
+
+    return decodePath(match.groups.path);
+}
+
+/* ===== src/core/naming.js ===== */
+
+
+const FIRST_SUFFIX = 2;
+const MAXIMUM_SUFFIX = 10000;
+
+const FILENAME_BUDGET_BYTES = 255;
+const COLLISION_RESERVE_BYTES = 5;
+
+function boundedStem(stem, suffix) {
+    const budget =
+        FILENAME_BUDGET_BYTES - utf8Length(suffix) - COLLISION_RESERVE_BYTES;
+    const kept = truncateToBytes(stem, Math.max(budget, 0));
+
+    return kept === stem ? stem : sanitizeFilename(kept);
+}
+
+function nameFrom(originalName, suffix) {
+    const stem = sanitizeFilename(fileStem(originalName));
+
+    return `${boundedStem(stem, suffix)}${suffix}`;
+}
+
+const STAMPED = "_stamped";
+const STAMPED_NAME = /_stamped(?:_\d+)?$/u;
+
+function looksStamped(name) {
+    return STAMPED_NAME.test(fileStem(name));
+}
+
+function describeExcluded(excluded) {
+    return "Left alone: " +
+        `${plural(excluded.length, "stamped copy", "stamped copies")} ` +
+        "from an earlier run.";
+}
+
+function splitExtension(path) {
+    const lastSlash = path.lastIndexOf("/");
+    const lastDot = path.lastIndexOf(".");
+
+    return lastDot > lastSlash + 1
+        ? { stem: path.slice(0, lastDot), extension: path.slice(lastDot) }
+        : { stem: path, extension: "" };
+}
+
+function nextUniquePath(initialPath, exists) {
+    if (!exists(initialPath)) {
+        return initialPath;
+    }
+
+    const { stem, extension } = splitExtension(initialPath);
+
+    for (let suffix = FIRST_SUFFIX; suffix < MAXIMUM_SUFFIX; suffix += 1) {
+        const candidate = `${stem}_${suffix}${extension}`;
+
+        if (!exists(candidate)) {
+            return candidate;
+        }
+    }
+
+    throw new Error("Could not create a unique output filename.");
+}
+
+function stagedPath(workspace, token, extension) {
+    return `${workspace}/staged-${sanitizeFilename(String(token))}${extension}`;
+}
+
+/* ===== src/core/choices.js ===== */
+
+
+const POSITIONS = [
+    { label: "Bottom right", value: "bottom-right" },
+    { label: "Bottom left", value: "bottom-left" },
+    { label: "Top right", value: "top-right" },
+    { label: "Top left", value: "top-left" },
+    { label: "Bottom centre", value: "bottom-centre" },
+    { label: "Top centre", value: "top-centre" }
+];
+
+const DATE_FORMATS = [
+    { label: "2026-09-09 14:30", value: "iso-minutes" },
+    { label: "2026-09-09", value: "iso-date" },
+    { label: "9 September 2026", value: "long-date" },
+    { label: "Do not stamp the date", value: "none" }
+];
+
+const COORDINATE_FORMATS = [
+    { label: "56.9496, 24.1052", value: "decimal" },
+    { label: "56°56'58.6\"N 24°6'18.7\"E", value: "sexagesimal" },
+    { label: "Do not stamp the coordinates", value: "none" }
+];
+
+const POSITION = {
+    prompt: "Where the stamp goes:",
+    label: "Position:",
+    choices: POSITIONS
+};
+
+const DATE_FORMAT = {
+    prompt: "How the date the photograph was taken is written:",
+    label: "Date format:",
+    choices: DATE_FORMATS
+};
+
+const COORDINATE_FORMAT = {
+    prompt: "How the place the photograph was taken is written:",
+    label: "Coordinate format:",
+    choices: COORDINATE_FORMATS
+};
+
+const MINIMUM_SIZE = 8;
+const MAXIMUM_SIZE = 400;
+const MINIMUM_MARGIN = 0;
+const MAXIMUM_MARGIN = 2000;
+const MINIMUM_OUTLINE = 0;
+const MAXIMUM_OUTLINE = 20;
+
+const SIZE = {
+    prompt: `Text size in points (${MINIMUM_SIZE}-${MAXIMUM_SIZE}):`,
+    label: "Text size:",
+    hint: `${MINIMUM_SIZE}-${MAXIMUM_SIZE} pt`,
+    defaultAnswer: "36",
+    minimum: MINIMUM_SIZE,
+    maximum: MAXIMUM_SIZE
+};
+
+const MARGIN = {
+    prompt: `Margin in pixels (${MINIMUM_MARGIN}-${MAXIMUM_MARGIN}):`,
+    label: "Margin:",
+    hint: `${MINIMUM_MARGIN}-${MAXIMUM_MARGIN} px`,
+    defaultAnswer: "24",
+    minimum: MINIMUM_MARGIN,
+    maximum: MAXIMUM_MARGIN
+};
+
+const OUTLINE_WIDTH = {
+    prompt: `Outline width in pixels (${MINIMUM_OUTLINE}-${MAXIMUM_OUTLINE}):`,
+    label: "Outline:",
+    hint: `${MINIMUM_OUTLINE}-${MAXIMUM_OUTLINE} px, 0 for none`,
+    defaultAnswer: "2",
+    minimum: MINIMUM_OUTLINE,
+    maximum: MAXIMUM_OUTLINE
+};
+
+function labelsOf(control) {
+    return control.choices.map((choice) => choice.label);
+}
+
+function defaultLabelOf(control) {
+    return control.choices[0].label;
+}
+
+function defaultValueOf(control) {
+    return control.choices[0].value;
+}
+
+function valueOfLabel(control, label) {
+    const chosen = control.choices.find((choice) => choice.label === label);
+
+    if (!chosen) {
+        throw new Error(`Unrecognised choice: ${label}`);
+    }
+
+    return chosen.value;
+}
+
+function labelOfValue(control, value) {
+    const chosen = control.choices.find((choice) => choice.value === value);
+
+    if (!chosen) {
+        throw new Error(`Unrecognised value: ${value}`);
+    }
+
+    return chosen.label;
+}
+
+/* ===== src/core/form-shapes.js ===== */
+
+
+function choiceRow({ key, control }, answers, invalid) {
+    return {
+        key,
+        kind: "choice",
+        label: control.label,
+        value: String(answers[key]),
+        invalid: invalid.has(key),
+        options: control.choices.map((choice) => ({ label: choice.label }))
+    };
+}
+
+function colourRow({ key, control }, answers, invalid) {
+    return {
+        key,
+        kind: "colour",
+        label: control.label,
+        hint: "or type #RRGGBB",
+        value: String(answers[key]),
+        invalid: invalid.has(key),
+        options: control.presets.map((colour) => ({ label: colour }))
+    };
+}
+
+function numberRow({ key, control }, answers, invalid) {
+    return {
+        key,
+        kind: "number",
+        label: control.label,
+        hint: control.hint,
+        value: String(answers[key]),
+        invalid: invalid.has(key),
+        minimum: control.minimum,
+        maximum: control.maximum
+    };
+}
+
+function textRow({ key, control }, answers, invalid) {
+    return {
+        key,
+        kind: "text",
+        label: control.label,
+        value: String(answers[key]),
+        invalid: invalid.has(key)
+    };
+}
+
+/* ===== src/core/reading.js ===== */
+
+
+function readNumeric(value, subject) {
+    if (typeof value !== "number" && typeof value !== "string") {
+        throw new Error(`${subject} must be a number.`);
+    }
+
+    return value;
+}
+
+function readWords(value, subject) {
+    if (typeof value !== "string") {
+        throw new Error(`${subject} must be text.`);
+    }
+
+    return value;
+}
+
+/* ===== src/core/settings.js ===== */
+
+
+const CUSTOM_TEXT_LIMIT = 500;
+
+function valuesOf(control) {
+    return control.choices.map((choice) => choice.value);
+}
+
+function assertChoice(value, control, label) {
+    const text = readWords(value, `The ${label}`);
+
+    if (!valuesOf(control).includes(text)) {
+        throw new Error(`Unsupported ${label}: ${text}`);
+    }
+
+    return text;
+}
+
+function readCustomText(value) {
+    const text = value === undefined || value === null
+        ? ""
+        : readWords(value, "Your own text");
+
+    if (text.length > CUSTOM_TEXT_LIMIT) {
+        throw new Error(
+            `Custom text must be ${CUSTOM_TEXT_LIMIT} characters or fewer.`
+        );
+    }
+
+    return text;
+}
+
+function isSettingsRecord(value) {
+    return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function normalizeSettings(settings) {
+    return {
+        font: readWords(settings.font ?? "", "The typeface").trim(),
+        size: parseInteger(
+            readNumeric(settings.size, "Text size"),
+            MINIMUM_SIZE,
+            MAXIMUM_SIZE,
+            "Text size"
+        ),
+        textColour: normalizeColour(settings.textColour, "Text colour"),
+        outlineColour: normalizeColour(settings.outlineColour, "Outline colour"),
+        outlineWidth: parseInteger(
+            readNumeric(settings.outlineWidth, "Outline"),
+            MINIMUM_OUTLINE,
+            MAXIMUM_OUTLINE,
+            "Outline"
+        ),
+        position: assertChoice(settings.position, POSITION, "position"),
+        margin: parseInteger(
+            readNumeric(settings.margin, "Margin"),
+            MINIMUM_MARGIN,
+            MAXIMUM_MARGIN,
+            "Margin"
+        ),
+        dateFormat: assertChoice(settings.dateFormat, DATE_FORMAT, "date format"),
+        coordinateFormat: assertChoice(
+            settings.coordinateFormat,
+            COORDINATE_FORMAT,
+            "coordinate format"
+        ),
+        customText: readCustomText(settings.customText)
+    };
+}
+
+function stampsNothing(settings) {
+    return settings.dateFormat === "none" &&
+        settings.coordinateFormat === "none" &&
+        settings.customText.trim() === "";
+}
+
+/* ===== src/core/moment.js ===== */
+
+
+const EXIF_MOMENT = new RegExp(
+    "^(?<year>\\d{4}):(?<month>\\d{2}):(?<day>\\d{2})" +
+    " (?<hour>\\d{2}):(?<minute>\\d{2})(?::(?<second>\\d{2}))?" +
+    "(?:\\.\\d+)?(?:Z|(?<offsetSign>[+-])" +
+    "(?<offsetHour>\\d{2}):?(?<offsetMinute>\\d{2}))?$",
+    "u"
+);
+
+const MONTHS_IN_YEAR = 12;
+const HOURS_IN_DAY = 24;
+const MINUTES_IN_HOUR = 60;
+const SECONDS_IN_MINUTE = 61;
+
+const LONG = 31;
+const SHORT = 30;
+const FEBRUARY_DAYS = 28;
+const LEAP_DAYS = 29;
+const FEBRUARY = 2;
+
+const DAYS_IN_MONTH = [
+    LONG, FEBRUARY_DAYS, LONG, SHORT, LONG, SHORT,
+    LONG, LONG, SHORT, LONG, SHORT, LONG
+];
+
+const FOUR = 4;
+const HUNDRED = 100;
+const FOUR_HUNDRED = 400;
+
+function isLeapYear(year) {
+    return year % FOUR === 0 && (year % HUNDRED !== 0 || year % FOUR_HUNDRED === 0);
+}
+
+function daysInMonth(year, month) {
+    return month === FEBRUARY && isLeapYear(year)
+        ? LEAP_DAYS
+        : DAYS_IN_MONTH[month - 1];
+}
+
+function isCalendarDate(year, month, day) {
+    return month >= 1 && month <= MONTHS_IN_YEAR &&
+        day >= 1 && day <= daysInMonth(year, month);
+}
+
+const OFFSET_HOURS_LIMIT = 14;
+
+function isOffset({ offsetSign, offsetHour, offsetMinute }) {
+    return !offsetSign ||
+        (Number(offsetHour) <= OFFSET_HOURS_LIMIT &&
+            Number(offsetMinute) < MINUTES_IN_HOUR);
+}
+
+function isClockTime(hour, minute, second) {
+    return hour < HOURS_IN_DAY &&
+        minute < MINUTES_IN_HOUR &&
+        second < SECONDS_IN_MINUTE;
+}
+
+function readMoment(text) {
+    const match = EXIF_MOMENT.exec(String(text));
+
+    if (!match) {
+        return null;
+    }
+
+    const { year, month, day, hour, minute, second } = match.groups;
+
+    if (!isCalendarDate(Number(year), Number(month), Number(day))) {
+        return null;
+    }
+
+    if (!isClockTime(Number(hour), Number(minute), Number(second ?? 0))) {
+        return null;
+    }
+
+    return isOffset(match.groups) ? { year, month, day, hour, minute } : null;
+}
+
+/* ===== src/core/place.js ===== */
+
+
+const DEGREE_DECIMALS = 4;
+const SECOND_DECIMALS = 1;
+
+const MINUTES_PER_DEGREE = 60;
+const SECONDS_PER_ARC_MINUTE = 60;
+const TENTHS_PER_SECOND = 10;
+const TENTHS_PER_MINUTE = SECONDS_PER_ARC_MINUTE * TENTHS_PER_SECOND;
+const TENTHS_PER_DEGREE = MINUTES_PER_DEGREE * TENTHS_PER_MINUTE;
+
+function hemisphere(value, displayed, positive, negative) {
+    return value < 0 && displayed !== 0 ? negative : positive;
+}
+
+function decimalDegrees(value) {
+    const rounded = Number(value.toFixed(DEGREE_DECIMALS));
+
+    return (rounded === 0 ? 0 : rounded).toFixed(DEGREE_DECIMALS);
+}
+
+function sexagesimal(value, positive, negative) {
+    const tenths = Math.round(Math.abs(value) * TENTHS_PER_DEGREE);
+    const degrees = Math.floor(tenths / TENTHS_PER_DEGREE);
+    const withinDegree = tenths % TENTHS_PER_DEGREE;
+    const minutes = Math.floor(withinDegree / TENTHS_PER_MINUTE);
+    const seconds = (withinDegree % TENTHS_PER_MINUTE) / TENTHS_PER_SECOND;
+    const letter = hemisphere(value, tenths, positive, negative);
+
+    return `${degrees}°${minutes}'${seconds.toFixed(SECOND_DECIMALS)}"${letter}`;
+}
+
+function decimalPlace(place) {
+    return `${decimalDegrees(place.latitude)}, ${decimalDegrees(place.longitude)}`;
+}
+
+function sexagesimalPlace(place) {
+    return `${sexagesimal(place.latitude, "N", "S")} ` +
+        `${sexagesimal(place.longitude, "E", "W")}`;
+}
+
+/* ===== src/core/metadata.js ===== */
+
+
+const MOMENT_TAGS = ["DateTimeOriginal", "CreateDate"];
+
+const MONTHS = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+];
+
+function captureMoment(facts) {
+    for (const tag of MOMENT_TAGS) {
+        const read = readMoment(facts[tag]);
+
+        if (read) {
+            return { ...read, tag };
+        }
+    }
+
+    return null;
+}
+
+const LATITUDE_LIMIT = 90;
+const LONGITUDE_LIMIT = 180;
+
+function boundedDegrees(value, limit) {
+    const text = typeof value === "number" || typeof value === "string"
+        ? String(value).trim()
+        : "";
+    const numeric = Number(text);
+
+    return text !== "" && isFinite(numeric) && Math.abs(numeric) <= limit
+        ? numeric
+        : null;
+}
+
+function coordinates(facts) {
+    const latitude = boundedDegrees(facts.GPSLatitude, LATITUDE_LIMIT);
+    const longitude = boundedDegrees(facts.GPSLongitude, LONGITUDE_LIMIT);
+
+    return latitude === null || longitude === null
+        ? null
+        : { latitude, longitude };
+}
+
+/* ===== src/core/inscription.js ===== */
+
+
+function isoDate(moment) {
+    return `${moment.year}-${moment.month}-${moment.day}`;
+}
+
+const MOMENT_WRITERS = {
+    "iso-minutes": (moment) => `${isoDate(moment)} ${moment.hour}:${moment.minute}`,
+    "iso-date": isoDate,
+    "long-date": (moment) =>
+        `${Number(moment.day)} ${MONTHS[Number(moment.month) - 1]} ${moment.year}`
+};
+
+const PLACE_WRITERS = {
+    decimal: decimalPlace,
+    sexagesimal: sexagesimalPlace
+};
+
+function wrote(facts, format, read, writers) {
+    const value = writers[format] ? read(facts) : null;
+
+    return value ? writers[format](value) : "";
+}
+
+function customLines(text) {
+    const lines = String(text ?? "").split("\n");
+
+    while (lines.length > 0 && lines.at(-1).trim() === "") {
+        lines.pop();
+    }
+
+    return lines;
+}
+
+function describeAbsence(settings) {
+    const missing = [
+        settings.dateFormat === "none" ? "" : "when",
+        settings.coordinateFormat === "none" ? "" : "where"
+    ].filter(Boolean);
+
+    return `it does not say ${missing.join(" or ")} it was taken, ` +
+        "and there is no text of your own to put on it";
+}
+
+function wantsMetadata(settings) {
+    return settings.dateFormat !== "none" || settings.coordinateFormat !== "none";
+}
+
+function inscriptionFor(facts, settings) {
+    const known = [
+        wrote(facts, settings.dateFormat, captureMoment, MOMENT_WRITERS),
+        wrote(facts, settings.coordinateFormat, coordinates, PLACE_WRITERS)
+    ].filter((line) => line.length > 0);
+    const lines = [...known, ...customLines(settings.customText)];
+
+    return lines.length > 0
+        ? { lines, text: lines.join("\n") }
+        : { nothing: describeAbsence(settings) };
+}
+
+/* ===== src/core/geometry.js ===== */
+
+
+const CENTRE_HALVES = 2;
+
+function clamp(value, limit) {
+    return Math.max(0, Math.min(Math.round(value), limit));
+}
+
+const HORIZONTAL = {
+    left: (room, margin) => margin,
+    right: (room, margin) => room - margin,
+    centre: (room) => room / CENTRE_HALVES
+};
+
+const VERTICAL = {
+    top: (room, margin) => margin,
+    bottom: (room, margin) => room - margin
+};
+
+function edgesOf(position) {
+    const [vertical, horizontal] = String(position).split("-");
+
+    return { vertical, horizontal };
+}
+
+function describeSize(size) {
+    return `${size.width} by ${size.height} pixels`;
+}
+
+function refuseSize(image, stamp) {
+    return new Error(
+        `The stamp does not fit on this photograph.\n\nThe text is ` +
+            `${describeSize(stamp)} and the photograph is ${describeSize(image)}. ` +
+            "Choose a smaller text size, or write less."
+    );
+}
+
+function placeStamp(image, stamp, settings) {
+    if (stamp.width > image.width || stamp.height > image.height) {
+        throw refuseSize(image, stamp);
+    }
+
+    const { vertical, horizontal } = edgesOf(settings.position);
+    const acrossRoom = image.width - stamp.width;
+    const downRoom = image.height - stamp.height;
+    const asked = {
+        left: HORIZONTAL[horizontal](acrossRoom, settings.margin),
+        top: VERTICAL[vertical](downRoom, settings.margin)
+    };
+    const at = {
+        left: clamp(asked.left, acrossRoom),
+        top: clamp(asked.top, downRoom)
+    };
+
+    return {
+        ...at,
+        crowded: at.left !== Math.round(asked.left) ||
+            at.top !== Math.round(asked.top)
+    };
+}
+
+function describeCrowding(count) {
+    return `${plural(count, "photograph")} had too little room for the ` +
+        "margin, so the stamp sits against the edge.";
+}
+
+/* ===== src/core/form-rows.js ===== */
+
+
+const FONT = {
+    prompt: "Typeface:",
+    label: "Typeface:"
+};
+
+const TEXT = {
+    prompt: "Text of your own to stamp:",
+    label: "Your own text:",
+    defaultAnswer: ""
+};
+
+const TEXT_COLOUR = {
+    prompt: "Colour of the text:",
+    label: "Text colour:",
+    defaultAnswer: "#FFFFFF",
+    presets: ["#FFFFFF", "#000000", "#FFD400", "#FF3B30"]
+};
+
+const OUTLINE_COLOUR = {
+    prompt: "Colour of the outline:",
+    label: "Outline colour:",
+    defaultAnswer: "#202020",
+    presets: ["#202020", "#000000", "#FFFFFF"]
+};
+
+const ORDER = [
+    { kind: "choice", key: "dateFormat", control: DATE_FORMAT },
+    { kind: "choice", key: "coordinateFormat", control: COORDINATE_FORMAT },
+    { kind: "text", key: "customText", control: TEXT },
+    { kind: "font", key: "font", control: FONT },
+    { kind: "number", key: "size", control: SIZE },
+    { kind: "colour", key: "textColour", control: TEXT_COLOUR },
+    { kind: "number", key: "outlineWidth", control: OUTLINE_WIDTH },
+    { kind: "colour", key: "outlineColour", control: OUTLINE_COLOUR },
+    { kind: "choice", key: "position", control: POSITION },
+    { kind: "number", key: "margin", control: MARGIN }
+];
+
+function fontControl(fonts) {
+    return {
+        ...FONT,
+        choices: fonts.map((font) => ({ label: font, value: font }))
+    };
+}
+
+function resolvedRow(row, fonts) {
+    return row.kind === "font" ? { ...row, control: fontControl(fonts) } : row;
+}
+
+function controlFor(row, fonts) {
+    return resolvedRow(row, fonts).control;
+}
+
+const BUILDERS = {
+    choice: choiceRow,
+    font: choiceRow,
+    colour: colourRow,
+    number: numberRow,
+    text: textRow
+};
+
+function formRows(answers, invalid, fonts) {
+    return ORDER.map((row) => {
+        const resolved = resolvedRow(row, fonts);
+
+        return BUILDERS[row.kind](resolved, answers, invalid);
+    });
+}
+
+/* ===== src/core/form-defaults.js ===== */
+
+
+function defaultFor(row, fonts) {
+    if (row.kind === "font") {
+        return fonts.length > 0 ? fonts[0] : "";
+    }
+
+    return row.kind === "choice"
+        ? defaultLabelOf(row.control)
+        : row.control.defaultAnswer;
+}
+
+function defaultAnswers(fonts) {
+    return Object.fromEntries(
+        ORDER.map((row) => [row.key, defaultFor(row, fonts)])
+    );
+}
+
+function defaultSettingFor(row, fonts) {
+    if (row.kind === "font") {
+        return fonts.length > 0 ? fonts[0] : "";
+    }
+
+    if (row.kind === "choice") {
+        return defaultValueOf(row.control);
+    }
+
+    return row.kind === "number"
+        ? Number(row.control.defaultAnswer)
+        : row.control.defaultAnswer;
+}
+
+function defaultSettings(fonts) {
+    return Object.fromEntries(
+        ORDER.map((row) => [row.key, defaultSettingFor(row, fonts)])
+    );
+}
+
+/* ===== src/core/form.js ===== */
+
+
+const CREATE_BUTTON = "Stamp";
+const CANCEL_BUTTON = "Cancel";
+
+const SOURCE = "The date and place are each photograph's own. " +
+    "Your own text is the same on all of them.";
+
+function invitation(count) {
+    const ask = `Choose what to stamp and how it should look. ${SOURCE}`;
+
+    return count > 0 ? `${plural(count, "photograph")}. ${ask}` : ask;
+}
+
+function formSpec(answers, problems, context) {
+    const { count, fonts } = context;
+
+    return {
+        title: APP_NAME,
+        detail: problems.length > 0
+            ? problems.map((problem) => problem.message).join("\n")
+            : invitation(count),
+        rows: formRows(
+            answers ?? defaultAnswers(fonts),
+            new Set(problems.map((problem) => problem.key)),
+            fonts
+        ),
+        buttons: [CREATE_BUTTON, CANCEL_BUTTON]
+    };
+}
+
+/* ===== src/core/answers.js ===== */
+
+
+const DIGITS = /^\d+$/u;
+
+function readNumber(answer, control) {
+    const text = String(answer).trim();
+    const value = parseInt(text, 10);
+
+    if (!DIGITS.test(text) || value < control.minimum || value > control.maximum) {
+        throw new Error(
+            `${control.label} enter a whole number from ` +
+                `${control.minimum} to ${control.maximum}.`
+        );
+    }
+
+    return value;
+}
+
+function readColour(answer, control) {
+    return normalizeColour(answer, control.label.replace(/:$/u, ""));
+}
+
+function readChoice(answer, control) {
+    try {
+        return valueOfLabel(control, answer);
+    } catch {
+        throw new Error(`${control.label} "${answer}" is not one of the choices.`);
+    }
+}
+
+function readText(answer, control) {
+    const text = String(answer);
+
+    if (text.length > CUSTOM_TEXT_LIMIT) {
+        throw new Error(
+            `${control.label} ${CUSTOM_TEXT_LIMIT} characters or fewer.`
+        );
+    }
+
+    return text;
+}
+
+const READERS = { choice: readChoice, colour: readColour, number: readNumber, text: readText };
+
+function readerFor(row) {
+    return READERS[row.kind === "font" ? "choice" : row.kind];
+}
+
+function readAnswers(answers, fonts) {
+    const settings = {};
+    const problems = [];
+
+    for (const row of ORDER) {
+        try {
+            settings[row.key] = readerFor(row)(
+                answers[row.key],
+                controlFor(row, fonts)
+            );
+        } catch (error) {
+            problems.push({ key: row.key, message: errorMessage(error) });
+        }
+    }
+
+    return problems.length > 0 ? { problems } : { settings };
+}
+
+function answersFromSettings(settings, fonts) {
+    const answers = {};
+
+    for (const row of ORDER) {
+        const value = settings[row.key];
+
+        answers[row.key] = row.kind === "choice" || row.kind === "font"
+            ? labelOfValue(controlFor(row, fonts), value)
+            : String(value);
+    }
+
+    return answers;
+}
+
+/* ===== src/core/preferences.js ===== */
+
+
+const DOMAIN = "com.resoltico.StampImages";
+const KEY = "lastSettings.v1";
+
+const PER_JOB = ["customText"];
+
+function encode(settings) {
+    const kept = { ...settings };
+
+    for (const key of PER_JOB) {
+        delete kept[key];
+    }
+
+    return JSON.stringify(kept);
+}
+
+function blank() {
+    return { customText: "" };
+}
+
+function rememberedAnswers(text, fonts) {
+    try {
+        const held = JSON.parse(String(text));
+
+        if (!isSettingsRecord(held)) {
+            return undefined;
+        }
+
+        const settings = normalizeSettings({ ...defaultSettings(fonts), ...held });
+
+        return { ...answersFromSettings(settings, fonts), ...blank() };
+    } catch {
+        return undefined;
+    }
+}
+
+/* ===== src/core/queries.js ===== */
+
+
+const NUMERIC = "-n";
+const JSON_OUT = "-json";
+
+const WANTED_TAGS = [
+    "-DateTimeOriginal",
+    "-CreateDate",
+    "-ModifyDate",
+    "-GPSLatitude",
+    "-GPSLongitude"
+];
+
+function buildMetadataArgv(exiftoolPath, imagePath) {
+    return [exiftoolPath, JSON_OUT, NUMERIC, ...WANTED_TAGS, imagePath];
+}
+
+function buildSizeArgv(vipsheaderPath, imagePath, field) {
+    return [vipsheaderPath, "-f", field, imagePath];
+}
+
+/* ===== src/core/lettering.js ===== */
+
+
+const RENDER_DPI = "72";
+
+const BOTH_SIDES = 2;
+
+const MARKUP = [["&", "&amp;"], ["<", "&lt;"], [">", "&gt;"]];
+
+function asMarkup(text) {
+    return MARKUP.reduce(
+        (written, [character, entity]) => written.split(character).join(entity),
+        String(text)
+    );
+}
+
+function buildTextArgv(vipsPath, outputPath, text, font) {
+    return [
+        vipsPath,
+        "text",
+        outputPath,
+        asMarkup(text),
+        "--font",
+        font,
+        "--dpi",
+        RENDER_DPI
+    ];
+}
+
+function buildEmbedArgv(vipsPath, around, size, border) {
+    return [
+        vipsPath,
+        "embed",
+        around.input,
+        around.output,
+        String(border),
+        String(border),
+        String(size.width + border * BOTH_SIDES),
+        String(size.height + border * BOTH_SIDES),
+        "--background",
+        "0"
+    ];
+}
+
+function windowFor(outlineWidth) {
+    return outlineWidth * BOTH_SIDES + 1;
+}
+
+function buildDilateArgv(vipsPath, inputPath, outputPath, outlineWidth) {
+    const size = windowFor(outlineWidth);
+
+    return [
+        vipsPath,
+        "rank",
+        inputPath,
+        outputPath,
+        String(size),
+        String(size),
+        String(size * size - 1)
+    ];
+}
+
+/* ===== src/core/colouring.js ===== */
+
+
+function buildSolidArgv(vipsPath, outputPath, size) {
+    return [
+        vipsPath,
+        "black",
+        outputPath,
+        String(size.width),
+        String(size.height),
+        "--bands",
+        "3"
+    ];
+}
+
+function buildColourArgv(vipsPath, inputPath, outputPath, colour) {
+    const { red, green, blue } = rgbOf(colour);
+
+    return [
+        vipsPath,
+        "linear",
+        inputPath,
+        outputPath,
+        "1 1 1",
+        `${red} ${green} ${blue}`,
+        "--uchar"
+    ];
+}
+
+function buildBandjoinArgv(vipsPath, colourPath, maskPath, outputPath) {
+    return [vipsPath, "bandjoin", `${colourPath} ${maskPath}`, outputPath];
+}
+
+function buildIccArgv(vipsPath, inputPath, outputPath, profilePath) {
+    return [
+        vipsPath,
+        "icc_transform",
+        inputPath,
+        outputPath,
+        profilePath,
+        "--input-profile",
+        "srgb",
+        "--intent",
+        "relative"
+    ];
+}
+
+/* ===== src/core/commands.js ===== */
+
+
+function buildCompositeArgv(vipsPath, over, outputPath, at) {
+    const argv = [
+        vipsPath,
+        "composite2",
+        over.base,
+        over.overlay,
+        outputPath,
+        "over"
+    ];
+
+    return at
+        ? [...argv, "--x", String(at.left), "--y", String(at.top)]
+        : argv;
+}
+
+const FAIL_ON_DAMAGE = "[fail_on=error]";
+
+function readingPath(sourcePath) {
+    return `${sourcePath}${FAIL_ON_DAMAGE}`;
+}
+
+function buildOrientArgv(vipsPath, inputPath, outputPath) {
+    return [vipsPath, "autorot", readingPath(inputPath), outputPath];
+}
+
+function buildFlattenArgv(vipsPath, inputPath, outputPath) {
+    return [vipsPath, "flatten", inputPath, outputPath, "--background=255,255,255"];
+}
+
+/* ===== src/core/formats.js ===== */
+
+
+const QUALITY = "[Q=90]";
+const LOSSLESS = "";
+
+const KNOWN = {
+    ".jpg": { extension: ".jpg", options: QUALITY },
+    ".jpeg": { extension: ".jpeg", options: QUALITY },
+    ".png": { extension: ".png", options: LOSSLESS },
+    ".heic": { extension: ".heic", options: QUALITY },
+    ".heif": { extension: ".heif", options: QUALITY },
+    ".tif": { extension: ".tif", options: LOSSLESS },
+    ".tiff": { extension: ".tiff", options: LOSSLESS },
+    ".webp": { extension: ".webp", options: QUALITY },
+    ".avif": { extension: ".avif", options: QUALITY }
+};
+
+const FALLBACK = { extension: ".jpg", options: QUALITY };
+
+function outputFormat(sourcePath) {
+    const { extension } = splitExtension(String(sourcePath));
+
+    return KNOWN[extension.toLowerCase()] ?? FALLBACK;
+}
+
+function outputExtension(sourcePath) {
+    return outputFormat(sourcePath).extension;
+}
+
+function savingPath(targetPath) {
+    return `${targetPath}${outputFormat(targetPath).options}`;
+}
+
+/* ===== src/core/preflight.js ===== */
+
+
+const FAIL_ON_PROBE = "--fail-on=error";
+
+const PROBE_IMAGE = "/nonexistent-stamp-images-preflight.png";
+const PROBE_OUTPUT = "/nonexistent-stamp-images-preflight.v";
+const PROBE_WIDTH = "10";
+
+function buildVipsProbeArgv(vipsPath) {
+    return [
+        vipsPath,
+        "thumbnail",
+        PROBE_IMAGE,
+        PROBE_OUTPUT,
+        PROBE_WIDTH,
+        "--size=down",
+        "--export-profile",
+        "srgb",
+        FAIL_ON_PROBE
+    ];
+}
+
+function buildExiftoolProbeArgv(exiftoolPath) {
+    return [exiftoolPath, "-json", "-n", "-FileType", exiftoolPath];
+}
+
+function isVipsUsable(probeOutput) {
+    return /VipsForeignLoad/u.test(String(probeOutput));
+}
+
+function isExiftoolUsable(probeOutput) {
+    try {
+        const answered = JSON.parse(String(probeOutput));
+
+        return Array.isArray(answered) &&
+            answered.length > 0 &&
+            Boolean(answered[0]) &&
+            typeof answered[0].SourceFile === "string" &&
+            !answered[0].Error;
+    } catch {
+        return false;
+    }
+}
+
+const INSTALL_COMMAND = "brew install exiftool vips";
+const HOMEBREW_URL = "https://brew.sh";
+
+function describeProblem(problem) {
+    if (problem.kind === "missing") {
+        return `- ${problem.tool} is not installed.`;
+    }
+
+    return `- ${problem.tool} is installed but does not do what this needs: ` +
+        `${problem.flags}.`;
+}
+
+function describeSetupProblems(problems, hasHomebrew) {
+    const remedy = hasHomebrew
+        ? `Run this in Terminal:\n\n${INSTALL_COMMAND}`
+        : `Install Homebrew first, from ${HOMEBREW_URL}\n\n` +
+            `then run:\n\n${INSTALL_COMMAND}`;
+
+    return `Setup needed.\n\n${problems.map(describeProblem).join("\n")}\n\n${remedy}`;
+}
+
+/* ===== src/runtime/shell.js ===== */
+
+
+function runArgv(app, argumentsList, label) {
+    const command = shellJoin(argumentsList);
+
+    try {
+        return app.doShellScript(command);
+    } catch (error) {
+        const context = label ? ` while ${label}` : "";
+
+        const failure = new Error(
+            `Command failed${context}.\n\n${errorMessage(error)}`,
+            { cause: error }
+        );
+
+        failure.command = summarizeCommand(command);
+
+        throw failure;
+    }
+}
+
+function tryArgv(app, argumentsList) {
+    try {
+        return app.doShellScript(shellJoin(argumentsList));
+    } catch {
+        return "";
+    }
+}
+
+function readTextFile(app, path) {
+    return runArgv(app, [CAT, path], "reading headless configuration");
+}
+
+function removeFile(app, path) {
+    if (!path) {
+        return;
+    }
+
+    tryArgv(app, [RM, "-f", path]);
+}
+
+/* ===== src/runtime/asking.js ===== */
+
+
+function succeeds(app, argumentsList) {
+    try {
+        app.doShellScript(shellJoin(argumentsList));
+
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function asks(app, argumentsList) {
+    return succeeds(app, [TEST, ...argumentsList]);
+}
+
+function testPath(app, flag, target) {
+    return asks(app, [flag, target]);
+}
+
+function pathIsTaken(app, path) {
+    return asks(app, ["-e", path, "-o", "-L", path]);
+}
+
+function isRegularFile(app, path) {
+    return testPath(app, "-f", path);
+}
+
+function isDirectory(app, path) {
+    return testPath(app, "-d", path);
+}
+
+function isExecutable(app, path) {
+    return testPath(app, "-x", path);
+}
+
+function isRegularNonEmpty(app, path) {
+    try {
+        app.doShellScript(shellJoin([TEST, "-f", path, "-a", "-s", path]));
+
+        return true;
+    } catch (error) {
+        if (isUserCancelled(error)) {
+            throw error;
+        }
+
+        return false;
+    }
+}
+
+function sameBytes(app, one, other) {
+    return succeeds(app, [CMP, "-s", one, other]);
+}
+
+function verifyFileWritten(app, path, label) {
+    if (!isRegularNonEmpty(app, path)) {
+        throw new Error(
+            `${label} is not a file with anything in it:\n\n${path}`
+        );
+    }
+}
+
+/* ===== src/runtime/tools.js ===== */
+
+
+const TOOL_SEARCH_PATH =
+    "/opt/homebrew/bin:/usr/local/bin:/opt/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+
+const TOOL_NAMES = ["vips", "vipsheader", "exiftool"];
+
+const ENVIRONMENT_OVERRIDES = {
+    vips: "STAMP_IMAGES_VIPS",
+    vipsheader: "STAMP_IMAGES_VIPSHEADER",
+    exiftool: "STAMP_IMAGES_EXIFTOOL"
+};
+
+function optionalEnvironment(app, name) {
+    return String(tryArgv(app, [PRINTENV, name])).trim();
+}
+
+function searchPath(app, executableName) {
+    try {
+        const found = String(
+            app.doShellScript(
+                `PATH=${shellQuote(TOOL_SEARCH_PATH)}; ` +
+                `command -v ${shellQuote(executableName)}`
+            )
+        ).trim();
+
+        return found && isExecutable(app, found) ? found : "";
+    } catch {
+        return "";
+    }
+}
+
+function candidatePaths(executableName) {
+    return [
+        `/opt/homebrew/bin/${executableName}`,
+        `/usr/local/bin/${executableName}`,
+        `/opt/local/bin/${executableName}`
+    ];
+}
+
+function findTool(app, executableName) {
+    const override = optionalEnvironment(
+        app,
+        ENVIRONMENT_OVERRIDES[executableName]
+    );
+
+    if (override && isExecutable(app, override)) {
+        return override;
+    }
+
+    for (const candidate of candidatePaths(executableName)) {
+        if (isExecutable(app, candidate)) {
+            return candidate;
+        }
+    }
+
+    return searchPath(app, executableName);
+}
+
+/* ===== src/runtime/preflight.js ===== */
+
+
+function probe(app, argv) {
+    try {
+        return app.doShellScript(`${shellJoin(argv)} 2>&1 || true`);
+    } catch {
+        return "";
+    }
+}
+
+function hasHomebrew(app) {
+    try {
+        return Boolean(app.doShellScript("command -v brew 2>/dev/null || true"));
+    } catch {
+        return false;
+    }
+}
+
+const CAPABILITY_PROBES = {
+    vips: {
+        build: buildVipsProbeArgv,
+        usable: isVipsUsable,
+        flags: "--size=down, --export-profile and --fail-on"
+    },
+    exiftool: {
+        build: buildExiftoolProbeArgv,
+        usable: isExiftoolUsable,
+        flags: "answer -json -n with readable JSON"
+    }
+};
+
+function inspectTool(app, name) {
+    const found = findTool(app, name);
+
+    if (!found) {
+        return { tool: name, kind: "missing", path: "" };
+    }
+
+    const capability = CAPABILITY_PROBES[name];
+
+    if (capability && !capability.usable(probe(app, capability.build(found)))) {
+        return {
+            tool: name,
+            kind: "unusable",
+            flags: capability.flags,
+            path: found
+        };
+    }
+
+    return { tool: name, kind: "ok", path: found };
+}
+
+function checkTools(app) {
+    const results = TOOL_NAMES.map((name) => inspectTool(app, name));
+    const problems = results.filter((result) => result.kind !== "ok");
+
+    if (problems.length > 0) {
+        throw new Error(describeSetupProblems(problems, hasHomebrew(app)));
+    }
+
+    const tools = {};
+
+    for (const result of results) {
+        tools[result.tool] = result.path;
+    }
+
+    return tools;
+}
+
+/* ===== src/runtime/tree.js ===== */
+
+
+const DIRECTORY = "NSFileTypeDirectory";
+const REGULAR = "NSFileTypeRegular";
+
+function identityFrom(attributes) {
+    return attributes
+        ? `${attributes.NSFileSystemNumber}:${attributes.NSFileSystemFileNumber}`
+        : "";
+}
+
+function kindFrom(attributes, workspace, path, ns) {
+    if (!attributes) {
+        return "missing";
+    }
+
+    if (attributes.NSFileType !== DIRECTORY) {
+        return attributes.NSFileType === REGULAR ? "file" : "other";
+    }
+
+    return workspace.isFilePackageAtPath(ns(path)) ? "package" : "directory";
+}
+
+function createTree(objc, ns, ref) {
+    if (!objc || !ns || !ref) {
+        return null;
+    }
+
+    try {
+        objc.import("Foundation");
+        objc.import("AppKit");
+    } catch {
+        return null;
+    }
+
+    const manager = ns.NSFileManager.defaultManager;
+    const workspace = ns.NSWorkspace.sharedWorkspace;
+
+    return {
+        inspect(path) {
+            const attributes = objc.deepUnwrap(
+                manager.attributesOfItemAtPathError(ns(path), ref())
+            );
+
+            return {
+                kind: kindFrom(attributes, workspace, path, ns),
+                identity: identityFrom(attributes)
+            };
+        },
+
+        entries(path) {
+            return objc.deepUnwrap(
+                manager.contentsOfDirectoryAtPathError(ns(path), ref())
+            );
+        },
+
+        standardize(path) {
+            return objc.unwrap(ns(path).stringByStandardizingPath);
+        }
+    };
+}
+
+/* ===== src/runtime/walking.js ===== */
+
+
+const HIDDEN = ".";
+const UNREADABLE = "could not be read";
+const UNEXAMINABLE = "could not be examined";
+const ALREADY_STAMPED = "already a stamped copy, so it was left alone";
+
+function isHidden(name) {
+    return name.startsWith(HIDDEN);
+}
+
+function childrenOf(tree, folder, names) {
+    return names
+        .filter((name) => !isHidden(name))
+        .map((name) => tree.standardize(`${folder}/${name}`));
+}
+
+function passedOver(path, entry) {
+    if (entry.kind === "missing") {
+        return { reason: UNEXAMINABLE, excluded: false };
+    }
+
+    if (entry.kind !== "file" || !isSupportedImage(path)) {
+        return null;
+    }
+
+    return looksStamped(basename(path))
+        ? { reason: ALREADY_STAMPED, excluded: true }
+        : null;
+}
+
+/* ===== src/runtime/expand.js ===== */
+
+
+function consider(path, entry, taken, outcome) {
+    const over = passedOver(path, entry);
+
+    if (over) {
+        outcome.problems.push({ path, ...over });
+    }
+
+    if (over || entry.kind !== "file" || !isSupportedImage(path)) {
+        return;
+    }
+
+    if (taken.has(entry.identity)) {
+        outcome.alreadyTaken = true;
+
+        return;
+    }
+
+    taken.add(entry.identity);
+    outcome.found.push(path);
+}
+
+function walk(tree, folder, taken, outcome) {
+    const names = tree.entries(folder);
+
+    if (!names) {
+        outcome.problems.push({ path: folder, reason: UNREADABLE });
+
+        return false;
+    }
+
+    for (const path of childrenOf(tree, folder, names)) {
+        const entry = tree.inspect(path);
+
+        if (entry.kind === "directory") {
+            walk(tree, path, taken, outcome);
+        } else {
+            consider(path, entry, taken, outcome);
+        }
+    }
+
+    return true;
+}
+
+function emptiness(outcome) {
+    return outcome.found.length === 0 && !outcome.alreadyTaken
+        ? "contains no supported images"
+        : "";
+}
+
+function imagesInFolder(tree, folder, taken) {
+    const outcome = { found: [], problems: [], alreadyTaken: false };
+
+    if (!walk(tree, folder, taken, outcome)) {
+        return { found: [], problems: [], reason: UNREADABLE };
+    }
+
+    return {
+        found: outcome.found,
+        problems: outcome.problems,
+        reason: emptiness(outcome)
+    };
+}
+
+/* ===== src/runtime/input.js ===== */
+
+
+const HEADLESS_MINIMUM_ARGUMENTS = 3;
+const HEADLESS_FIRST_IMAGE_INDEX = 2;
+
+function pathCandidates(item) {
+    const candidates = [];
+
+    for (const produce of [
+        () => String(item),
+        () => String(item.url())
+    ]) {
+        try {
+            candidates.push(produce());
+        } catch {
+            candidates.push("");
+        }
+    }
+
+    return candidates;
+}
+
+function inputItemToPosixPath(item) {
+    for (const value of pathCandidates(item)) {
+        if (/^file:\/\//iu.test(value)) {
+            return decodeFileUrl(value);
+        }
+
+        if (value.charAt(0) === "/") {
+            return value;
+        }
+    }
+
+    return "";
+}
+
+function finderSelection() {
+    return Application("Finder").selection();
+}
+
+function collectInvocation(app, input, headless) {
+    const items = normalizeInvocationInput(input);
+
+    if (!headless) {
+        return { headless: false, settings: null, inputItems: items };
+    }
+
+    if (items.length < HEADLESS_MINIMUM_ARGUMENTS) {
+        throw new Error(
+            "Headless usage: --headless /path/to/settings.json /path/to/photograph ..."
+        );
+    }
+
+    const configuration = JSON.parse(readTextFile(app, String(items[1])));
+
+    if (!isSettingsRecord(configuration)) {
+        throw new Error(
+            "The headless settings must be a JSON object of settings."
+        );
+    }
+
+    return {
+        headless: true,
+        settings: configuration,
+        inputItems: items.slice(HEADLESS_FIRST_IMAGE_INDEX)
+    };
+}
+
+/* ===== src/runtime/reasons.js ===== */
+
+
+function rejectionReason(app, path) {
+    if (isDirectory(app, path)) {
+        return "a folder; select the images inside it";
+    }
+
+    if (!isSupportedImage(path)) {
+        return `not a supported format (${supportedFormatList()})`;
+    }
+
+    return isRegularFile(app, path) ? "" : "not a readable file";
+}
+
+const ANONYMOUS = "[object Object]";
+
+function describeUnresolved(item) {
+    const named = pathCandidates(item)
+        .find((candidate) => candidate && candidate !== ANONYMOUS);
+
+    return named
+        ? {
+            path: "",
+            name: named,
+            reason: "not an absolute path to a file"
+        }
+        : null;
+}
+
+/* ===== src/runtime/selection.js ===== */
+
+
+function inspect(tree, path) {
+    return tree ? tree.inspect(path) : { kind: null, identity: "" };
+}
+
+function reportUnresolved(item, rejected) {
+    const unresolved = describeUnresolved(item);
+
+    if (unresolved) {
+        rejected.push(unresolved);
+    }
+}
+
+function remember(found, tree, path) {
+    const standardized = tree ? tree.standardize(path) : path;
+
+    if (found.roots.has(standardized)) {
+        return;
+    }
+
+    const entry = inspect(tree, standardized);
+
+    found.roots.set(standardized, {
+        path: standardized,
+        kind: entry.kind,
+        identity: entry.identity
+    });
+}
+
+function resolve(tree, items, rejected) {
+    const found = { roots: new Map() };
+
+    for (const item of items) {
+        const path = inputItemToPosixPath(item);
+
+        if (path) {
+            remember(found, tree, path);
+        } else {
+            reportUnresolved(item, rejected);
+        }
+    }
+
+    return [...found.roots.values()];
+}
+
+function isFolder(root) {
+    return root.kind === "directory";
+}
+
+function byPath(left, right) {
+    return left.path < right.path ? -1 : 1;
+}
+
+function selectedItems(tree, items, rejected) {
+    const roots = resolve(tree, items, rejected);
+
+    return [
+        ...roots.filter(isFolder).sort(byPath),
+        ...roots.filter((root) => !isFolder(root))
+    ];
+}
+
+/* ===== src/runtime/admission.js ===== */
+
+
+function record(path, folder) {
+    return { path, originalName: basename(path), folder };
+}
+
+function rejection(path, reason) {
+    return { path, name: basename(path), reason };
+}
+
+function admitFolder(tree, path, outcome) {
+    const found = imagesInFolder(tree, path, outcome.taken);
+
+    for (const problem of found.problems) {
+        const into = problem.excluded ? outcome.excluded : outcome.rejected;
+
+        into.push(rejection(problem.path, problem.reason));
+    }
+
+    if (found.reason) {
+        outcome.rejected.push(rejection(path, found.reason));
+
+        return;
+    }
+
+    for (const image of found.found) {
+        outcome.images.push(record(image, `${path}/`));
+    }
+}
+
+const KIND_REASONS = {
+    package: "a package, not a folder of images",
+    other: "a link; select the file it points to"
+};
+
+function reasonFor(app, root) {
+    return KIND_REASONS[root.kind] ?? rejectionReason(app, root.path);
+}
+
+function admit(app, tree, root, outcome) {
+    if (root.kind === "directory") {
+        admitFolder(tree, root.path, outcome);
+
+        return;
+    }
+
+    const reason = reasonFor(app, root);
+
+    if (reason) {
+        outcome.rejected.push(rejection(root.path, reason));
+
+        return;
+    }
+
+    if (!outcome.taken.has(root.identity || root.path)) {
+        outcome.taken.add(root.identity || root.path);
+        outcome.images.push(record(root.path, dirname(root.path)));
+    }
+}
+
+function collectImageFiles(app, inputItems, tree = null) {
+    const items = inputItems.length > 0 ? inputItems : finderSelection();
+    const outcome = {
+        images: [],
+        rejected: [],
+        excluded: [],
+        taken: new Set()
+    };
+
+    for (const root of selectedItems(tree, items, outcome.rejected)) {
+        admit(app, tree, root, outcome);
+    }
+
+    return {
+        images: sortImageRecords(outcome.images),
+        rejected: outcome.rejected,
+        excluded: outcome.excluded
+    };
+}
+
+/* ===== src/runtime/workspace.js ===== */
+
+
+const MADE_HERE = /\/StampImages\.[^/]+$/u;
+const WORKSPACE_PATTERN = /^\S*\/StampImages\.[^/\s]+$/u;
+const NONCE_RANGE = 1000000000;
+
+function createWorkspace(app) {
+    const path = String(
+        runArgv(
+            app,
+            [MKTEMP, "-d", "-t", "StampImages"],
+            "creating temporary workspace"
+        )
+    ).trim();
+
+    if (!WORKSPACE_PATTERN.test(path)) {
+        if (MADE_HERE.test(path)) {
+            tryArgv(app, [RM, "-rf", path]);
+        }
+
+        throw new Error(
+            `This Mac's temporary folder cannot be used:\n\n${path}`
+        );
+    }
+
+    return path;
+}
+
+function removeWorkspace(app, path) {
+    if (!path || !WORKSPACE_PATTERN.test(path)) {
+        return;
+    }
+
+    tryArgv(app, [RM, "-rf", path]);
+}
+
+function nonce() {
+    return `${Date.now()}-${Math.floor(Math.random() * NONCE_RANGE)}`;
+}
+
+/* ===== src/runtime/rescue.js ===== */
+
+const RECOVERY_PREFIX = "StampImages-recovered";
+
+function setAside(app, stagedPath) {
+    try {
+        const folder = String(runArgv(
+            app,
+            [MKTEMP, "-d", "-t", RECOVERY_PREFIX]
+        )).trim();
+        const recovered = `${folder}/${basename(stagedPath)}`;
+
+        runArgv(app, [MV, stagedPath, recovered]);
+
+        return recovered;
+    } catch {
+        return stagedPath;
+    }
+}
+
+/* ===== src/runtime/exclusive-rename.js ===== */
+
+
+const RENAME_EXCL = 4;
+
+function createRenamer(objc, ns) {
+    if (!objc || !ns) {
+        return null;
+    }
+
+    try {
+        objc.import("stdio");
+    } catch {
+        return null;
+    }
+
+    if (typeof ns.renamex_np !== "function") {
+        return null;
+    }
+
+    return {
+        rename(from, to) {
+            try {
+                return ns.renamex_np(from, to, RENAME_EXCL) === 0;
+            } catch {
+                return false;
+            }
+        }
+    };
+}
+
+/* ===== src/runtime/file-facts.js ===== */
+
+
+const SIZE_UNKNOWN = -1;
+const UNIDENTIFIED = { identity: "", size: SIZE_UNKNOWN };
+
+const FORMAT = "-f%d:%i:%z";
+
+function factsFrom(text) {
+    const [device, number, size] = String(text).trim().split(":");
+    const bytes = parseInt(size, 10);
+
+    return device && number && isFinite(bytes)
+        ? { identity: `${device}:${number}`, size: bytes }
+        : UNIDENTIFIED;
+}
+
+function fileFacts(app, path) {
+    return factsFrom(tryArgv(app, [STAT, FORMAT, path]));
+}
+
+/* ===== src/runtime/staging-area.js ===== */
+
+
+const READY = "ready";
+
+function stagingArea(finalPath) {
+    const directory = `${dirname(finalPath)}.StampImages-${nonce()}`;
+    const { extension } = splitExtension(finalPath);
+
+    return { directory, file: `${directory}/${READY}${extension}` };
+}
+
+function openStaging(app, area) {
+    runArgv(
+        app,
+        [MKDIR, area.directory],
+        "making a place for the copy in the output folder"
+    );
+}
+
+function closeStaging(app, area) {
+    removeFile(app, area.file);
+
+    tryArgv(app, [RMDIR, area.directory]);
+}
+
+/* ===== src/runtime/output-copy.js ===== */
+
+
+function mismatch(written, expected) {
+    return [`the staged file is ${written} bytes where ${expected} were expected`];
+}
+
+function copied(app, from, written, expected) {
+    if (expected === SIZE_UNKNOWN || written.size !== expected) {
+        return { reasons: mismatch(written.size, expected), made: true };
+    }
+
+    return sameBytes(app, from.staged, from.file)
+        ? { reasons: [], made: true, identity: written.identity }
+        : { reasons: ["the copy in the output folder is not the same file"], made: true };
+}
+
+function gaveUp(error, made) {
+    return {
+        reasons: [errorMessage(error)],
+        made,
+        cancelled: isUserCancelled(error)
+    };
+}
+
+function copyBeside(app, staged, area, expected) {
+    try {
+        openStaging(app, area);
+    } catch (error) {
+        return gaveUp(error, false);
+    }
+
+    try {
+        runArgv(app, [CP, staged, area.file], "copying the stamped copy into the output folder");
+    } catch (error) {
+        return gaveUp(error, true);
+    }
+
+    return copied(
+        app,
+        { staged, file: area.file },
+        fileFacts(app, area.file),
+        expected
+    );
+}
+
+/* ===== src/runtime/claim.js ===== */
+
+
+const UNTAKEN = "the output name could not be created in one step, " +
+    "so the copy was not put there";
+const NO_RENAME = "the other way of creating it was not available to this run";
+
+function published(from) {
+    return { published: true, reasons: [], claimed: from };
+}
+
+function refused(reasons, taken = false) {
+    return { published: false, reasons, taken };
+}
+
+function abandoned() {
+    return { published: false, abandoned: true };
+}
+
+function linkFrom(app, from, finalPath) {
+    try {
+        runArgv(app, [LN, from, finalPath], "claiming the output name");
+
+        return null;
+    } catch (error) {
+        return error;
+    }
+}
+
+function whyNot(app, finalPath, said, rename) {
+    if (pathIsTaken(app, finalPath)) {
+        return { reasons: ["the output path was taken", said], taken: true };
+    }
+
+    return {
+        reasons: rename ? [UNTAKEN, said] : [UNTAKEN, NO_RENAME, said],
+        taken: false
+    };
+}
+
+function claimFrom(attempt, from) {
+    const { app, paths, rename } = attempt;
+    const failure = linkFrom(app, from, paths.final);
+
+    if (!failure) {
+        return published(from);
+    }
+
+    if (isUserCancelled(failure)) {
+        return abandoned();
+    }
+
+    if (rename && rename.rename(from, paths.final)) {
+        return published(from);
+    }
+
+    const why = whyNot(app, paths.final, errorMessage(failure), rename);
+
+    return refused(why.reasons, why.taken);
+}
+
+/* ===== src/runtime/transfer.js ===== */
+
+
+function throughStaging(attempt, facts, refusal) {
+    const { app, paths } = attempt;
+    const copied = copyBeside(app, paths.staged, paths.area, facts.size);
+    const staging = copied.made ? paths.area : null;
+
+    if (copied.cancelled) {
+        return { ...abandoned(), claimedIdentity: "", staging };
+    }
+
+    if (copied.reasons.length > 0) {
+        return {
+            published: false,
+            reasons: [...copied.reasons, refusal],
+            staging,
+            claimedIdentity: "",
+            claimedSize: facts.size
+        };
+    }
+
+    return {
+        ...claimFrom(attempt, paths.area.file),
+        claimedIdentity: copied.identity,
+        claimedSize: facts.size,
+        staging
+    };
+}
+
+function claiming(facts) {
+    return {
+        claimedIdentity: facts.identity,
+        claimedSize: facts.size,
+        staging: null
+    };
+}
+
+function deliver(app, paths, facts, rename) {
+    const failure = linkFrom(app, paths.staged, paths.final);
+
+    if (!failure) {
+        return { ...published(paths.staged), ...claiming(facts) };
+    }
+
+    if (isUserCancelled(failure)) {
+        return { ...abandoned(), ...claiming(facts) };
+    }
+
+    const said = errorMessage(failure);
+
+    return pathIsTaken(app, paths.final)
+        ? {
+            ...refused(["the output path was taken", said], true),
+            ...claiming(facts)
+        }
+        : throughStaging({ app, paths, rename }, facts, said);
+}
+
+/* ===== src/runtime/recovery.js ===== */
+
+
+function describeFailure(reasons, whereabouts) {
+    return [
+        "The stamped copy could not be saved where it was meant to go.",
+        ...reasons,
+        whereabouts
+    ].join("\n\n");
+}
+
+function clearAway(job, outcome) {
+    if (outcome.staging) {
+        closeStaging(job.app, outcome.staging);
+    }
+
+    for (const path of outcome.mine ?? []) {
+        removeFile(job.app, path);
+    }
+}
+
+function keep(job, paths, outcome) {
+    clearAway(job, outcome);
+
+    const recovered = setAside(job.app, paths.staged);
+
+    if (recovered !== paths.staged) {
+        job.unpublished.delete(paths.staged);
+    }
+
+    return new Error(describeFailure(
+        outcome.reasons,
+        `The finished copy has been kept here, in a temporary folder that ` +
+            `macOS clears out when you restart:\n\n${recovered}`
+    ));
+}
+
+/* ===== src/runtime/ownership.js ===== */
+
+
+function isPublished(published, outcome) {
+    return Boolean(published.identity) &&
+        published.identity === outcome.claimedIdentity &&
+        published.size === outcome.claimedSize;
+}
+
+function strayInside(app, paths, outcome) {
+    const inside = `${paths.final}/${basename(outcome.claimed)}`;
+
+    return fileFacts(app, inside).identity === outcome.claimedIdentity
+        ? [inside]
+        : [];
+}
+
+function confirm(job, paths, outcome) {
+    job.unpublished.delete(paths.staged);
+    clearAway(job, outcome);
+    removeFile(job.app, paths.staged);
+}
+
+function unfinished(job, paths, outcome) {
+    return keep(job, paths, {
+        ...outcome,
+        mine: strayInside(job.app, paths, outcome),
+        reasons: [
+            `the output path does not hold the copy this run published:\n\n${paths.final}`
+        ]
+    });
+}
+
+function clearAttempt(job, outcome) {
+    clearAway(job, outcome);
+}
+
+function abandon(job, staged, outcome) {
+    clearAway(job, outcome);
+    job.unpublished.delete(staged);
+
+    return new UserCancelled();
+}
+
+/* ===== src/runtime/publish.js ===== */
+
+
+const ATTEMPTS = 3;
+
+function settle(job, paths, outcome) {
+    if (outcome.published) {
+        throw unfinished(job, paths, outcome);
+    }
+
+    if (outcome.abandoned) {
+        throw abandon(job, paths.staged, outcome);
+    }
+
+    return { paths, outcome };
+}
+
+function claimOnce(job, staged, facts, final) {
+    const paths = { staged, area: stagingArea(final), final };
+    const outcome = deliver(job.app, paths, facts, job.rename);
+
+    if (!isPublished(fileFacts(job.app, final), outcome)) {
+        return settle(job, paths, outcome);
+    }
+
+    confirm(job, paths, outcome);
+
+    return { published: final, stopped: Boolean(outcome.abandoned) };
+}
+
+function claimName(job, staged, facts, chooseName) {
+    let refused = null;
+
+    for (let attempt = 0; attempt < ATTEMPTS; attempt += 1) {
+        const tried = claimOnce(job, staged, facts, chooseName());
+
+        if (tried.published) {
+            return { path: tried.published, stopped: tried.stopped };
+        }
+
+        refused = tried;
+
+        if (!tried.outcome.taken) {
+            break;
+        }
+
+        clearAttempt(job, tried.outcome);
+    }
+
+    throw keep(job, refused.paths, refused.outcome);
+}
+
+function publishImage(job, stagedPath, chooseName) {
+    job.progress.phase("Saving the copy");
+    job.unpublished.add(stagedPath);
+
+    const facts = fileFacts(job.app, stagedPath);
+
+    if (!facts.identity) {
+        throw keep(job, { staged: stagedPath, final: "" }, {
+            reasons: [`The finished copy could not be measured:\n\n${stagedPath}`],
+            staging: null
+        });
+    }
+
+    return claimName(job, stagedPath, facts, chooseName);
+}
+
+/* ===== src/runtime/fonts.js ===== */
+
+
+const CANDIDATES = [
+    "Helvetica Neue",
+    "Arial",
+    "Verdana",
+    "Avenir Next",
+    "Gill Sans",
+    "Georgia",
+    "Palatino",
+    "Baskerville",
+    "Menlo",
+    "Courier New"
+];
+
+const IMPOSSIBLE = "NoSuchFaceIsInstalledAnywhere";
+const PROBE_TEXT = "AWgy0123";
+const PROBE_SIZE = 40;
+
+const WEIGHTS = ["", " Bold"];
+
+function drawWith(where, font, output) {
+    const { app, tools } = where;
+
+    runArgv(
+        app,
+        buildTextArgv(tools.vips, output, PROBE_TEXT, `${font} ${PROBE_SIZE}`),
+        "checking which fonts are installed"
+    );
+    verifyFileWritten(app, output, "the drawn text");
+
+    return output;
+}
+
+function fallbackDrawing(where) {
+    return drawWith(where, IMPOSSIBLE, `${where.workspace}/font-fallback.png`);
+}
+
+function resolves(where, family, fallback) {
+    try {
+        const drawn = drawWith(
+            where,
+            family,
+            `${where.workspace}/font-candidate.png`
+        );
+
+        return !sameBytes(where.app, drawn, fallback);
+    } catch (error) {
+        if (isUserCancelled(error)) {
+            throw error;
+        }
+
+        return false;
+    }
+}
+
+function availableFonts(where) {
+    const fallback = fallbackDrawing(where);
+    const found = [];
+
+    for (const family of CANDIDATES) {
+        if (resolves(where, family, fallback)) {
+            found.push(...WEIGHTS.map((weight) => `${family}${weight}`));
+        }
+    }
+
+    if (found.length === 0) {
+        throw new Error(
+            "None of the fonts this action offers draws on this Mac."
+        );
+    }
+
+    return found;
+}
+
+/* ===== src/runtime/tinting.js ===== */
+
+
+function sizeOf(job, path) {
+    const measure = (field) => Number(runArgv(
+        job.app,
+        buildSizeArgv(job.tools.vipsheader, path, field),
+        "measuring the stamp"
+    ));
+
+    return { width: measure("width"), height: measure("height") };
+}
+
+function inSpaceOf(job, paths, profile) {
+    if (!profile) {
+        return { path: paths.colour, moved: true };
+    }
+
+    const moved = succeeds(
+        job.app,
+        buildIccArgv(job.tools.vips, paths.colour, paths.moved, profile)
+    );
+
+    return moved
+        ? { path: paths.moved, moved: true }
+        : { path: paths.colour, moved: false };
+}
+
+function tinted(job, paths, colour, drawing) {
+    runArgv(
+        job.app,
+        buildSolidArgv(job.tools.vips, paths.solid, drawing.size),
+        "colouring the stamp"
+    );
+    runArgv(
+        job.app,
+        buildColourArgv(job.tools.vips, paths.solid, paths.colour, colour),
+        "colouring the stamp"
+    );
+
+    const read = inSpaceOf(job, paths, drawing.profile);
+
+    runArgv(
+        job.app,
+        buildBandjoinArgv(job.tools.vips, read.path, paths.mask, paths.out),
+        "colouring the stamp"
+    );
+
+    return { path: paths.out, moved: read.moved };
+}
+
+function pathsFor(workspace, token, stage) {
+    const stem = `${workspace}/stamp-${token}-${stage}`;
+
+    return {
+        raw: `${stem}-raw.png`,
+        mask: `${stem}-mask.png`,
+        solid: `${stem}-solid.v`,
+        colour: `${stem}-colour.v`,
+        moved: `${stem}-moved.v`,
+        out: `${stem}.png`
+    };
+}
+
+function filesOf(paths) {
+    return [paths.raw, paths.mask, paths.solid, paths.colour, paths.moved, paths.out];
+}
+
+/* ===== src/runtime/layers.js ===== */
+
+
+function drawMask(job, face, text) {
+    const { settings, tools } = job;
+    const border = settings.outlineWidth;
+
+    runArgv(
+        job.app,
+        buildTextArgv(tools.vips, face.raw, text, `${settings.font} ${settings.size}`),
+        "drawing the stamp"
+    );
+    verifyFileWritten(job.app, face.raw, "the drawn text");
+
+    const drawn = sizeOf(job, face.raw);
+
+    if (border === 0) {
+        return { mask: face.raw, size: drawn };
+    }
+
+    runArgv(
+        job.app,
+        buildEmbedArgv(tools.vips, { input: face.raw, output: face.mask }, drawn, border),
+        "drawing the stamp"
+    );
+
+    return { mask: face.mask, size: sizeOf(job, face.mask) };
+}
+
+function drawOutline(job, token, drawing) {
+    const edge = pathsFor(job.workspace, token, "edge");
+
+    runArgv(
+        job.app,
+        buildDilateArgv(
+            job.tools.vips,
+            drawing.mask,
+            edge.mask,
+            job.settings.outlineWidth
+        ),
+        "drawing the outline"
+    );
+
+    return { paths: edge, ...tinted(job, edge, job.settings.outlineColour, drawing) };
+}
+
+function drawLayers(job, token, drawn) {
+    const face = pathsFor(job.workspace, token, "face");
+    const drawing = { ...drawMask(job, face, drawn.text), profile: drawn.profile };
+    const glyphs = tinted(
+        job,
+        { ...face, mask: drawing.mask },
+        job.settings.textColour,
+        drawing
+    );
+
+    if (job.settings.outlineWidth === 0) {
+        return {
+            glyphs: glyphs.path,
+            outline: "",
+            moved: glyphs.moved,
+            size: drawing.size,
+            spent: filesOf(face)
+        };
+    }
+
+    const outline = drawOutline(job, token, drawing);
+
+    return {
+        glyphs: glyphs.path,
+        outline: outline.path,
+        moved: glyphs.moved && outline.moved,
+        size: drawing.size,
+        spent: [...filesOf(face), ...filesOf(outline.paths)]
+    };
+}
+
+/* ===== src/runtime/render.js ===== */
+
+
+function combineLayers(job, token, layers) {
+    if (!layers.outline) {
+        return layers.glyphs;
+    }
+
+    const path = `${job.workspace}/stamp-${token}.png`;
+
+    runArgv(
+        job.app,
+        buildCompositeArgv(
+            job.tools.vips,
+            { base: layers.outline, overlay: layers.glyphs },
+            path
+        ),
+        "assembling the stamp"
+    );
+
+    return path;
+}
+
+function clearLayers(job, layers, stamp) {
+    for (const spent of layers.spent.filter((each) => each !== stamp)) {
+        removeFile(job.app, spent);
+    }
+}
+
+function drawStamp(job, token, drawn) {
+    const layers = drawLayers(job, token, drawn);
+    const path = combineLayers(job, token, layers);
+
+    verifyFileWritten(job.app, path, "the stamp");
+    clearLayers(job, layers, path);
+
+    return { path, size: layers.size, moved: layers.moved };
+}
+
+const DRAWINGS_KEPT = 8;
+
+function forget(job) {
+    const [oldest] = job.stamps.keys();
+
+    removeFile(job.app, job.stamps.get(oldest).path);
+    job.stamps.delete(oldest);
+}
+
+function stampFor(job, drawn) {
+    const key = `${drawn.profile}\n${drawn.text}`;
+    const held = job.stamps.get(key);
+
+    if (held) {
+        return held;
+    }
+
+    const stamp = drawStamp(job, String(job.drawn += 1), drawn);
+
+    if (job.stamps.size >= DRAWINGS_KEPT) {
+        forget(job);
+    }
+
+    job.stamps.set(key, stamp);
+
+    return stamp;
+}
+
+/* ===== src/runtime/fidelity.js ===== */
+
+
+const FAITHFUL = ["sRGB", "RGB", "RGB16", "B_W", "GREY16"];
+const INTERPRETATION = /VIPS_INTERPRETATION_(?<kind>\w+)/u;
+
+const GREY_ALPHA = 2;
+const COLOUR_ALPHA = 4;
+const ALPHA_BANDS = [GREY_ALPHA, COLOUR_ALPHA];
+
+function headerField(job, path, field, label) {
+    return String(runArgv(
+        job.app,
+        buildSizeArgv(job.tools.vipsheader, path, field),
+        label
+    )).trim();
+}
+
+function bandsOf(job, path) {
+    return Number(headerField(job, path, "bands", "measuring the photograph"));
+}
+
+function kindOf(job, path) {
+    return INTERPRETATION.exec(
+        headerField(job, path, "interpretation", "measuring the photograph")
+    )?.groups.kind ?? "";
+}
+
+function pagesIn(job, path) {
+    const answer = Number(tryArgv(
+        job.app,
+        buildSizeArgv(job.tools.vipsheader, path, "n-pages")
+    ));
+
+    return answer > 1 ? answer : 1;
+}
+
+function refuseUnfaithful(job, source) {
+    const kind = kindOf(job, source);
+
+    if (!FAITHFUL.includes(kind)) {
+        throw new Error(
+            "This photograph is not stored as colour or grey, so a stamped " +
+                `copy of it would not be the colours it is (${kind || "unreadable"}).`
+        );
+    }
+
+    const pages = pagesIn(job, source);
+
+    if (pages > 1) {
+        throw new Error(
+            `This file holds ${pages} images, and a stamped copy of it would ` +
+                "hold only the first."
+        );
+    }
+}
+
+function hasAlpha(job, path) {
+    return ALPHA_BANDS.includes(bandsOf(job, path));
+}
+
+/* ===== src/runtime/image.js ===== */
+
+
+function orient(job, source, token) {
+    const oriented = `${job.workspace}/oriented-${token}.v`;
+
+    runArgv(
+        job.app,
+        buildOrientArgv(job.tools.vips, source, oriented),
+        "reading the photograph"
+    );
+    verifyFileWritten(job.app, oriented, "the photograph");
+
+    return oriented;
+}
+
+function composite(job, base, stamp, token) {
+    const stamped = `${job.workspace}/stamped-${token}.v`;
+
+    runArgv(
+        job.app,
+        buildCompositeArgv(
+            job.tools.vips,
+            { base: base.path, overlay: stamp.path },
+            stamped,
+            stamp.at
+        ),
+        "stamping the photograph"
+    );
+    verifyFileWritten(job.app, stamped, "the stamped photograph");
+
+    return stamped;
+}
+
+function saveCopy(job, stamped, target, source) {
+    const written = savingPath(target);
+
+    runArgv(
+        job.app,
+        source.hasAlpha
+            ? [job.tools.vips, "copy", stamped, written]
+            : buildFlattenArgv(job.tools.vips, stamped, written),
+        "saving the stamped copy"
+    );
+    verifyFileWritten(job.app, target, "the stamped copy");
+
+    const saved = sizeOf(job, target);
+
+    if (saved.width !== source.size.width || saved.height !== source.size.height) {
+        throw new Error(
+            `The stamped copy is ${saved.width} by ${saved.height} pixels ` +
+                `where ${source.size.width} by ${source.size.height} were ` +
+                `expected:\n\n${target}`
+        );
+    }
+}
+
+function readPhotograph(job, source, token) {
+    refuseUnfaithful(job, source);
+
+    const path = orient(job, source, token);
+
+    return { path, size: sizeOf(job, path), hasAlpha: hasAlpha(job, path) };
+}
+
+/* ===== src/runtime/facts.js ===== */
+
+
+function recordFor(answer) {
+    const read = JSON.parse(String(answer));
+
+    if (!Array.isArray(read) || read.length === 0 || !read[0]) {
+        throw new Error("it answered with nothing about this photograph");
+    }
+
+    if (read[0].Error) {
+        throw new Error(String(read[0].Error));
+    }
+
+    return read[0];
+}
+
+function factsFor(job, imagePath) {
+    const answer = runArgv(
+        job.app,
+        buildMetadataArgv(job.tools.exiftool, imagePath),
+        "reading the photograph's metadata"
+    );
+
+    try {
+        return recordFor(answer);
+    } catch (error) {
+        throw new Error(
+            `The photograph's metadata could not be read: ${error.message}`,
+            { cause: error }
+        );
+    }
+}
+
+/* ===== src/runtime/colour-space.js ===== */
+
+
+function known(job, path) {
+    return job.profiles.find((seen) => sameBytes(job.app, seen, path)) ?? "";
+}
+
+function extract(job, source, token) {
+    const written =
+        `${job.workspace}/profile-${token}-${fileStem(basename(source))}.icc`;
+
+    tryArgv(job.app, [
+        job.tools.exiftool,
+        "-icc_profile",
+        "-b",
+        "-w!",
+        `${job.workspace}/profile-${token}-%f.icc`,
+        source
+    ]);
+
+    return isRegularFile(job.app, written) ? written : "";
+}
+
+function profileFor(job, source, token) {
+    const written = extract(job, source, token);
+
+    if (!written) {
+        return "";
+    }
+
+    const seen = known(job, written);
+
+    if (!seen) {
+        job.profiles.push(written);
+
+        return written;
+    }
+
+    removeFile(job.app, written);
+
+    return seen;
+}
+
+/* ===== src/runtime/stamping.js ===== */
+
+
+function clearIntermediates(job, intermediates, keeping) {
+    for (const path of intermediates) {
+        if (path !== keeping) {
+            removeFile(job.app, path);
+        }
+    }
+}
+
+function stampOnto(job, photograph, image, token) {
+    job.progress.phase("Drawing the stamp");
+
+    const stamp = stampFor(job, {
+        text: image.inscription.text,
+        profile: profileFor(job, image.path, token)
+    });
+    const at = placeStamp(photograph.size, stamp.size, job.settings);
+
+    job.progress.phase("Stamping the photograph");
+
+    return {
+        stamped: composite(job, photograph, { path: stamp.path, at }, token),
+        crowded: at.crowded,
+        unconverted: !stamp.moved
+    };
+}
+
+function produce(job, image, token, intermediates) {
+    const photograph = readPhotograph(job, image.path, token);
+
+    intermediates.push(photograph.path);
+
+    const drawn = stampOnto(job, photograph, image, token);
+
+    intermediates.push(drawn.stamped);
+
+    const target = stagedPath(job.workspace, token, outputExtension(image.path));
+
+    intermediates.push(target);
+    saveCopy(job, drawn.stamped, target, photograph);
+
+    return {
+        staged: target,
+        crowded: drawn.crowded,
+        unconverted: drawn.unconverted
+    };
+}
+
+function inscribe(job, image) {
+    const facts = wantsMetadata(job.settings) ? factsFor(job, image.path) : {};
+
+    return inscriptionFor(facts, job.settings);
+}
+
+function stampOne(job, image, token) {
+    const inscription = inscribe(job, image);
+
+    if (inscription.nothing) {
+        return { nothing: inscription.nothing };
+    }
+
+    const intermediates = [];
+    let keeping = "";
+
+    try {
+        const made = produce(job, { ...image, inscription }, token, intermediates);
+
+        keeping = made.staged;
+
+        return made;
+    } finally {
+        clearIntermediates(job, intermediates, keeping);
+    }
+}
+
+/* ===== src/runtime/attempt.js ===== */
+
+
+function destinationFor(job, image) {
+    const extension = outputExtension(image.path);
+    const name = nameFrom(image.originalName, `${STAMPED}${extension}`);
+
+    return nextUniquePath(
+        `${image.folder}${name}`,
+        (candidate) => pathIsTaken(job.app, candidate)
+    );
+}
+
+function failed(image, error) {
+    return {
+        name: image.originalName,
+        path: image.path,
+        message: errorMessage(error),
+        command: commandOf(error)
+    };
+}
+
+function stampToFile(job, image, index) {
+    const token = String(index + 1);
+
+    try {
+        job.progress.beginning(index + 1, image.originalName);
+
+        const made = stampOne(job, image, token);
+
+        if (made.nothing) {
+            return { nothing: { name: image.originalName, reason: made.nothing } };
+        }
+
+        const saved = publishImage(job, made.staged, () => destinationFor(job, image));
+
+        return {
+            output: saved.path,
+            stopped: saved.stopped,
+            crowded: made.crowded,
+            unconverted: made.unconverted
+        };
+    } catch (error) {
+        return isUserCancelled(error)
+            ? { stopped: true }
+            : { failure: failed(image, error) };
+    }
+}
+
+/* ===== src/runtime/job.js ===== */
+
+
+const OUTCOMES = [
+    { held: "failure", into: "failures", said: "Failed" },
+    { held: "nothing", into: "nothing", said: "Nothing to stamp" }
+];
+
+function counted(job, results, outcome) {
+    results.outputs.push(outcome.output);
+    results.crowded += outcome.crowded ? 1 : 0;
+    results.unconverted += outcome.unconverted ? 1 : 0;
+    job.progress.finished("Saved");
+}
+
+function tally(job, results, outcome) {
+    const kind = OUTCOMES.find((each) => outcome[each.held]);
+
+    if (kind) {
+        results[kind.into].push(outcome[kind.held]);
+        job.progress.finished(kind.said);
+
+        return;
+    }
+
+    if (outcome.output) {
+        counted(job, results, outcome);
+    }
+}
+
+
+function attempt(job, results, image, index) {
+    const outcome = stampToFile(job, image, index);
+
+    tally(job, results, outcome);
+
+    return Boolean(outcome.stopped);
+}
+
+function runJob(job, images) {
+    const results = {
+        outputs: [],
+        failures: [],
+        nothing: [],
+        crowded: 0,
+        unconverted: 0
+    };
+
+    for (const [index, image] of images.entries()) {
+        if (attempt(job, results, image, index)) {
+            results.stopped = true;
+
+            return results;
+        }
+    }
+
+    return results;
+}
+
+/* ===== src/runtime/receipt.js ===== */
+
+
+const UTF8_ENCODING = 4;
+
+function foundation(objc, ns) {
+    try {
+        objc.import("Foundation");
+
+        return ns ?? null;
+    } catch {
+        return null;
+    }
+}
+
+function writeReceipt(text, ns = foundation(globalThis.ObjC, globalThis.$)) {
+    if (!ns) {
+        return false;
+    }
+
+    ns.NSFileHandle.fileHandleWithStandardOutput.writeData(
+        ns(String(text)).dataUsingEncoding(UTF8_ENCODING)
+    );
+
+    return true;
+}
+
+function ledgerOf(result) {
+    const accounted = result.outputs.length +
+        result.failures.length +
+        result.nothing.length +
+        result.rejected.length;
+
+    return {
+        stamped: result.outputs.length,
+        failed: result.failures.length,
+        nothing: result.nothing.length,
+        rejected: result.rejected.length,
+        notAttempted: Math.max(result.requested - accounted, 0)
+    };
+}
+
+function isCompleteSuccess(result) {
+    return result.outputs.length === result.requested;
+}
+
+const COLUMNS = [
+    ["failed", "failed"],
+    ["nothing", "with nothing to stamp"],
+    ["rejected", "not usable"],
+    ["notAttempted", "not attempted"]
+];
+
+function describeIncomplete(result) {
+    const ledger = ledgerOf(result);
+    const counts = COLUMNS
+        .filter(([column]) => ledger[column] > 0)
+        .map(([column, said]) => `${ledger[column]} ${said}`);
+
+    return "The request was not completely honoured: " +
+        `${ledger.stamped} of ${result.requested} stamped, ${counts.join(", ")}.`;
+}
+
+/* ===== src/runtime/appkit-bridge.js ===== */
+
+
+function appkitBridge(objc, ns) {
+    if (!objc || !ns) {
+        return null;
+    }
+
+    try {
+        objc.import("AppKit");
+
+        return { objc, ns };
+    } catch {
+        return null;
+    }
+}
+
+function rectOf(ns, rect) {
+    return ns.NSMakeRect(rect.left, rect.bottom, rect.width, rect.height);
+}
+
+function perform(target, method) {
+    return target[method];
+}
+
+/* ===== src/runtime/appkit-widgets.js ===== */
+
+
+const HINT_FONT_SIZE = 11;
+
+const INVALID_TINT_ALPHA = 0.18;
+
+const ALIGN_RIGHT = 1;
+
+const TRUNCATE_TAIL = 4;
+
+
+function makeView(ns, width, height) {
+    return ns.NSView.alloc.initWithFrame(ns.NSMakeRect(0, 0, width, height));
+}
+
+function makeLabel(ns, text, rect) {
+    const label = ns.NSTextField.alloc.initWithFrame(
+        rectOf(ns, rect)
+    );
+
+    label.stringValue = text;
+    label.editable = false;
+    label.bezeled = false;
+    label.drawsBackground = false;
+    label.selectable = false;
+    label.alignment = ALIGN_RIGHT;
+    label.lineBreakMode = TRUNCATE_TAIL;
+
+    return label;
+}
+
+function makeHint(ns, text, rect) {
+    const hint = ns.NSTextField.alloc.initWithFrame(
+        rectOf(ns, rect)
+    );
+
+    hint.stringValue = text;
+    hint.editable = false;
+    hint.bezeled = false;
+    hint.drawsBackground = false;
+    hint.selectable = false;
+    hint.font = ns.NSFont.systemFontOfSize(HINT_FONT_SIZE);
+    hint.textColor = ns.NSColor.secondaryLabelColor;
+    hint.lineBreakMode = TRUNCATE_TAIL;
+
+    return hint;
+}
+
+function makePopup(ns, rect) {
+    return ns.NSPopUpButton.alloc.initWithFramePullsDown(
+        rectOf(ns, rect),
+        false
+    );
+}
+
+function addPopupItem(popup, option) {
+    popup.addItemWithTitle(option.label);
+
+    return popup.lastItem;
+}
+
+function markInvalid(ns, control) {
+    control.drawsBackground = true;
+    control.backgroundColor = ns.NSColor.systemRedColor
+        .colorWithAlphaComponent(INVALID_TINT_ALPHA);
+}
+
+function markHintInvalid(ns, hint) {
+    hint.textColor = ns.NSColor.systemRedColor;
+}
+
+function makeAlert(ns, spec) {
+    const alert = ns.NSAlert.alloc.init;
+
+    alert.messageText = spec.title;
+    alert.informativeText = spec.detail;
+
+    for (const button of spec.buttons) {
+        alert.addButtonWithTitle(button);
+    }
+
+    return alert;
+}
+
+/* ===== src/runtime/appkit-fields.js ===== */
+
+
+const BEZEL_BORDER = 2;
+const FIELD_FONT_SIZE = 13;
+
+function makeField(ns, text, rect) {
+    const field = ns.NSTextField.alloc.initWithFrame(
+        rectOf(ns, rect)
+    );
+
+    field.stringValue = text;
+
+    return field;
+}
+
+function makeColourCombo(ns, row, rect) {
+    const combo = ns.NSComboBox.alloc.initWithFrame(
+        rectOf(ns, rect)
+    );
+
+    combo.usesDataSource = false;
+    combo.editable = true;
+    combo.completes = false;
+    combo.numberOfVisibleItems = row.options.length;
+    combo.addItemsWithObjectValues(
+        ns(row.options.map((option) => option.label))
+    );
+    combo.stringValue = row.value;
+    combo.setAccessibilityLabel(row.label);
+
+    return combo;
+}
+
+function plainTextView(ns, text, rect) {
+    const view = ns.NSTextView.alloc.initWithFrame(rectOf(ns, rect));
+
+    view.string = text;
+    view.richText = false;
+    view.automaticQuoteSubstitutionEnabled = false;
+    view.automaticDashSubstitutionEnabled = false;
+    view.font = ns.NSFont.systemFontOfSize(FIELD_FONT_SIZE);
+
+    return view;
+}
+
+function makeCaption(ns, text, rect) {
+    const scroll = ns.NSScrollView.alloc.initWithFrame(rectOf(ns, rect));
+    const view = plainTextView(ns, text, rect);
+
+    scroll.documentView = view;
+    scroll.hasVerticalScroller = true;
+    scroll.borderType = BEZEL_BORDER;
+
+    return { control: scroll, text: view };
+}
+
+/* ===== src/runtime/appkit-geometry.js ===== */
+
+const ROW_HEIGHT = 32;
+const LABEL_WIDTH = 150;
+const CONTROL_WIDTH = 260;
+const NUMBER_WIDTH = 70;
+
+const COLOUR_WIDTH = 100;
+
+const TEXT_WIDTH = 260;
+const CAPTION_LINES = 3;
+const CAPTION_HEIGHT = 52;
+const CONTROL_HEIGHT = 24;
+const HINT_HEIGHT = 16;
+const GAP = 10;
+const HINT_GAP = 8;
+const PADDING = 6;
+
+const BOTH_EDGES = 2;
+const HALVES = 2;
+
+const CONTROL_LEFT = LABEL_WIDTH + GAP;
+const FORM_WIDTH = CONTROL_LEFT + CONTROL_WIDTH;
+
+function hintRect(rect, controlWidth) {
+    const left = CONTROL_LEFT + controlWidth + HINT_GAP;
+
+    return {
+        left,
+        bottom: rect.bottom + (CONTROL_HEIGHT - HINT_HEIGHT) / HALVES,
+        width: FORM_WIDTH - left,
+        height: HINT_HEIGHT
+    };
+}
+
+function rowsBelow(index, rowCount, caption) {
+    const rows = rowCount - index - 1;
+
+    return index < caption ? rows + CAPTION_LINES - 1 : rows;
+}
+
+function rowRect(at, column) {
+    return {
+        left: column.left,
+        bottom: PADDING + rowsBelow(at.index, at.rowCount, at.caption) * ROW_HEIGHT,
+        width: column.width,
+        height: CONTROL_HEIGHT
+    };
+}
+
+function formSize(rowCount) {
+    return {
+        width: FORM_WIDTH,
+        height: (rowCount + CAPTION_LINES - 1) * ROW_HEIGHT + PADDING * BOTH_EDGES
+    };
+}
+
+function labelRect(at) {
+    return rowRect(at, { left: 0, width: LABEL_WIDTH });
+}
+
+function controlRect(at) {
+    return rowRect(at, { left: CONTROL_LEFT, width: CONTROL_WIDTH });
+}
+
+/* ===== src/runtime/appkit-form.js ===== */
+
+
+function addChoice(context, row, rect) {
+    const { ns, widgets, view } = context;
+    const popup = widgets.makePopup(ns, rect);
+
+    for (const option of row.options) {
+        widgets.addPopupItem(popup, option);
+    }
+
+    popup.selectItemWithTitle(row.value);
+    view.addSubview(popup);
+
+    if (row.invalid) {
+        widgets.markInvalid(ns, popup);
+    }
+
+    return popup;
+}
+
+function addTyped(context, row, rect, control) {
+    const { ns, widgets, view } = context;
+    const { width, make } = control;
+    const field = make({ ...rect, width });
+    const hint = widgets.makeHint(ns, row.hint, hintRect(rect, width));
+
+    view.addSubview(field);
+    view.addSubview(hint);
+
+    if (row.invalid) {
+        widgets.markInvalid(ns, field);
+        widgets.markHintInvalid(ns, hint);
+    }
+
+    return field;
+}
+
+function addColour(context, row, rect) {
+    return addTyped(context, row, rect, {
+        width: COLOUR_WIDTH,
+        make: (frame) => context.widgets.makeColourCombo(context.ns, row, frame)
+    });
+}
+
+function addText(context, row, rect) {
+    const { ns, widgets, view } = context;
+    const caption = widgets.makeCaption(ns, row.value, {
+        ...rect,
+        width: TEXT_WIDTH,
+        height: CAPTION_HEIGHT
+    });
+
+    view.addSubview(caption.control);
+
+    if (row.invalid) {
+        widgets.markInvalid(ns, caption.text);
+    }
+
+    return caption;
+}
+
+function addNumber(context, row, rect) {
+    return addTyped(context, row, rect, {
+        width: NUMBER_WIDTH,
+        make: (frame) => context.widgets.makeField(context.ns, row.value, frame)
+    });
+}
+
+const ADD_ROW = {
+    choice: addChoice,
+    colour: addColour,
+    text: addText,
+    number: addNumber
+};
+
+function buildForm(bridge, spec, widgets) {
+    const rowCount = spec.rows.length;
+    const { width, height } = formSize(rowCount);
+    const view = widgets.makeView(bridge.ns, width, height);
+    const context = { ns: bridge.ns, widgets, view };
+    const controls = {};
+    const caption = spec.rows.findIndex((row) => row.kind === "text");
+
+    spec.rows.forEach((row, index) => {
+        const at = { index, rowCount, caption };
+
+        view.addSubview(widgets.makeLabel(bridge.ns, row.label, labelRect(at)));
+        controls[row.key] = ADD_ROW[row.kind](context, row, controlRect(at));
+    });
+
+    return { view, controls };
+}
+
+/* ===== src/runtime/appkit.js ===== */
+
+const WIDGETS = {
+    makeView,
+    makeLabel,
+    makeHint,
+    makePopup,
+    addPopupItem,
+    makeField,
+    makeColourCombo,
+    makeCaption,
+    markInvalid,
+    markHintInvalid,
+    makeAlert
+};
+
+
+const RESPONSE_ABORT = -1001;
+const FIRST_BUTTON = 1000;
+
+function heldBy(bridge, row, control) {
+    if (row.kind === "choice") {
+        return control.titleOfSelectedItem;
+    }
+
+    if (row.kind === "text") {
+        return control.text.string;
+    }
+
+    return control.stringValue;
+}
+
+function readControls(bridge, spec, controls) {
+    const answers = {};
+
+    for (const row of spec.rows) {
+        const control = controls[row.key];
+
+        if (row.kind !== "choice" && row.kind !== "text") {
+            control.validateEditing;
+        }
+
+        answers[row.key] = String(bridge.objc.unwrap(heldBy(bridge, row, control)));
+    }
+
+    return answers;
+}
+
+function presentForm(bridge, spec, widgets = WIDGETS) {
+    const { view, controls } = buildForm(bridge, spec, widgets);
+    const alert = widgets.makeAlert(bridge.ns, spec);
+
+    alert.accessoryView = view;
+
+    const response = Number(alert.runModal);
+
+    if (response === RESPONSE_ABORT) {
+        return null;
+    }
+
+    return response === FIRST_BUTTON
+        ? { answers: readControls(bridge, spec, controls) }
+        : { cancelled: true };
+}
+
+/* ===== src/runtime/prompts.js ===== */
+
+
+function chooseRequired(app, control, opening) {
+    const choice = app.chooseFromList(labelsOf(control), {
+        withTitle: APP_NAME,
+        withPrompt: control.prompt,
+        defaultItems: [opening]
+    });
+
+    if (!choice) {
+        throw new UserCancelled();
+    }
+
+    valueOfLabel(control, choice[0]);
+
+    return choice[0];
+}
+
+function askUntil(app, question, read) {
+    let answer = question.defaultAnswer;
+    let problem = "";
+
+    for (;;) {
+        const response = app.displayDialog(
+            problem ? `${problem}\n\n${question.prompt}` : question.prompt,
+            {
+                withTitle: APP_NAME,
+                defaultAnswer: answer,
+                buttons: ["Cancel", "OK"],
+                defaultButton: "OK",
+                cancelButton: "Cancel"
+            }
+        );
+
+        answer = String(response.textReturned);
+
+        try {
+            return read(answer, question);
+        } catch (error) {
+            problem = errorMessage(error);
+        }
+    }
+}
+
+/* ===== src/runtime/dialogs.js ===== */
+
+
+function askRow(app, row, answers, fonts) {
+    const control = controlFor(row, fonts);
+
+    if (row.kind === "choice" || row.kind === "font") {
+        return chooseRequired(app, control, answers[row.key]);
+    }
+
+    return askUntil(
+        app,
+        {
+            prompt: control.prompt,
+            defaultAnswer: String(answers[row.key])
+        },
+        (typed) => {
+            const read = readAnswers({ ...answers, [row.key]: typed }, fonts);
+
+            if (read.problems) {
+                const mine = read.problems.find((problem) => problem.key === row.key);
+
+                if (mine) {
+                    throw new Error(mine.message);
+                }
+            }
+
+            return typed;
+        }
+    );
+}
+
+function collectDialogSettings(app, answers, fonts) {
+    const given = { ...answers };
+
+    for (const row of ORDER) {
+        given[row.key] = askRow(app, row, given, fonts);
+    }
+
+    return readAnswers(given, fonts).settings;
+}
+
+/* ===== src/runtime/preferences.js ===== */
+
+
+function present(value) {
+    if (!value) {
+        return false;
+    }
+
+    return typeof value.isNil !== "function" || !value.isNil();
+}
+
+function memoryOn(objc, ns, suite) {
+    return {
+        recall() {
+            try {
+                const held = suite.stringForKey(ns(KEY));
+
+                return present(held) ? String(objc.unwrap(held)) : "";
+            } catch {
+                return "";
+            }
+        },
+
+        remember(text) {
+            try {
+                suite.setObjectForKey(ns(text), ns(KEY));
+            } catch {
+            }
+        }
+    };
+}
+
+const FORGETFUL = Object.freeze({
+    recall() {
+        return "";
+    },
+    remember() {
+        return undefined;
+    }
+});
+
+function createMemory(objc, ns) {
+    if (!objc || !ns) {
+        return FORGETFUL;
+    }
+
+    try {
+        objc.import("Foundation");
+
+        const suite = ns.NSUserDefaults.alloc.initWithSuiteName(ns(DOMAIN));
+
+        return present(suite) ? memoryOn(objc, ns, suite) : FORGETFUL;
+    } catch {
+        return FORGETFUL;
+    }
+}
+
+/* ===== src/runtime/settings-form.js ===== */
+
+
+function formRound(bridge, present, state) {
+    const outcome = present(
+        bridge,
+        formSpec(state.answers, state.problems, state.context)
+    );
+
+    if (!outcome) {
+        return { unavailable: true };
+    }
+
+    if (outcome.cancelled) {
+        throw new UserCancelled();
+    }
+
+    const read = readAnswers(outcome.answers, state.context.fonts);
+
+    return read.settings
+        ? { settings: read.settings }
+        : { answers: outcome.answers, problems: read.problems };
+}
+
+function collectViaForm(bridge, present, opening) {
+    let state = { ...opening, problems: [] };
+
+    for (;;) {
+        const round = formRound(bridge, present, state);
+
+        if (round.unavailable) {
+            return null;
+        }
+
+        if (round.settings) {
+            return round.settings;
+        }
+
+        state = { ...round, context: opening.context };
+    }
+}
+
+function attemptForm(bridge, present, opening) {
+    try {
+        return collectViaForm(bridge, present, opening);
+    } catch (error) {
+        if (isUserCancelled(error)) {
+            throw error;
+        }
+
+        return null;
+    }
+}
+
+function collectSettings(app, opening, injected) {
+    const {
+        bridge = appkitBridge(globalThis.ObjC, globalThis.$),
+        present = presentForm
+    } = injected;
+
+    if (bridge) {
+        const settings = attemptForm(bridge, present, opening);
+
+        if (settings) {
+            return settings;
+        }
+    }
+
+    const { fonts } = opening.context;
+
+    return collectDialogSettings(app, opening.answers ?? defaultAnswers(fonts), fonts);
+}
+
+/* ===== src/runtime/settings-run.js ===== */
+
+
+function defaultMemory() {
+    return createMemory(globalThis.ObjC, globalThis.$);
+}
+
+function settingsFor(app, invocation, context, injected = {}) {
+    if (invocation.headless) {
+        return normalizeSettings(invocation.settings);
+    }
+
+    const { openMemory = defaultMemory } = injected;
+    const memory = openMemory();
+    const opening = {
+        context,
+        answers: rememberedAnswers(memory.recall(), context.fonts)
+    };
+    const settings = normalizeSettings(collectSettings(app, opening, injected));
+
+    memory.remember(encode(settings));
+
+    return settings;
+}
+
+/* ===== src/runtime/broadcast.js ===== */
+
+
+function broadcast(sinks, state) {
+    return (use) => {
+        for (const sink of sinks) {
+            try {
+                use(sink);
+            } catch (error) {
+                state.stopped ||= isUserCancelled(error);
+            }
+        }
+    };
+}
+
+/* ===== src/runtime/saying.js ===== */
+
+function reporting(state, say, stopped) {
+    const announce = (text) => {
+        state.description = text;
+        say();
+
+        if (stopped()) {
+            throw new UserCancelled();
+        }
+    };
+
+    return {
+        beginning(index, originalName) {
+            const name = String(originalName).replace(/\s+/gu, " ");
+
+            state.detail = `${index} of ${state.images} — ${name}`;
+            announce("Reading the photograph");
+        },
+
+        phase: announce,
+
+        finished(text) {
+            state.done += 1;
+            state.description = text;
+            say();
+        }
+    };
+}
+
+/* ===== src/runtime/progress.js ===== */
+
+
+function nothing() {
+    return undefined;
+}
+
+function never() {
+    return false;
+}
+
+const SILENT = Object.freeze({
+    stopped: never,
+    expect: nothing,
+    beginning: nothing,
+    phase: nothing,
+    finished: nothing,
+    pause: nothing,
+    close: nothing
+});
+
+function lifecycle(state, each) {
+    return {
+        stopped() {
+            each((sink) => {
+                state.stopped ||= sink.stopped();
+            });
+
+            return state.stopped;
+        },
+
+        expect(images) {
+            state.images = images;
+            each((sink) => sink.start(images));
+        },
+
+        pause() {
+            each((sink) => sink.pause());
+        },
+
+        close() {
+            if (state.closed) {
+                return;
+            }
+
+            state.closed = true;
+            each((sink) => sink.close());
+        }
+    };
+}
+
+function createProgress(sinks) {
+    if (sinks.length === 0) {
+        return SILENT;
+    }
+
+    const state =
+        { images: 0, done: 0, description: "", detail: "", stopped: false, closed: false };
+    const each = broadcast(sinks, state);
+    const say = () => each(
+        (sink) => sink.report(state.done, state.description, state.detail)
+    );
+    const life = lifecycle(state, each);
+
+    return { ...reporting(state, say, life.stopped), ...life };
+}
+
+/* ===== src/runtime/panel-geometry.js ===== */
+
+
+const PANEL_WIDTH = 420;
+const PADDING_X = 18;
+const PADDING_Y = 16;
+const HEADLINE_HEIGHT = 18;
+const DETAIL_HEIGHT = 16;
+const BAR_HEIGHT = 6;
+
+const HEADLINE_GAP = 4;
+const BAR_GAP = 12;
+
+const EDGES = 2;
+const BAR_RADIUS = BAR_HEIGHT / EDGES;
+
+const CONTENT_WIDTH = PANEL_WIDTH - PADDING_X * EDGES;
+
+const PANEL_HEIGHT = PADDING_Y * EDGES +
+    HEADLINE_HEIGHT + HEADLINE_GAP + DETAIL_HEIGHT + BAR_GAP + BAR_HEIGHT;
+
+const HEADLINE_BOTTOM = PANEL_HEIGHT - PADDING_Y - HEADLINE_HEIGHT;
+const DETAIL_BOTTOM = HEADLINE_BOTTOM - HEADLINE_GAP - DETAIL_HEIGHT;
+const BAR_BOTTOM = DETAIL_BOTTOM - BAR_GAP - BAR_HEIGHT;
+
+function panelRow(bottom, height, width = CONTENT_WIDTH) {
+    return { left: PADDING_X, bottom, width, height };
+}
+
+const PANEL_RECT = Object.freeze({
+    left: 0,
+    bottom: 0,
+    width: PANEL_WIDTH,
+    height: PANEL_HEIGHT
+});
+
+const HEADLINE_RECT = Object.freeze(panelRow(HEADLINE_BOTTOM, HEADLINE_HEIGHT));
+const DETAIL_RECT = Object.freeze(panelRow(DETAIL_BOTTOM, DETAIL_HEIGHT));
+const TRACK_RECT = Object.freeze(panelRow(BAR_BOTTOM, BAR_HEIGHT));
+
+function fillRect(done, total) {
+    const fraction = total > 0 ? Math.min(done / total, 1) : 0;
+
+    return panelRow(BAR_BOTTOM, BAR_HEIGHT, CONTENT_WIDTH * fraction);
+}
+
+/* ===== src/runtime/panel-widgets.js ===== */
+
+
+const BACKING_BUFFERED = 2;
+
+const STYLE_TITLED = 1;
+const STYLE_UTILITY = 16;
+const STYLE_NONACTIVATING = 128;
+const PANEL_STYLE = STYLE_TITLED + STYLE_UTILITY + STYLE_NONACTIVATING;
+
+const FLOATING_LEVEL = 3;
+
+const BOX_CUSTOM = 4;
+const NO_BORDER = 0;
+const NO_TITLE = 0;
+
+const HEADLINE_FONT_SIZE = 13;
+const DETAIL_FONT_SIZE = 11;
+
+const TRUNCATES_TAIL = 4;
+
+function makePanel(ns, rect, title) {
+    const panel = ns.NSPanel.alloc.initWithContentRectStyleMaskBackingDefer(
+        rectOf(ns, rect),
+        PANEL_STYLE,
+        BACKING_BUFFERED,
+        false
+    );
+
+    panel.title = title;
+    panel.level = FLOATING_LEVEL;
+    panel.hidesOnDeactivate = false;
+    panel.becomesKeyOnlyIfNeeded = true;
+    panel.ignoresMouseEvents = true;
+    panel.releasedWhenClosed = false;
+    perform(panel, "center");
+
+    return panel;
+}
+
+function makeContent(ns, rect) {
+    return ns.NSView.alloc.initWithFrame(rectOf(ns, rect));
+}
+
+function makeText(ns, rect, font, colour) {
+    const text = ns.NSTextField.alloc.initWithFrame(rectOf(ns, rect));
+
+    text.stringValue = "";
+    text.editable = false;
+    text.bezeled = false;
+    text.drawsBackground = false;
+    text.selectable = false;
+    text.font = font;
+    text.textColor = colour;
+    text.lineBreakMode = TRUNCATES_TAIL;
+
+    return text;
+}
+
+function makeHeadline(ns, rect) {
+    return makeText(
+        ns,
+        rect,
+        ns.NSFont.boldSystemFontOfSize(HEADLINE_FONT_SIZE),
+        ns.NSColor.labelColor
+    );
+}
+
+function makeDetail(ns, rect) {
+    return makeText(
+        ns,
+        rect,
+        ns.NSFont.systemFontOfSize(DETAIL_FONT_SIZE),
+        ns.NSColor.secondaryLabelColor
+    );
+}
+
+function makeBar(ns, rect, colour) {
+    const box = ns.NSBox.alloc.initWithFrame(rectOf(ns, rect));
+
+    box.boxType = BOX_CUSTOM;
+    box.borderType = NO_BORDER;
+    box.borderWidth = 0;
+    box.titlePosition = NO_TITLE;
+    box.fillColor = colour;
+    box.cornerRadius = BAR_RADIUS;
+
+    return box;
+}
+
+/* ===== src/runtime/panel-window.js ===== */
+
+
+const PAINT_SECONDS = 0.01;
+
+const POLICY_ACCESSORY = 1;
+const POLICY_PROHIBITED = 2;
+
+function sharedApplication(ns) {
+    return ns.NSApplication.sharedApplication;
+}
+
+function policyOf(ns) {
+    return Number(perform(sharedApplication(ns), "activationPolicy"));
+}
+
+function setPolicy(ns, policy) {
+    sharedApplication(ns).setActivationPolicy(policy);
+}
+
+function allowWindows(ns) {
+    const policy = policyOf(ns);
+
+    if (policy === POLICY_PROHIBITED) {
+        setPolicy(ns, POLICY_ACCESSORY);
+    }
+
+    return () => setPolicy(ns, policy);
+}
+
+function paint(ns, panel) {
+    perform(panel, "display");
+    ns.NSRunLoop.currentRunLoop.runModeBeforeDate(
+        ns.NSModalPanelRunLoopMode,
+        ns.NSDate.dateWithTimeIntervalSinceNow(PAINT_SECONDS)
+    );
+}
+
+function show(panel) {
+    perform(panel, "orderFrontRegardless");
+}
+
+function hide(panel) {
+    panel.orderOut(null);
+}
+
+function closeWindow(panel) {
+    perform(panel, "close");
+}
+
+function setFrame(ns, view, rect) {
+    view.frame = rectOf(ns, rect);
+}
+
+function setHidden(view, hidden) {
+    view.hidden = hidden;
+}
+
+const OPTION_HELD = 524288;
+
+function optionHeld(ns) {
+    try {
+        return (Number(ns.NSEvent.modifierFlags) & OPTION_HELD) !== 0;
+    } catch {
+        return false;
+    }
+}
+
+/* ===== src/runtime/panel-view.js ===== */
+
+
+const TITLE = `${APP_NAME} — hold ⌥ to stop`;
+
+function build(ns) {
+    const content = makeContent(ns, PANEL_RECT);
+    const view = {
+        panel: makePanel(ns, PANEL_RECT, TITLE),
+        headline: makeHeadline(ns, HEADLINE_RECT),
+        detail: makeDetail(ns, DETAIL_RECT),
+        track: makeBar(ns, TRACK_RECT, ns.NSColor.separatorColor),
+        fill: makeBar(ns, fillRect(0, 0), ns.NSColor.controlAccentColor)
+    };
+
+    for (const part of [view.headline, view.detail, view.track, view.fill]) {
+        content.addSubview(part);
+    }
+
+    setHidden(view.track, true);
+    setHidden(view.fill, true);
+    view.panel.contentView = content;
+
+    return view;
+}
+
+/* ===== src/runtime/panel.js ===== */
+
+
+const APPEARANCE_DELAY = 500;
+
+function panelSink(view, ns, now, restore) {
+    let total = 0;
+    let armedAt = now();
+
+    return {
+        stopped() {
+            return optionHeld(ns);
+        },
+
+        start(units) {
+            total = units;
+            setHidden(view.track, false);
+            setHidden(view.fill, false);
+        },
+
+        report(done, description, detail) {
+            view.headline.stringValue = description;
+            view.detail.stringValue = detail;
+            setFrame(ns, view.fill, fillRect(done, total));
+
+            if (now() - armedAt < APPEARANCE_DELAY) {
+                return;
+            }
+
+            show(view.panel);
+            paint(ns, view.panel);
+        },
+
+        pause() {
+            hide(view.panel);
+            armedAt = now();
+        },
+
+        close() {
+            hide(view.panel);
+            closeWindow(view.panel);
+            restore();
+        }
+    };
+}
+
+function openPanel(bridge = appkitBridge(globalThis.ObjC, globalThis.$), now = Date.now) {
+    if (!bridge) {
+        return null;
+    }
+
+    try {
+        const view = build(bridge.ns);
+
+        return panelSink(view, bridge.ns, now, allowWindows(bridge.ns));
+    } catch {
+        return null;
+    }
+}
+
+/* ===== src/runtime/surfaces.js ===== */
+
+
+function jxaProgress(host = globalThis.Progress) {
+    if (!host) {
+        return null;
+    }
+
+    return {
+        stopped() {
+            return false;
+        },
+
+        start(total) {
+            host.totalUnitCount = total;
+            host.completedUnitCount = 0;
+        },
+
+        report(done, description, detail) {
+            host.completedUnitCount = done;
+            host.description = description;
+            host.additionalDescription = detail;
+        },
+
+        pause() {
+            return undefined;
+        },
+
+        close() {
+            host.totalUnitCount = 0;
+        }
+    };
+}
+
+function openProgress(headless, build = [openPanel, jxaProgress]) {
+    if (headless) {
+        return SILENT;
+    }
+
+    try {
+        return createProgress(build.map((open) => open()).filter(Boolean));
+    } catch {
+        return SILENT;
+    }
+}
+
+/* ===== src/runtime/assembly.js ===== */
+
+
+function withWorkspace(app, unpublished, use) {
+    const workspace = createWorkspace(app);
+
+    try {
+        return use(workspace);
+    } finally {
+        if (unpublished.size === 0) {
+            removeWorkspace(app, workspace);
+        }
+    }
+}
+
+function fontsFor(prepared, workspace, progress) {
+    const { app, invocation, tools } = prepared;
+
+    if (invocation.headless) {
+        return [];
+    }
+
+    progress.phase("Checking which fonts are installed");
+
+    return availableFonts({ app, tools, workspace });
+}
+
+function settingsFrom(app, invocation, context) {
+    const settings = settingsFor(app, invocation, context);
+
+    if (stampsNothing(settings)) {
+        throw new Error(
+            "This would stamp nothing.\n\nChoose a date or coordinate " +
+                "format, or write some text of your own."
+        );
+    }
+
+    return settings;
+}
+
+function jobFor(prepared, settings, place) {
+    return {
+        app: prepared.app,
+        tools: prepared.tools,
+        settings,
+        workspace: place.workspace,
+        stamps: new Map(),
+        drawn: 0,
+        profiles: [],
+        unpublished: place.unpublished,
+        rename: createRenamer(globalThis.ObjC, globalThis.$),
+        progress: place.progress
+    };
+}
+
+function assemble(prepared, place) {
+    const context = {
+        count: prepared.selection.images.length,
+        fonts: fontsFor(prepared, place.workspace, place.progress)
+    };
+
+    place.progress.pause();
+
+    const settings = settingsFrom(prepared.app, prepared.invocation, context);
+
+    return jobFor(prepared, settings, place);
+}
+
+/* ===== src/runtime/reporting.js ===== */
+
+
+function notice(app, message) {
+    app.displayDialog(message, {
+        withTitle: APP_NAME,
+        buttons: ["OK"],
+        defaultButton: "OK"
+    });
+}
+
+function describeNothing(rejected) {
+    if (rejected.length === 0) {
+        return "No photographs selected.\n\nSelect one or more " +
+            `${supportedFormatList()} files in Finder, or a folder ` +
+            "containing them, then run the action again.";
+    }
+
+    const reasons = rejected.map((entry) => `${entry.name}: ${entry.reason}`);
+
+    return `Nothing to stamp.\n\n${reasons.join("\n")}`;
+}
+
+function reportNothing(app, headless, rejected) {
+    if (headless) {
+        throw new Error(describeNothing(rejected));
+    }
+
+    notice(app, describeNothing(rejected));
+}
+
+function describe(result) {
+    const ledger = ledgerOf(result);
+    const stamped = `${plural(ledger.stamped, "photograph")} stamped`;
+    const trouble = result.requested - ledger.stamped;
+    const sentence = trouble === 0
+        ? `${stamped}.`
+        : `${stamped}, and ${trouble} not.`;
+
+    return result.stopped ? `Stopped.\n\n${sentence}` : sentence;
+}
+
+function named(entries, say) {
+    return entries.map((entry) => `${entry.name}: ${say(entry)}`);
+}
+
+function detailOf(result) {
+    const lines = [
+        ...named(result.failures, (failure) => failure.message),
+        ...named(result.nothing, (entry) => entry.reason),
+        ...named(result.rejected, (entry) => entry.reason),
+        ...result.excluded.length > 0 ? [describeExcluded(result.excluded)] : [],
+        ...result.crowded > 0 ? [describeCrowding(result.crowded)] : [],
+        ...result.unconverted > 0 ? [describeUnconverted(result.unconverted)] : []
+    ];
+
+    return lines.length > 0 ? `\n\n${lines.join("\n")}` : "";
+}
+
+function reportHeadless(result, write = writeReceipt) {
+    const receipt = JSON.stringify({ ...result, ledger: ledgerOf(result) });
+
+    if (isCompleteSuccess(result)) {
+        return receipt;
+    }
+
+    write(`${receipt}\n`);
+
+    throw new Error(describeIncomplete(result));
+}
+
+function report(app, result, headless) {
+    if (headless) {
+        return reportHeadless(result);
+    }
+
+    notice(app, `${describe(result)}${detailOf(result)}`);
+
+    return undefined;
+}
+
+/* ===== src/runtime/main.js ===== */
+
+
+function prepare(app, input, headless, progress) {
+    progress.phase("Checking required tools");
+
+    const tools = checkTools(app);
+    const invocation = collectInvocation(app, input, headless);
+
+    progress.phase("Finding photographs");
+
+    return {
+        tools,
+        invocation,
+        selection: collectImageFiles(
+            app,
+            invocation.inputItems,
+            createTree(globalThis.ObjC, globalThis.$, globalThis.Ref)
+        )
+    };
+}
+
+function stampAll(app, job, selection, headless) {
+    const result = runJob(job, selection.images);
+
+    result.rejected = selection.rejected;
+    result.excluded = selection.excluded;
+    result.requested = selection.images.length + selection.rejected.length;
+    job.progress.close();
+
+    return report(app, result, headless);
+}
+
+function stamp(prepared, place, headless) {
+    const job = assemble(prepared, place);
+
+    place.progress.expect(prepared.selection.images.length);
+
+    return stampAll(prepared.app, job, prepared.selection, headless);
+}
+
+function execute(app, input, headless, progress = openProgress(headless)) {
+    const prepared = { app, ...prepare(app, input, headless, progress) };
+
+    if (prepared.selection.images.length === 0) {
+        progress.close();
+
+        return reportNothing(app, headless, prepared.selection.rejected);
+    }
+
+    const unpublished = new Set();
+
+    return withWorkspace(app, unpublished, (workspace) => stamp(
+        prepared,
+        { workspace, unpublished, progress },
+        headless
+    ));
+}
+
+function runReported(app, input, headless) {
+    const progress = openProgress(headless);
+
+    try {
+        return execute(app, input, headless, progress);
+    } finally {
+        progress.close();
+    }
+}
+
+function run(input, parameters) {
+    const app = Application.currentApplication();
+    const headless = isHeadlessInput(input);
+
+    app.includeStandardAdditions = true;
+
+    try {
+        return runReported(app, input, headless);
+    } catch (error) {
+        if (headless) {
+            throw new Error(describeForLog(error), { cause: error });
+        }
+
+        if (!isUserCancelled(error)) {
+            app.displayDialog(errorMessage(error), {
+                withTitle: APP_NAME,
+                buttons: ["OK"],
+                defaultButton: "OK"
+            });
+        }
+
+        return undefined;
+    }
+}

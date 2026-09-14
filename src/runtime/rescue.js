@@ -1,0 +1,37 @@
+"use strict";
+
+const { MKTEMP, MV } = require("../core/executables.js");
+const { basename } = require("../core/paths.js");
+const { runArgv } = require("./shell.js");
+
+const RECOVERY_PREFIX = "StampImages-recovered";
+
+/*
+ * A copy that could not be published is still a finished copy.
+ *
+ * The photograph has been read, the stamp drawn and the copy written by this
+ * point, so deleting it destroys finished work over a failure that has
+ * nothing to do with its contents -- and the workspace it sits in is removed
+ * as soon as the run ends. It is moved out of the way instead, and where it
+ * went is part of the failure.
+ *
+ * Best effort: if it cannot be moved it stays where it was built, and the
+ * message says so rather than claiming a rescue that did not happen.
+ */
+function setAside(app, stagedPath) {
+    try {
+        const folder = String(runArgv(
+            app,
+            [MKTEMP, "-d", "-t", RECOVERY_PREFIX]
+        )).trim();
+        const recovered = `${folder}/${basename(stagedPath)}`;
+
+        runArgv(app, [MV, stagedPath, recovered]);
+
+        return recovered;
+    } catch {
+        return stagedPath;
+    }
+}
+
+module.exports = { setAside };

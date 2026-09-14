@@ -1,0 +1,130 @@
+"use strict";
+
+/*
+ * The install command itself: the four copies of it must agree, and must
+ * still be there to compare.
+ */
+
+const assert = require("node:assert/strict");
+const test = require("node:test");
+
+const load = () => import("../../../tools/lint/toolchain.mjs");
+
+test("the copies of the install command must agree", async () => {
+    const { checkToolchain } = await load();
+    const files = {
+        "CONTRIBUTING.md": "```sh\nbrew install vips exiftool\n```\n",
+        ".github/workflows/quality.yml": "      - run: brew install vips exiftool\n",
+        ".github/workflows/release.yml": "      - run: brew install vips\n",
+        "tests/integration/lib/fixtures.sh": "    for tool in vips exiftool; do\n"
+    };
+
+    await assert.rejects(
+        () => checkToolchain((file) => Promise.resolve(files[file])),
+        /install commands disagree between files/u
+    );
+});
+
+test("an install command that has gone missing is not silently zero tools", async () => {
+    const { checkToolchain } = await load();
+
+    await assert.rejects(
+        () => checkToolchain((file) => Promise.resolve(
+            file === "CONTRIBUTING.md" ? "no command here\n" : "brew install vips\n"
+        )),
+        /CONTRIBUTING\.md no longer documents the install command/u
+    );
+});
+
+test("a fixtures file that stops listing its tools is an error", async () => {
+    const { checkToolchain } = await load();
+    const agreed = "brew install vips\n";
+
+    await assert.rejects(
+        () => checkToolchain((file) => Promise.resolve(
+            file.endsWith("fixtures.sh") ? "nothing listed\n" : agreed
+        )),
+        /no longer lists its required tools/u
+    );
+});
+
+test("an agreeing, complete toolchain reports how many formulae it names", async () => {
+    const { checkToolchain } = await load();
+    const agreed = "brew install vips exiftool\n";
+
+    assert.equal(
+        await checkToolchain((file) => Promise.resolve(
+            file.endsWith("fixtures.sh")
+                ? "    for tool in osascript vips exiftool; do\n"
+                : agreed
+        )),
+        2
+    );
+});
+
+test("a suite that needs a formula nobody installs fails the gate", async () => {
+    // The whole reason this check exists: a suite required a tool that
+    // nothing installed, and passed anyway because another formula happened
+    // to pull it in -- one upstream change from failing on a machine that
+    // followed the documented install exactly.
+    const { checkToolchain } = await load();
+    const agreed = "brew install vips\n";
+
+    await assert.rejects(
+        () => checkToolchain((file) => Promise.resolve(
+            file.endsWith("fixtures.sh")
+                ? "    for tool in vips vipsheader exiftool; do\n"
+                : agreed
+        )),
+        (error) => {
+            assert.match(
+                error.message,
+                /requires tools the documented install does not provide/u
+            );
+            // Named once each, however many commands come from them, and as
+            // a list rather than run together into a formula that does not
+            // exist.
+            assert.match(error.message, /provide: exiftool$/u);
+
+            return true;
+        }
+    );
+});
+
+test("the report reads in a fixed order, not in the order files arrive", async () => {
+    // The sources are read concurrently, so without an ordering the same
+    // disagreement is reported differently from one run to the next, and a
+    // change in the message stops meaning a change in the files. Here the
+    // prose arrives first and still comes last.
+    const { checkToolchain } = await load();
+    const read = (file) => (file.endsWith("CONTRIBUTING.md")
+        ? Promise.resolve("brew install vips\n")
+        : Promise.resolve().then(() => "brew install exiftool\n"));
+
+    await assert.rejects(() => checkToolchain(read), (error) => {
+        assert.equal(error.message, [
+            "install commands disagree between files:",
+            "  .github/workflows/quality.yml (1): exiftool",
+            "  .github/workflows/release.yml (1): exiftool",
+            "  CONTRIBUTING.md (1): vips"
+        ].join("\n"));
+
+        return true;
+    });
+});
+
+test("whitespace in the sources is not read as an extra tool", async () => {
+    // Both halves are prose in Markdown and YAML, where a stray double space
+    // survives review; counted as a formula it would be a formula nobody has
+    // mapped, and the gate would fail on the reader's spacing.
+    const { checkToolchain } = await load();
+
+    assert.equal(
+        await checkToolchain((file) => Promise.resolve(
+            file.endsWith("fixtures.sh")
+                ? "    for tool in  vips   exiftool ; do\n"
+                : "brew install  vips   exiftool\n"
+        )),
+        2
+    );
+});

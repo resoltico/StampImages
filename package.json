@@ -1,0 +1,39 @@
+{
+  "name": "stamp-images-macos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Source, build, QA, and release scaffolding for an exiftool + vips macOS Finder Quick Action",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/resoltico/StampImages.git"
+  },
+  "homepage": "https://github.com/resoltico/StampImages",
+  "author": "Ervins Strauhmanis",
+  "engines": {
+    "node": ">=26.8.1"
+  },
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "lint": "node tools/lint.mjs",
+    "lint:js": "eslint .",
+    "test": "node --test \"tests/unit/**/*.test.cjs\" \"tests/repo/**/*.test.cjs\"",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-exclude=\"tests/**\" --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 \"tests/unit/**/*.test.cjs\" \"tests/repo/**/*.test.cjs\"",
+    "check-dist": "node tools/check-dist.mjs",
+    "quality": "npm run lint && npm run lint:js && npm run test:coverage && npm run test:mutation && npm run check-dist",
+    "release": "npm run build && npm run quality",
+    "test:integration:macos": "bash tests/integration/macos.sh && bash tests/integration/copies.sh && bash tests/integration/selection.sh && bash tests/integration/publication.sh && bash tests/integration/volumes.sh && bash tests/integration/cards.sh && bash tests/integration/damaged.sh",
+    "test:mutation": "stryker run",
+    "test:unit": "node --test \"tests/unit/**/*.test.cjs\""
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@stryker-mutator/core": "10.0.0",
+    "@stryker-mutator/tap-runner": "10.0.0",
+    "acorn": "8.18.0",
+    "eslint": "10.9.1"
+  },
+  "overrides": {
+    "qs": "6.16.0"
+  }
+}

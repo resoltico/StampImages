@@ -1,0 +1,64 @@
+"use strict";
+
+const { MKDIR, RMDIR } = require("../core/executables.js");
+const { dirname } = require("../core/paths.js");
+const { splitExtension } = require("../core/naming.js");
+const { runArgv, tryArgv, removeFile } = require("./shell.js");
+const { nonce } = require("./workspace.js");
+
+/*
+ * A place of this run's own, beside the destination, to put the stamped copy
+ * in when it cannot be linked into place from the workspace.
+ *
+ * Made rather than found: mkdir either creates the directory or fails, and it
+ * fails for anything already at that name -- a file, a folder, a link, a
+ * named pipe. Measured, all four. So everything inside it is this attempt's,
+ * which is what makes copying into it and clearing it away afterwards safe.
+ *
+ * Taking a name by opening it was not the same thing. The shell's noclobber
+ * redirection refuses a regular file, and quietly accepts a link pointing at
+ * something that is not one -- measured, a link to /dev/null was accepted and
+ * nothing was created, so the run recorded a name it did not own and cleanup
+ * deleted the link. On a named pipe it does worse: it waits for a reader, and
+ * there is no timeout above it to end that wait.
+ *
+ * Hidden, and named for this attempt, so it is neither in the way nor
+ * something another run would ask for.
+ */
+
+/*
+ * Named for what it holds and given the kind of file it is. Nothing reads the
+ * staged copy by its extension -- publication is a rename -- but a copy a
+ * failed run had to leave behind is one somebody opens, and a file with no
+ * extension is one they cannot.
+ */
+const READY = "ready";
+
+function stagingArea(finalPath) {
+    const directory = `${dirname(finalPath)}.StampImages-${nonce()}`;
+    const { extension } = splitExtension(finalPath);
+
+    return { directory, file: `${directory}/${READY}${extension}` };
+}
+
+function openStaging(app, area) {
+    runArgv(
+        app,
+        [MKDIR, area.directory],
+        "making a place for the copy in the output folder"
+    );
+}
+
+/*
+ * Whatever this run put in there, and then the directory itself. rmdir
+ * removes an empty directory and refuses one that is not, so a directory
+ * something else has written into is left alone rather than emptied.
+ */
+function closeStaging(app, area) {
+    removeFile(app, area.file);
+
+    // A directory that cannot be removed is not a failure of the run.
+    tryArgv(app, [RMDIR, area.directory]);
+}
+
+module.exports = { stagingArea, openStaging, closeStaging };
