@@ -32,6 +32,13 @@ Eleven settings, asked once for the whole selection:
   face — and Font Book listing a font is not the same as this being able to
   ask for it by that name
 - the weight, regular or bold, which is a setting rather than part of the name
+
+A note on which fonts it can see: it draws through vips, which reads the fonts
+installed in your font folders. A font a font manager has *activated* rather
+than installed is not one of those, however plainly Font Book and every other
+app show it — so it is refused with the reason rather than quietly replaced.
+Installing the font, or pointing fontconfig at the folder your manager keeps
+it in, makes it available.
 - the text size in points, and its colour
 - the outline width and colour, so light text stays readable on a light sky
 - which corner or edge the block goes in, and how far in from it

@@ -115,14 +115,36 @@ function probing(where) {
 }
 
 /*
- * Why a name was refused, in the one place every reader of it can reach. It
- * names what was asked for rather than what is available, because what is
- * available is a handful of suggestions and the machine has hundreds.
+ * Why a name was refused, in the one place every reader of it can reach.
+ *
+ * It names what was asked for rather than what is available, because what is
+ * available is a handful of suggestions and the machine has hundreds -- and it
+ * names the likeliest reason somebody is surprised. Measured: a font manager
+ * activates a face through the system's own font machinery without putting a
+ * file where these tools look, so Font Book, Word and every other app show it
+ * while fontconfig has never heard of it. Reported from use, and the first
+ * thing the message used to say was to set the weight elsewhere, which sent
+ * somebody to try both weights of a face this cannot see at all.
  */
+const WEIGHT_IN_NAME = /\s(?:Bold|Italic|Oblique)$/iu;
+
+/*
+ * Said only where it applies. A name ending in a weight word is the one shape
+ * this can be sure about, because that is what an earlier version stored.
+ */
+function withoutTheWeight(family) {
+    return WEIGHT_IN_NAME.test(family)
+        ? ` The weight is a setting of its own: try "${
+            family.replace(WEIGHT_IN_NAME, "")}" and set Weight.`
+        : "";
+}
+
 function undrawable(family) {
     return `This Mac does not draw with the typeface "${family}".\n\n` +
-        "Font Book may list it and still not answer to that name. " +
-        "Set the weight with Weight rather than in the name.";
+        "Another app showing it is not the same as this being able to use " +
+        "it: a font activated by a font manager rather than installed is not " +
+        "where this looks. The settings window offers the faces it can " +
+        `draw with.${withoutTheWeight(family)}`;
 }
 
 module.exports = { drawWith, probing, undrawable, IMPOSSIBLE, PROBE_SIZE };

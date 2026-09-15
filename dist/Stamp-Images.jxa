@@ -2881,10 +2881,21 @@ function probing(where) {
     };
 }
 
+const WEIGHT_IN_NAME = /\s(?:Bold|Italic|Oblique)$/iu;
+
+function withoutTheWeight(family) {
+    return WEIGHT_IN_NAME.test(family)
+        ? ` The weight is a setting of its own: try "${
+            family.replace(WEIGHT_IN_NAME, "")}" and set Weight.`
+        : "";
+}
+
 function undrawable(family) {
     return `This Mac does not draw with the typeface "${family}".\n\n` +
-        "Font Book may list it and still not answer to that name. " +
-        "Set the weight with Weight rather than in the name.";
+        "Another app showing it is not the same as this being able to use " +
+        "it: a font activated by a font manager rather than installed is not " +
+        "where this looks. The settings window offers the faces it can " +
+        `draw with.${withoutTheWeight(family)}`;
 }
 
 /* ===== src/runtime/fonts.js ===== */

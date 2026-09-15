@@ -374,6 +374,38 @@ They hold here, but the specific families differ by machine, so the measured
 table above is this Mac's rather than a claim about macOS. The grey-profile
 and filename findings were reproduced natively here as well as in the report.
 
+## What a font manager makes invisible
+
+Reported from use the day 1.1.0's audit landed: "Source Serif 4" refused, with
+the person having tried both weights because the message told them to.
+
+The refusal was right. Measured on this Mac: CoreText knows 217 families and
+five of them are Source Serif 4 and its optical-size siblings, so Font Book,
+Word and LibreOffice all show it; fontconfig knows 671 families and none of
+them is any Source Serif at all, and `fc-match "Source Serif 4"` answers
+"Times New Roman". The font was activated by a font manager, which registers a
+file with the system's own font machinery wherever that file happens to sit --
+here a folder in Dropbox -- rather than installing it where fontconfig looks.
+
+So vips cannot draw with it, and before this round it would have been stamped
+in Times New Roman with nothing said. That is the defect the resolver exists
+to catch, working.
+
+The message was not right. It ended "Set the weight with Weight rather than in
+the name", which is advice about a different problem, and it is what sent
+somebody to try both weights of a face this cannot see. It names the likeliest
+cause now -- another app showing a font is not the same as this being able to
+use it -- and the weight sentence appears only for a name that actually ends
+in a weight word, which is the one shape this can be sure about, because it is
+what 1.0.0 stored.
+
+**The remedy, measured rather than suggested.** Pointing fontconfig at the
+folder the manager keeps its fonts in takes this Mac from 671 families to
+3652, `fc-match "Source Serif 4"` then answers with itself, and vips draws it
+as its own face. That is a user-level `~/.config/fontconfig/fonts.conf` with a
+`<dir>` in it -- the person's own configuration rather than anything this
+program writes, which is why the README says what to do rather than doing it.
+
 ## What a red hint claimed
 
 Reported from use on the day 1.1.0 was built: somebody typed "Noto Serif",

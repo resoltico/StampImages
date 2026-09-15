@@ -17,6 +17,11 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Fixed
 
+- A typeface this cannot use says the likeliest reason. A font activated by a
+  font manager rather than installed is invisible to the tools this draws
+  with, however plainly Font Book and every other app show it — and the
+  refusal used to end by telling you to set the weight elsewhere, which is
+  advice about a different problem.
 - Typefaces whose name ends in a style word can be asked for at all. "Times
   New Roman" was read as the family "Times New" and appeared to be missing;
   "Arial Black" was read as Arial made bold. Both work now.

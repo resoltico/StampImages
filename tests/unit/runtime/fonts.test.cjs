@@ -13,7 +13,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const { isUserCancelled } = require("../../../src/core/errors.js");
 const { availableFonts, CANDIDATES } = require("../../../src/runtime/fonts.js");
-const { IMPOSSIBLE } = require("../../../src/runtime/font-probe.js");
+const { IMPOSSIBLE, undrawable } = require("../../../src/runtime/font-probe.js");
 const { createFakeHost } = require("./fake-host.cjs");
 
 const WORKSPACE = "/var/folders/xx/T/StampImages.Fake01";
@@ -117,4 +117,24 @@ test("a drawing that cannot be compared is not a typeface that resolved", () => 
     });
 
     assert.deepEqual(availableFonts(where), []);
+});
+
+test("the refusal names the likeliest reason, and advises only where it can", () => {
+    // A font manager activates a face through the system's own machinery
+    // without putting a file where these tools look, so every other app shows
+    // it while fontconfig has never heard of it. The message used to end by
+    // telling people to set the weight elsewhere, which sent somebody to try
+    // both weights of a face this cannot see at all.
+    const said = undrawable("Source Serif 4");
+
+    assert.match(said, /does not draw with the typeface "Source Serif 4"/u);
+    assert.match(said, /activated by a font manager rather than installed/u);
+    assert.doesNotMatch(said, /weight/iu, "no advice about a different problem");
+});
+
+test("a name that carries its weight is told where the weight goes", () => {
+    // Which is the one shape this can be sure about: it is what 1.0.0 stored.
+    const said = undrawable("Helvetica Neue Bold");
+
+    assert.match(said, /try "Helvetica Neue" and set Weight/u);
 });
