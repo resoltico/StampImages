@@ -646,6 +646,7 @@ function listRow({ kind, key, control }, answers, invalid) {
         kind,
         label: control.label,
         hint: control.hint,
+        suggests: control.suggests,
         value: String(answers[key]),
         invalid: invalid.has(key),
         options: (control.choices ?? control.presets).map(
@@ -1074,7 +1075,8 @@ function describeCrowding(count) {
 const FONT = {
     prompt: "Typeface, by family name:",
     label: "Typeface:",
-    hint: "or type a name"
+    hint: "or type a name",
+    suggests: true
 };
 
 const TEXT = {
@@ -3691,7 +3693,7 @@ function controlRect(at) {
     return rowRect(at, { left: CONTROL_LEFT, width: CONTROL_WIDTH });
 }
 
-/* ===== src/runtime/appkit-form.js ===== */
+/* ===== src/runtime/appkit-rows.js ===== */
 
 
 function addChoice(context, row, rect) {
@@ -3712,6 +3714,18 @@ function addChoice(context, row, rect) {
     return popup;
 }
 
+function markRefused(context, row, made) {
+    if (!row.invalid) {
+        return;
+    }
+
+    context.widgets.markInvalid(context.ns, made.field);
+
+    if (!row.suggests) {
+        context.widgets.markHintInvalid(context.ns, made.hint);
+    }
+}
+
 function addTyped(context, row, rect, control) {
     const { ns, widgets, view } = context;
     const { width, make } = control;
@@ -3721,10 +3735,7 @@ function addTyped(context, row, rect, control) {
     view.addSubview(field);
     view.addSubview(hint);
 
-    if (row.invalid) {
-        widgets.markInvalid(ns, field);
-        widgets.markHintInvalid(ns, hint);
-    }
+    markRefused(context, row, { field, hint });
 
     return field;
 }
@@ -3767,6 +3778,9 @@ const ADD_ROW = {
     text: addText,
     number: addNumber
 };
+
+/* ===== src/runtime/appkit-form.js ===== */
+
 
 function buildForm(bridge, spec, widgets) {
     const rowCount = spec.rows.length;

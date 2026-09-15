@@ -72,6 +72,7 @@ export const moduleOrder = [
     "src/runtime/appkit-widgets.js",
     "src/runtime/appkit-fields.js",
     "src/runtime/appkit-geometry.js",
+    "src/runtime/appkit-rows.js",
     "src/runtime/appkit-form.js",
     "src/runtime/appkit.js",
     "src/runtime/prompts.js",

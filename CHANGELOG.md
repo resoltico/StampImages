@@ -14,7 +14,10 @@ Notable changes to this project are documented in this file. The format is based
   anything else — "Zapfino", "Optima", a font you installed yourself. The name
   is drawn with before the run starts, so one that draws nothing comes back
   with the field marked and your other answers where you left them, rather
-  than being stamped in whatever face the renderer picked instead.
+  than being stamped in whatever face the renderer picked instead. The reason
+  is the line at the top of the window: a name that seems obvious can be
+  absent — macOS ships 190 Noto families and not the plain "Noto Serif" — and
+  a name Font Book lists can still draw the fallback.
 
 ### Fixed
 

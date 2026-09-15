@@ -250,6 +250,44 @@ as the fallback while Helvetica Neue, Arial, Georgia and the rest draw as
 themselves. The question worth asking is not whether a font is installed but
 whether asking for it by that name draws it.
 
+## What a red hint claimed
+
+Reported from use on the day 1.1.0 was built: somebody typed "Noto Serif",
+the row came back marked, and what they read was a complaint that they had
+not entered a name.
+
+They had. The name was refused because this Mac draws nothing with it -- there
+is no plain "Noto Serif" here, only the 190 script-specific Noto families
+macOS ships, and the Latin one is a Google download -- and the sentence saying
+so was at the top of the form. What they saw first was the hint beside the
+field, in red: **"or type a name"**.
+
+Marking a row paints the value and its hint together, and for the rows that
+had hints until now that is right: "8-400 pt" in red says what the number had
+to be, and "or type #RRGGBB" says what the colour had to look like. The
+typeface's hint is not a rule. It offers -- it says a name may be typed at all
+-- so painting it red tells somebody who has just typed one that they have
+not, in the loudest place on the row.
+
+The rule it breaks cannot go there either. What makes a typeface acceptable is
+a fact about the machine rather than about the value, it is different on every
+Mac, and 87 points of hint column cannot hold it. It is already the sentence
+at the top.
+
+So a control says whether its hint offers or requires, and only a hint that
+requires is marked. One flag, read where the marking happens.
+
+**What this says about the feature rather than the bug.** The suggestions are
+a list of ten, and "or type a name" is how somebody learns the field takes
+anything. That invitation now has to carry the weight of a discovery: a name
+that seems obvious can be absent, and a name Font Book lists can draw the
+fallback anyway. Measured on this Mac, of twenty serif faces asked for by the
+name Font Book shows, nine draw -- Charter, Didot, Bodoni 72, Cochin, Optima,
+Palatino, Georgia, Baskerville, Academy Engraved LET -- and eleven do not,
+including Times New Roman, Hoefler Text, Iowan Old Style and New York. The
+refusal is doing its job in every one of those cases, which makes what the
+refusal says the thing worth getting right.
+
 ## What a list of ten could not be
 
 The typeface was the one setting whose control claimed to be the whole truth

@@ -25,18 +25,18 @@ const {
  */
 
 /*
- * The ten this Mac drew with are suggestions, not the whole truth.
- *
- * Which faces exist is a fact about the machine and fontControl below is where
- * they are put in -- but probing every family fontconfig knows costs a render
- * apiece, which on this Mac is 671 of them, so the list is a handful worth
- * having at hand and anything may be typed instead. A name that was typed is
- * drawn with before the run starts, exactly as these ten were.
+ * The faces this Mac drew with are suggestions, not the whole truth: probing
+ * every family fontconfig knows costs a render apiece, which on this Mac is
+ * 671 of them. So anything may be typed instead, and a name that was typed is
+ * drawn with before the run starts, exactly as the suggestions were.
  */
 const FONT = {
     prompt: "Typeface, by family name:",
     label: "Typeface:",
-    hint: "or type a name"
+    hint: "or type a name",
+    // Offers rather than requires, so it is not marked with a refused value:
+    // see markRefused in appkit-form.js.
+    suggests: true
 };
 
 /*

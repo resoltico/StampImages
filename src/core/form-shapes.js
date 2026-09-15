@@ -21,6 +21,7 @@ function listRow({ kind, key, control }, answers, invalid) {
         kind,
         label: control.label,
         hint: control.hint,
+        suggests: control.suggests,
         value: String(answers[key]),
         invalid: invalid.has(key),
         options: (control.choices ?? control.presets).map(

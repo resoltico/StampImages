@@ -1,122 +1,21 @@
 "use strict";
 
 const {
-    COLOUR_WIDTH,
-    FONT_WIDTH,
-    TEXT_WIDTH,
-    CAPTION_HEIGHT,
-    NUMBER_WIDTH,
     formSize,
     labelRect,
-    controlRect,
-    hintRect
+    controlRect
 } = require("./appkit-geometry.js");
+const { ADD_ROW } = require("./appkit-rows.js");
 
 /*
- * Turning the form description from src/core/form.js into a view.
+ * Turning the form description from src/core/form.js into a view: where each
+ * row goes, and what each row becomes -- the second of which is
+ * appkit-rows.js.
  *
  * Split from appkit.js so that laying the rows out and presenting the result
- * stay separately readable, and so neither file exceeds the size the gate
- * allows. The widget primitives arrive as a parameter, which is what lets
- * this be tested without AppKit.
+ * stay separately readable. The widget primitives arrive as a parameter,
+ * which is what lets this be tested without AppKit.
  */
-
-function addChoice(context, row, rect) {
-    const { ns, widgets, view } = context;
-    const popup = widgets.makePopup(ns, rect);
-
-    for (const option of row.options) {
-        widgets.addPopupItem(popup, option);
-    }
-
-    popup.selectItemWithTitle(row.value);
-    view.addSubview(popup);
-
-    if (row.invalid) {
-        widgets.markInvalid(ns, popup);
-    }
-
-    return popup;
-}
-
-/*
- * A row that is typed into: the control, only as wide as what it holds, and
- * the space that would have been wasted carrying the rule it accepts.
- *
- * The colour row and the number rows differ in the control and in how wide it
- * is, and in nothing else -- so they differ here in the control and in how
- * wide it is, and in nothing else.
- */
-function addTyped(context, row, rect, control) {
-    const { ns, widgets, view } = context;
-    const { width, make } = control;
-    const field = make({ ...rect, width });
-    const hint = widgets.makeHint(ns, row.hint, hintRect(rect, width));
-
-    view.addSubview(field);
-    view.addSubview(hint);
-
-    if (row.invalid) {
-        // The value and the rule it breaks, marked together.
-        widgets.markInvalid(ns, field);
-        widgets.markHintInvalid(ns, hint);
-    }
-
-    return field;
-}
-
-/*
- * A list and a field at once, so what is worth having at hand stays available
- * without a second control to keep in step with it -- and what is not on the
- * list can still be said. Two rows are this now: a colour, whose list is four
- * of them and whose field takes any other; and the typeface, whose list is
- * what this Mac drew with and whose field takes the name of anything else it
- * has. They differ in how wide the field has to be and in nothing else.
- */
-function addCombo(width) {
-    return (context, row, rect) => addTyped(context, row, rect, {
-        width,
-        make: (frame) => context.widgets.makeCombo(context.ns, row, frame)
-    });
-}
-
-/*
- * Free text takes the whole control column and states its rule nowhere: what
- * it accepts is anything, and the only bound is a length nobody reaches by
- * writing a caption. It is taller than the other rows because it is the one
- * that can hold more than a line.
- */
-function addText(context, row, rect) {
-    const { ns, widgets, view } = context;
-    const caption = widgets.makeCaption(ns, row.value, {
-        ...rect,
-        width: TEXT_WIDTH,
-        height: CAPTION_HEIGHT
-    });
-
-    view.addSubview(caption.control);
-
-    if (row.invalid) {
-        widgets.markInvalid(ns, caption.text);
-    }
-
-    return caption;
-}
-
-function addNumber(context, row, rect) {
-    return addTyped(context, row, rect, {
-        width: NUMBER_WIDTH,
-        make: (frame) => context.widgets.makeField(context.ns, row.value, frame)
-    });
-}
-
-const ADD_ROW = {
-    choice: addChoice,
-    font: addCombo(FONT_WIDTH),
-    colour: addCombo(COLOUR_WIDTH),
-    text: addText,
-    number: addNumber
-};
 
 function buildForm(bridge, spec, widgets) {
     const rowCount = spec.rows.length;
