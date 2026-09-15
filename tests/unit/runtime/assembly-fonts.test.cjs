@@ -67,3 +67,37 @@ test("a face chosen from the form's own list is not asked about twice", () => {
 
     assert.deepEqual(after, [], "nothing is drawn after the list is settled");
 });
+
+test("a name is drawn with once, however often it is asked about", () => {
+    // The probe goes in the context because both front ends need it and
+    // neither can answer it. Memoised, because the same question arrives from
+    // the form's loop, from a headless configuration, and from nowhere else
+    // that should have to count renderings.
+    const host = createFakeHost({ fonts: ["Menlo"] });
+    const invocation = {
+        headless: true,
+        settings: { ...defaultSettings(["Menlo"]), customText: "Riga" }
+    };
+
+    assemble({ ...prepared(host, true), invocation }, place(recorder()));
+
+    const drawn = host.commands.filter((command) => command.includes("'text'"));
+
+    assert.equal(drawn.length, 2, "the face and the name that cannot resolve");
+});
+
+test("the faces the form suggests are answered before anybody asks", () => {
+    // They were drawn with to find them, so the probe starts out knowing
+    // them: asking again would spend a rendering on an answer already had.
+    const host = createFakeHost({ fonts: ["Menlo"] });
+
+    assemble(prepared(host), place(recorder()));
+
+    const drawn = host.commands.filter((command) => command.includes("'text'"));
+
+    assert.equal(
+        drawn.filter((command) => command.includes("'Menlo 40'")).length,
+        1,
+        "drawn once, while the list was being found"
+    );
+});

@@ -3,7 +3,8 @@
 const { stampsNothing } = require("../core/settings.js");
 const { createWorkspace, removeWorkspace } = require("./workspace.js");
 const { createRenamer } = require("./exclusive-rename.js");
-const { availableFonts, drawsWith } = require("./fonts.js");
+const { availableFonts } = require("./fonts.js");
+const { probing } = require("./font-probe.js");
 const { settingsFor } = require("./settings-run.js");
 
 /*
@@ -43,40 +44,40 @@ function whereToDraw(prepared, workspace) {
     return { app: prepared.app, tools: prepared.tools, workspace };
 }
 
-function fontsFor(prepared, workspace, progress) {
-    if (prepared.invocation.headless) {
+function fontsFor(where, headless, progress) {
+    if (headless) {
         return [];
     }
 
     progress.phase("Checking which fonts are installed");
 
-    return availableFonts(whereToDraw(prepared, workspace));
+    return availableFonts(where);
 }
 
 /*
- * A run only ever draws with a face it has drawn with.
+ * Whether a face draws, asked once per name.
  *
- * The form's list is the probe's own output, so a typeface chosen from it
- * needs no second opinion and gets none. A name that did not come from it has
- * had none at all -- and pango answers every name, so a headless
- * configuration asking for a face this Mac does not have was stamped in a
- * default face and reported as a complete success, which is the one thing the
- * form's list exists to prevent.
+ * The faces the form suggests were drawn with to find them, so they are
+ * answered before anybody asks. A name that was typed, or that came from a
+ * headless configuration, costs a drawing the first time it is seen and
+ * nothing afterwards -- which is what lets the same question be asked wherever
+ * it matters without anyone counting the renderings.
  *
- * Refused rather than repaired. Substituting a face nobody asked for is what
- * this is about, and choosing the substitute here rather than letting pango
- * choose it would be the same silence with better manners.
+ * It goes in the context beside the count and the suggestions because it is
+ * the same sort of thing: what the front ends need in order to ask. Neither of
+ * them can answer this one, and both of them have to.
  */
-function requireDrawableFont(where, family, fonts) {
-    if (fonts.includes(family) || drawsWith(where, family)) {
-        return;
-    }
+function fontProbe(where, offered) {
+    const answered = new Map(offered.map((family) => [family, true]));
+    const draws = probing(where);
 
-    throw new Error(
-        `Nothing draws with the typeface "${family}" on this Mac.\n\n` +
-            "Not every installed face answers to the name Font Book shows. " +
-            "The settings window offers the ones this Mac does draw with."
-    );
+    return (family) => {
+        if (!answered.has(family)) {
+            answered.set(family, draws(family));
+        }
+
+        return answered.get(family);
+    };
 }
 
 function settingsFrom(app, invocation, context) {
@@ -118,20 +119,17 @@ function jobFor(prepared, settings, place) {
  * quick enough to need no window still does not get one.
  */
 function assemble(prepared, place) {
+    const where = whereToDraw(prepared, place.workspace);
+    const fonts = fontsFor(where, prepared.invocation.headless, place.progress);
     const context = {
         count: prepared.selection.images.length,
-        fonts: fontsFor(prepared, place.workspace, place.progress)
+        fonts,
+        draws: fontProbe(where, fonts)
     };
 
     place.progress.pause();
 
     const settings = settingsFrom(prepared.app, prepared.invocation, context);
-
-    requireDrawableFont(
-        whereToDraw(prepared, place.workspace),
-        settings.font,
-        context.fonts
-    );
 
     return jobFor(prepared, settings, place);
 }

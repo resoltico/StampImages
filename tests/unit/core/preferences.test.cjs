@@ -96,10 +96,10 @@ test("a record edited into something invalid is refused entirely", () => {
 });
 
 test("a font that has gone since is not a reason to forget the rest", () => {
-    // The list is a fact about the machine, so a remembered font that is not
-    // on it has no label to come back as -- and reading it raised, which took
+    // It used to be read back through the list of faces this Mac drew with
+    // today, where an absent one has no label, and that raised -- which took
     // the size, the colours, the position and the margin down with it. One
-    // absent typeface used to reset every setting somebody had chosen.
+    // absent typeface reset every setting somebody had chosen.
     const kept = JSON.stringify({
         ...defaultSettings(FONTS),
         font: "Zapfino",
@@ -112,8 +112,8 @@ test("a font that has gone since is not a reason to forget the rest", () => {
     assert.equal(restored.margin, "0");
     assert.equal(
         restored.font,
-        FONTS[0],
-        "and the typeface falls back to the one a run with no record opens on"
+        "Zapfino",
+        "and the typeface comes back as the name it was, for the field to hold"
     );
 });
 

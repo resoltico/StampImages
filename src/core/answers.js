@@ -64,11 +64,29 @@ function readText(answer, control) {
     return text;
 }
 
-const READERS = { choice: readChoice, colour: readColour, number: readNumber, text: readText };
+/*
+ * A typeface is a name, and which names draw is not a question this layer can
+ * answer: pango decides, by drawing. So what is read here is that a name was
+ * given at all, and whether it draws is asked of the renderer afterwards --
+ * in the form's own loop, where it comes back as this same kind of problem.
+ */
+function readFont(answer, control) {
+    const name = String(answer).trim();
 
-function readerFor(row) {
-    return READERS[row.kind === "font" ? "choice" : row.kind];
+    if (name === "") {
+        throw new Error(`${control.label} name a face to draw with.`);
+    }
+
+    return name;
 }
+
+const READERS = {
+    choice: readChoice,
+    font: readFont,
+    colour: readColour,
+    number: readNumber,
+    text: readText
+};
 
 /*
  * Every problem at once. A form that reports the first bad field, and only
@@ -80,7 +98,7 @@ function readAnswers(answers, fonts) {
 
     for (const row of ORDER) {
         try {
-            settings[row.key] = readerFor(row)(
+            settings[row.key] = READERS[row.kind](
                 answers[row.key],
                 controlFor(row, fonts)
             );
@@ -94,9 +112,15 @@ function readAnswers(answers, fonts) {
 
 /*
  * Settings the form could have produced, which is what a remembered run is
- * given back as. The exact inverse of reading it: a choice becomes the label
- * it is offered under, a number becomes the text of itself, and a colour is
- * already what the control holds.
+ * given back as. The exact inverse of reading it: a closed choice becomes the
+ * label it is offered under, a number becomes the text of itself, and a
+ * colour or a typeface is already what the control holds.
+ *
+ * Only a closed choice is looked up, which is the whole of why a remembered
+ * typeface that has since gone is no longer a problem: it used to be read
+ * back through the list of faces this Mac drew with today, where an absent
+ * one has no label -- and that raised, which discarded the record and reset
+ * every other setting with it. A name is a name now.
  */
 function answersFromSettings(settings, fonts) {
     const answers = {};
@@ -104,7 +128,7 @@ function answersFromSettings(settings, fonts) {
     for (const row of ORDER) {
         const value = settings[row.key];
 
-        answers[row.key] = row.kind === "choice" || row.kind === "font"
+        answers[row.key] = row.kind === "choice"
             ? labelOfValue(controlFor(row, fonts), value)
             : String(value);
     }

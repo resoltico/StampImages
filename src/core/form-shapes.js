@@ -3,32 +3,29 @@
 /*
  * What a row of the form looks like, by kind.
  *
- * Four kinds and nothing else: something chosen from a list, a colour, a
- * number with bounds, and text written freely. Each is a plain object,
- * because the runtime layer's job is to turn one into a widget and it should
- * not have to ask questions to do it.
+ * Five kinds and nothing else: something chosen from a list, a typeface, a
+ * colour, a number with bounds, and text written freely. Each is a plain
+ * object, because the runtime layer's job is to turn one into a widget and it
+ * should not have to ask questions to do it.
+ *
+ * A list is either the whole of what may be chosen or a few worth having at
+ * hand, and the difference is the kind rather than the shape: the position and
+ * the two formats are closed, the typeface and the colours are open and carry
+ * a hint saying what may be typed instead. One builder serves all three sorts
+ * of list, because a row that offers names is a row that offers names.
  */
 
-function choiceRow({ key, control }, answers, invalid) {
+function listRow({ kind, key, control }, answers, invalid) {
     return {
         key,
-        kind: "choice",
+        kind,
         label: control.label,
+        hint: control.hint,
         value: String(answers[key]),
         invalid: invalid.has(key),
-        options: control.choices.map((choice) => ({ label: choice.label }))
-    };
-}
-
-function colourRow({ key, control }, answers, invalid) {
-    return {
-        key,
-        kind: "colour",
-        label: control.label,
-        hint: "or type #RRGGBB",
-        value: String(answers[key]),
-        invalid: invalid.has(key),
-        options: control.presets.map((colour) => ({ label: colour }))
+        options: (control.choices ?? control.presets).map(
+            (option) => ({ label: option.label ?? option })
+        )
     };
 }
 
@@ -61,4 +58,4 @@ function textRow({ key, control }, answers, invalid) {
     };
 }
 
-module.exports = { choiceRow, colourRow, numberRow, textRow };
+module.exports = { listRow, numberRow, textRow };

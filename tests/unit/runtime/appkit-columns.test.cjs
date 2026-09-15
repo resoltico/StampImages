@@ -58,7 +58,11 @@ test("a hint sits past the control it belongs to, whatever its width", () => {
     const { view, controls, spec } = build();
     const { hints } = columnsOf(view);
 
-    assert.equal(hints.length, 5, "the two colours and the three numbers");
+    assert.equal(
+        hints.length,
+        6,
+        "the typeface, the two colours and the three numbers"
+    );
 
     for (const row of spec.rows.filter((candidate) => candidate.hint)) {
         const control = controls[row.key];

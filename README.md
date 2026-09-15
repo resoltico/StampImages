@@ -21,7 +21,8 @@ Ten settings, asked once for the whole selection:
 - how the date is written, or that it is not stamped
 - how the coordinates are written, or that they are not
 - text of your own, which may run to several lines
-- the typeface, from the faces this Mac will actually render with
+- the typeface: one of the faces this Mac was seen to render with, or the
+  family name of any other it has — typed into the same control
 - the text size in points, and its colour
 - the outline width and colour, so light text stays readable on a light sky
 - which corner or edge the block goes in, and how far in from it

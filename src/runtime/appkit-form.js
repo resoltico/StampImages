@@ -2,6 +2,7 @@
 
 const {
     COLOUR_WIDTH,
+    FONT_WIDTH,
     TEXT_WIDTH,
     CAPTION_HEIGHT,
     NUMBER_WIDTH,
@@ -65,13 +66,17 @@ function addTyped(context, row, rect, control) {
 }
 
 /*
- * The one control that is a list and a field at once, so the presets stay
- * available without a second control to keep in step with them.
+ * A list and a field at once, so what is worth having at hand stays available
+ * without a second control to keep in step with it -- and what is not on the
+ * list can still be said. Two rows are this now: a colour, whose list is four
+ * of them and whose field takes any other; and the typeface, whose list is
+ * what this Mac drew with and whose field takes the name of anything else it
+ * has. They differ in how wide the field has to be and in nothing else.
  */
-function addColour(context, row, rect) {
-    return addTyped(context, row, rect, {
-        width: COLOUR_WIDTH,
-        make: (frame) => context.widgets.makeColourCombo(context.ns, row, frame)
+function addCombo(width) {
+    return (context, row, rect) => addTyped(context, row, rect, {
+        width,
+        make: (frame) => context.widgets.makeCombo(context.ns, row, frame)
     });
 }
 
@@ -107,7 +112,8 @@ function addNumber(context, row, rect) {
 
 const ADD_ROW = {
     choice: addChoice,
-    colour: addColour,
+    font: addCombo(FONT_WIDTH),
+    colour: addCombo(COLOUR_WIDTH),
     text: addText,
     number: addNumber
 };

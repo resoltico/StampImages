@@ -41,7 +41,7 @@ function makeField(ns, text, rect) {
  * offers to finish the word, and what the field holds is then something the
  * user did not type.
  */
-function makeColourCombo(ns, row, rect) {
+function makeCombo(ns, row, rect) {
     const combo = ns.NSComboBox.alloc.initWithFrame(
         rectOf(ns, rect)
     );
@@ -94,4 +94,4 @@ function makeCaption(ns, text, rect) {
     return { control: scroll, text: view };
 }
 
-module.exports = { makeField, makeColourCombo, makeCaption };
+module.exports = { makeField, makeCombo, makeCaption };

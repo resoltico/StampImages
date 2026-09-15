@@ -19,6 +19,13 @@ const NUMBER_WIDTH = 70;
 // before its items became the colours themselves.
 const COLOUR_WIDTH = 100;
 
+// A family name and the button that opens the suggestions, with the rest of
+// the column left for the hint that says a name may be typed instead.
+// Measured through AppKit rather than guessed: "Helvetica Neue Bold", the
+// longest face the list offers, asks for exactly 165 points, and the hint
+// beside it asks for 82 of the 87 that leaves.
+const FONT_WIDTH = 165;
+
 // A caption is longer than a number, so it takes the whole column -- and it
 // is the one setting that can hold more than a line, so it is deeper too.
 const TEXT_WIDTH = 260;
@@ -98,6 +105,7 @@ module.exports = {
     ROW_HEIGHT,
     PADDING,
     COLOUR_WIDTH,
+    FONT_WIDTH,
     TEXT_WIDTH,
     CAPTION_HEIGHT,
     CAPTION_LINES,

@@ -2,6 +2,7 @@
 
 const { normalizeSettings } = require("../core/settings.js");
 const { encode, rememberedAnswers } = require("../core/preferences.js");
+const { undrawable } = require("./font-probe.js");
 const { createMemory } = require("./preferences.js");
 const { collectSettings } = require("./settings-form.js");
 
@@ -26,9 +27,26 @@ function defaultMemory() {
  * `false` or `0` got it wrong: a headless run opened a dialog and waited for
  * an answer nobody was there to give.
  */
+/*
+ * A configuration names its own typeface and nothing has offered it a list, so
+ * this is the only thing that stands between a name and the renderer -- and
+ * pango answers every name, so a file asking for a face this Mac does not have
+ * stamped the photograph in a default one and reported a complete success.
+ *
+ * Refused rather than repaired: choosing the substitute here rather than
+ * letting pango choose it is the same silence with better manners.
+ */
+function drawableSettings(settings, context) {
+    if (!context.draws(settings.font)) {
+        throw new Error(undrawable(settings.font));
+    }
+
+    return settings;
+}
+
 function settingsFor(app, invocation, context, injected = {}) {
     if (invocation.headless) {
-        return normalizeSettings(invocation.settings);
+        return drawableSettings(normalizeSettings(invocation.settings), context);
     }
 
     const { openMemory = defaultMemory } = injected;

@@ -37,9 +37,8 @@ const POSITION = {
 };
 
 // Named for what they choose, which is a format: "Date:" over a menu of
-// "2026-09-09 14:30" reads as though it were asking which date to stamp, or
-// offering one it had already read, and it is neither. Where the values come
-// from is the form's opening line. The items stay samples rather than names.
+// "2026-09-09 14:30" reads as though it were asking which date to stamp, and
+// it is neither. Where the values come from is the form's opening line.
 const DATE_FORMAT = {
     prompt: "How the date the photograph was taken is written:",
     label: "Date format:",

@@ -14,9 +14,10 @@ const { settingsFor } = require("../../../src/runtime/settings-run.js");
 const { defaultAnswers } = require("../../../src/core/form-defaults.js");
 const { encode } = require("../../../src/core/preferences.js");
 const { createFakeApp } = require("./fake-app.cjs");
+const { askingContext } = require("./fake-assembly.cjs");
 
 const FONTS = ["Menlo", "Menlo Bold"];
-const CONTEXT = { count: 1, fonts: FONTS };
+const CONTEXT = askingContext(FONTS);
 
 const HEADLESS = {
     font: "Menlo",
@@ -50,42 +51,6 @@ function memoryHolding(text) {
 function interactive(app, injected) {
     return settingsFor(app, { headless: false }, CONTEXT, injected);
 }
-
-test("a headless run uses the file it was given, validated", () => {
-    const settings = settingsFor(
-        createFakeApp(),
-        { headless: true, settings: HEADLESS },
-        CONTEXT
-    );
-
-    assert.deepEqual(settings, HEADLESS);
-});
-
-test("a headless configuration that is wrong is refused, naming the setting", () => {
-    assert.throws(
-        () => settingsFor(
-            createFakeApp(),
-            { headless: true, settings: { ...HEADLESS, size: 9000 } },
-            CONTEXT
-        ),
-        /Text size/u
-    );
-});
-
-test("a headless run does not even open the memory", () => {
-    // Not "reads it and ignores it": a configuration file means the same thing
-    // every time it is used, and this branch returns before anything is opened.
-    const memory = memoryHolding("");
-
-    settingsFor(
-        createFakeApp(),
-        { headless: true, settings: HEADLESS },
-        CONTEXT,
-        { openMemory: memory.open }
-    );
-
-    assert.equal(memory.kept.opened, 0);
-});
 
 test("an interactive run opens on what the last one confirmed", () => {
     const memory = memoryHolding(encode({ ...HEADLESS, size: 72 }));

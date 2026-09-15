@@ -35,7 +35,11 @@ test("every row becomes a label, a control, and a hint where it has one", () => 
 
     assert.equal(view.subviews.length, spec.rows.length * 2 + withHints);
     assert.equal(Object.keys(controls).length, spec.rows.length);
-    assert.equal(withHints, 5, "every bounded row states the bound it accepts");
+    assert.equal(
+        withHints,
+        6,
+        "every row that can be typed into says what may be typed"
+    );
 
     for (const row of spec.rows) {
         assert.ok(controls[row.key], `${row.key} has no control`);

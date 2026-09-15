@@ -11,10 +11,7 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const {
-    readAnswers,
-    answersFromSettings
-} = require("../../../src/core/answers.js");
+const { readAnswers } = require("../../../src/core/answers.js");
 const { defaultAnswers } = require("../../../src/core/form-defaults.js");
 
 const FONTS = ["Menlo", "Menlo Bold"];
@@ -74,11 +71,20 @@ test("a colour is refused in the same words the settings would use", () => {
     assert.match(read.problems[0].message, /Outline colour must be six/u);
 });
 
-test("a font this Mac does not draw with is not one of the choices", () => {
-    const read = readAnswers(answers({ font: "Comic Sans MS" }), FONTS);
+test("a typeface is a name, and a name off the list is still a name", () => {
+    // Which names draw is not a question this layer can answer -- pango
+    // decides, by drawing -- so a face the list does not suggest is read and
+    // asked about afterwards, in the form's own loop.
+    const read = readAnswers(answers({ font: "  Zapfino  " }), FONTS);
+
+    assert.equal(read.settings.font, "Zapfino", "less the spaces around it");
+});
+
+test("a typeface left empty is refused, because a run has to draw with one", () => {
+    const read = readAnswers(answers({ font: "   " }), FONTS);
 
     assert.equal(read.problems[0].key, "font");
-    assert.match(read.problems[0].message, /is not one of the choices/u);
+    assert.match(read.problems[0].message, /name a face to draw with/u);
 });
 
 test("custom text longer than a caption is refused, naming the limit", () => {
@@ -86,39 +92,6 @@ test("custom text longer than a caption is refused, naming the limit", () => {
 
     assert.equal(read.problems[0].key, "customText");
     assert.match(read.problems[0].message, /500 characters or fewer/u);
-});
-
-test("settings become the answers a form would have been showing", () => {
-    const { settings } = readAnswers(answers({ customText: "Riga" }), FONTS);
-
-    assert.deepEqual(
-        answersFromSettings(settings, FONTS),
-        answers({ customText: "Riga" })
-    );
-});
-
-test("the two directions are each other's inverse", () => {
-    const given = answers({
-        dateFormat: "2026-09-09",
-        coordinateFormat: "56°56'58.6\"N 24°6'18.7\"E",
-        font: "Menlo Bold",
-        size: "72",
-        margin: "0",
-        outlineWidth: "0",
-        textColour: "#FF8000"
-    });
-    const { settings } = readAnswers(given, FONTS);
-
-    assert.deepEqual(answersFromSettings(settings, FONTS), given);
-});
-
-test("a value nothing offers cannot be turned back into a label", () => {
-    // Which is a settings file somebody edited, and is refused rather than
-    // shown as an empty menu.
-    assert.throws(
-        () => answersFromSettings({ ...readAnswers(answers(), FONTS).settings, position: "middle" }, FONTS),
-        /Unrecognised value: middle/u
-    );
 });
 
 test("a number is taken as typed, less the spaces around it", () => {

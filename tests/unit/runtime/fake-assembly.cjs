@@ -47,4 +47,14 @@ function place(progress, unpublished = new Set()) {
     return { workspace: WORKSPACE, unpublished, progress };
 }
 
-module.exports = { TOOLS, recorder, prepared, place };
+/*
+ * What the front ends need in order to ask a person anything: how many
+ * photographs were found, which faces to suggest, and how to find out whether
+ * a face draws. The probe here answers for the faces it was given and for
+ * nothing else, which is a Mac with exactly those and no others.
+ */
+function askingContext(fonts, count = 1) {
+    return { count, fonts, draws: (family) => fonts.includes(family) };
+}
+
+module.exports = { TOOLS, recorder, prepared, place, askingContext };

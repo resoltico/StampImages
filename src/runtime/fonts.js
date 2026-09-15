@@ -1,32 +1,27 @@
 "use strict";
 
-const { buildTextArgv } = require("../core/lettering.js");
-const { isUserCancelled } = require("../core/errors.js");
-const { runArgv } = require("./shell.js");
-const { sameBytes, verifyFileWritten } = require("./asking.js");
+const { probing } = require("./font-probe.js");
 
 /*
- * Which fonts this machine will actually render with.
+ * Which faces the form suggests.
  *
- * The renderer resolves a font name through pango, and pango answers every
- * name: asked for one it cannot place, it draws in a default face and says
- * nothing. A settings form offering a name that silently becomes a different
- * face is worse than one offering fewer names, so each family is drawn with
- * before it is offered, beside a name that certainly does not exist, and a
- * family whose drawing is that drawing did not resolve.
+ * A list offering a name that silently becomes a different face is worse than
+ * a shorter list, so every name here is drawn with before it is offered --
+ * font-probe.js is that question. What the list may not do is grow without
+ * bound: every name in it costs a rendering before the form can appear, and
+ * this Mac knows 671 family names.
  *
- * The drawings are compared byte for byte rather than by width, and what is
- * asked is "does asking for it by this name draw it" rather than "is it
- * installed": measured, "Helvetica" and "Times New Roman" are both present
- * and both draw as the fallback. What each of those cost to learn is in QA.md.
+ * So the list is short on purpose, and the typeface is the one setting whose
+ * list is a set of suggestions rather than the whole of what may be chosen: a
+ * name that is not here can be typed, and is drawn with in the same way before
+ * the run starts.
  */
 
 /*
  * Faces macOS ships, across the shapes somebody stamping a photograph might
  * want: a sans, a display sans, a serif, an old-style serif, and a monospace
- * for coordinates that line up. Names that do not draw are dropped by the
- * probe, so the list can afford to be optimistic; what it may not do is grow
- * without bound, because every name in it costs a rendering.
+ * for coordinates that line up. Names that do not draw are dropped, so the
+ * list can afford to be optimistic about what a given Mac has.
  */
 const CANDIDATES = [
     "Helvetica Neue",
@@ -41,10 +36,6 @@ const CANDIDATES = [
     "Courier New"
 ];
 
-const IMPOSSIBLE = "NoSuchFaceIsInstalledAnywhere";
-const PROBE_TEXT = "AWgy0123";
-const PROBE_SIZE = 40;
-
 /*
  * A family that draws is offered in both weights without probing the bold.
  *
@@ -56,81 +47,17 @@ const PROBE_SIZE = 40;
  */
 const WEIGHTS = ["", " Bold"];
 
-function drawWith(where, font, output) {
-    const { app, tools } = where;
-
-    runArgv(
-        app,
-        buildTextArgv(tools.vips, output, PROBE_TEXT, `${font} ${PROBE_SIZE}`),
-        "checking which fonts are installed"
-    );
-    verifyFileWritten(app, output, "the drawn text");
-
-    return output;
-}
-
-/*
- * What a name that resolved to nothing looks like, drawn once: every family is
- * compared against it rather than against a guess. Not caught -- a renderer
- * that cannot draw a line of text is a broken tool, and saying so is a better
- * answer than reporting that this Mac has no fonts.
- */
-function fallbackDrawing(where) {
-    return drawWith(where, IMPOSSIBLE, `${where.workspace}/font-fallback.png`);
-}
-
-/*
- * A family that would not draw is one this Mac cannot offer, which is what
- * this is for -- and a cancellation is not that. The probe is the longest
- * thing a run does before it says anything, one vips render per candidate, so
- * it is where somebody waiting is most likely to ask it to stop; swallowed
- * here, that answered "this Mac does not have this font" about every
- * remaining one, and a run whose probe was stopped part way told the person
- * their Mac had no fonts at all.
- *
- * Nothing has been produced at this point -- no photograph has been read --
- * so letting it out costs nothing and ends the run where every other
- * cancellation ends it.
- */
-function resolves(where, family, fallback) {
-    try {
-        const drawn = drawWith(
-            where,
-            family,
-            `${where.workspace}/font-candidate.png`
-        );
-
-        return !sameBytes(where.app, drawn, fallback);
-    } catch (error) {
-        if (isUserCancelled(error)) {
-            throw error;
-        }
-
-        return false;
-    }
-}
-
-/*
- * Whether one named face draws, for a name that did not come from the list
- * below: a headless configuration's, which nothing has probed. Asking for a
- * face this Mac does not have used to stamp the photograph in a default one
- * and report a complete success. The same question, asked the same way.
- */
-function drawsWith(where, family) {
-    return resolves(where, family, fallbackDrawing(where));
-}
-
 /*
  * The faces to offer, in the order they are written down. A machine none of
  * them draws on is not one this can offer a choice on, and it says so rather
  * than offering a list that does nothing.
  */
 function availableFonts(where) {
-    const fallback = fallbackDrawing(where);
+    const draws = probing(where);
     const found = [];
 
     for (const family of CANDIDATES) {
-        if (resolves(where, family, fallback)) {
+        if (draws(family)) {
             found.push(...WEIGHTS.map((weight) => `${family}${weight}`));
         }
     }
@@ -144,4 +71,4 @@ function availableFonts(where) {
     return found;
 }
 
-module.exports = { availableFonts, drawsWith, CANDIDATES, IMPOSSIBLE };
+module.exports = { availableFonts, CANDIDATES };

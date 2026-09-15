@@ -250,6 +250,58 @@ as the fallback while Helvetica Neue, Arial, Georgia and the rest draw as
 themselves. The question worth asking is not whether a font is installed but
 whether asking for it by that name draws it.
 
+## What a list of ten could not be
+
+The typeface was the one setting whose control claimed to be the whole truth
+and was not. Ten families, probed by drawing with each, and a Mac's other 661
+unavailable -- measured with fontconfig on this machine -- with no way to say
+so. The list cannot simply grow: every name in it costs a rendering before the
+form can appear, and probing all 671 would take about 107 seconds.
+
+So the list stops being the whole truth and becomes what it always was: a
+handful worth having at hand. The typeface is a list you may also type into,
+which is exactly what the colours have always been, and `form-rows.js` had
+already written down the reason -- "presets in a control that is a field,
+rather than a menu with a Custom... item that makes a second control appear".
+
+**What that turned out to cost.** Less than the feature, because three of the
+four pieces existed. `makeColourCombo` built an NSComboBox from a row's options
+and value with nothing colour-specific in it but its name, so it became
+`makeCombo`. `addTyped` already drew a field with its rule beside it, so the
+hint slot was there. And `appkit.js` needed no change at all: it reads a menu
+by `titleOfSelectedItem`, a caption by its view's string, and *everything else*
+by `stringValue`, which is what a combo holds whether it was picked or typed.
+
+What was new is one rule and one object. The rule: a face on the list has been
+drawn with, and a face that was typed has not, so it is drawn with before the
+run starts. The object: a memoised probe, made once per run, answering the
+faces the list already proved and drawing for any other name the first time it
+is seen. It sits in the context beside the count and the suggestions because it
+is the same sort of thing -- what the front ends need in order to ask -- and
+because two of them need it and neither can answer it.
+
+**What it deleted.** `withKnownFont`, added the day before, which replaced a
+remembered typeface this Mac no longer draws with the first one it does. That
+existed because a remembered face was read back through the list, where an
+absent one has no label and raised. A typeface is a name now, and
+`answersFromSettings` looks up only a closed choice, so the case cannot arise:
+the name comes back, the field holds it, and the renderer says whether it
+draws. `drawsWith` went too -- the memoised probe wants the reference drawing
+kept, not redrawn per name, so the one-shot form had no caller left.
+
+**Where the two front ends differ, deliberately.** The form offers the list and
+takes any name, because it can ask the renderer about what was typed and mark
+the field when nothing draws. The stepwise dialogs -- the fallback when AppKit
+cannot present a form at all -- keep the list alone: a dialog would have to
+accept a name, close, and fail the run several questions later. It is the same
+trade the caption already makes, where the form takes as many lines as somebody
+types and a dialog's field is one.
+
+**Measured, not guessed.** The typeface field is 165 points because
+"Helvetica Neue Bold", the longest face the list offers, asks AppKit for
+exactly 165, and "or type a name" asks for 82 of the 87 that leaves. Both read
+off a form built through the real bridge with the shipped artifact.
+
 ## What the font probe did not cover
 
 The probe decides what the settings window offers. Two paths reach a typeface

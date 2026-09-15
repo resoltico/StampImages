@@ -1,6 +1,6 @@
 "use strict";
 
-const { choiceRow, colourRow, numberRow, textRow } = require("./form-shapes.js");
+const { listRow, numberRow, textRow } = require("./form-shapes.js");
 const {
     POSITION,
     DATE_FORMAT,
@@ -24,11 +24,19 @@ const {
  * agree are one list and a bug waiting to be written.
  */
 
-// No choices of its own: which faces exist is a fact about the machine, and
-// fontControl below is where they are put in.
+/*
+ * The ten this Mac drew with are suggestions, not the whole truth.
+ *
+ * Which faces exist is a fact about the machine and fontControl below is where
+ * they are put in -- but probing every family fontconfig knows costs a render
+ * apiece, which on this Mac is 671 of them, so the list is a handful worth
+ * having at hand and anything may be typed instead. A name that was typed is
+ * drawn with before the run starts, exactly as these ten were.
+ */
 const FONT = {
-    prompt: "Typeface:",
-    label: "Typeface:"
+    prompt: "Typeface, by family name:",
+    label: "Typeface:",
+    hint: "or type a name"
 };
 
 /*
@@ -52,10 +60,13 @@ const TEXT = {
  * why they are presets in a control that is a field, rather than a menu with a
  * "Custom..." item that makes a second control appear.
  */
+const COLOUR_HINT = "or type #RRGGBB";
+
 const TEXT_COLOUR = {
     prompt: "Colour of the text:",
     label: "Text colour:",
     defaultAnswer: "#FFFFFF",
+    hint: COLOUR_HINT,
     presets: ["#FFFFFF", "#000000", "#FFD400", "#FF3B30"]
 };
 
@@ -63,6 +74,7 @@ const OUTLINE_COLOUR = {
     prompt: "Colour of the outline:",
     label: "Outline colour:",
     defaultAnswer: "#202020",
+    hint: COLOUR_HINT,
     presets: ["#202020", "#000000", "#FFFFFF"]
 };
 
@@ -111,9 +123,9 @@ function controlFor(row, fonts) {
 }
 
 const BUILDERS = {
-    choice: choiceRow,
-    font: choiceRow,
-    colour: colourRow,
+    choice: listRow,
+    font: listRow,
+    colour: listRow,
     number: numberRow,
     text: textRow
 };

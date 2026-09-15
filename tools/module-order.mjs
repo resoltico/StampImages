@@ -55,6 +55,7 @@ export const moduleOrder = [
     "src/runtime/recovery.js",
     "src/runtime/ownership.js",
     "src/runtime/publish.js",
+    "src/runtime/font-probe.js",
     "src/runtime/fonts.js",
     "src/runtime/tinting.js",
     "src/runtime/layers.js",

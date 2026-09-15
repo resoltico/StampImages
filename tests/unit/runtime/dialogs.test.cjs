@@ -76,13 +76,18 @@ test("what may be typed is decided by the reader the form uses", () => {
     );
 });
 
-test("a font this Mac does not draw with is not offered", () => {
+test("the typeface stays a list here, where a typed one could not be checked", () => {
+    // The one place the two front ends differ, and deliberately: the form can
+    // ask the renderer about a name somebody typed and mark the field when
+    // nothing draws. A dialog would have to accept the name, close, and fail
+    // the run several questions later -- so it offers faces already known to
+    // draw, which is the answer that is always usable.
     const app = createFakeApp();
 
     collectDialogSettings(app, defaultAnswers(FONTS), FONTS);
 
     const fontPrompt = app.listPrompts.find(
-        (prompt) => prompt.settings.withPrompt === "Typeface:"
+        (prompt) => prompt.settings.withPrompt.startsWith("Typeface")
     );
 
     assert.deepEqual(fontPrompt.options, FONTS);

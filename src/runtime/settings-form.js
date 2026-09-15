@@ -3,6 +3,7 @@
 const { formSpec } = require("../core/form.js");
 const { readAnswers } = require("../core/answers.js");
 const { isUserCancelled, UserCancelled } = require("../core/errors.js");
+const { undrawable } = require("./font-probe.js");
 const { presentForm } = require("./appkit.js");
 const { appkitBridge } = require("./appkit-bridge.js");
 const { collectDialogSettings } = require("./dialogs.js");
@@ -16,6 +17,24 @@ const { defaultAnswers } = require("../core/form-defaults.js");
  * -- and falling back to ten questions is better than failing a run over a
  * widget. What has been measured about each is in QA.md.
  */
+
+/*
+ * The one answer this layer cannot read for itself.
+ *
+ * Every other setting is decided by what it says -- a number is in range or it
+ * is not -- and a typeface is decided by the renderer, by drawing with it. So
+ * it is asked here rather than in the reader, and a name that draws nothing
+ * comes back as the same kind of problem a number out of range does: the field
+ * marked, the sentence at the top, and everything else still typed.
+ */
+function withDrawableFont(state, outcome, settings) {
+    return state.context.draws(settings.font)
+        ? { settings }
+        : {
+            answers: outcome.answers,
+            problems: [{ key: "font", message: undrawable(settings.font) }]
+        };
+}
 
 /*
  * One pass: present, and report what came back as either unusable, the
@@ -38,7 +57,7 @@ function formRound(bridge, present, state) {
     const read = readAnswers(outcome.answers, state.context.fonts);
 
     return read.settings
-        ? { settings: read.settings }
+        ? withDrawableFont(state, outcome, read.settings)
         : { answers: outcome.answers, problems: read.problems };
 }
 

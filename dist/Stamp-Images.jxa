@@ -1,5 +1,5 @@
 /*
- * Stamp Images 1.0.0
+ * Stamp Images 1.1.0
  * https://github.com/resoltico/StampImages
  *
  * Copyright (c) 2026 Ervins Strauhmanis
@@ -18,7 +18,7 @@
 /* ===== src/core/version.js ===== */
 
 const APP_NAME = "Stamp Images";
-const VERSION = "1.0.0";
+const VERSION = "1.1.0";
 
 /* ===== src/core/executables.js ===== */
 
@@ -640,26 +640,17 @@ function labelOfValue(control, value) {
 /* ===== src/core/form-shapes.js ===== */
 
 
-function choiceRow({ key, control }, answers, invalid) {
+function listRow({ kind, key, control }, answers, invalid) {
     return {
         key,
-        kind: "choice",
+        kind,
         label: control.label,
+        hint: control.hint,
         value: String(answers[key]),
         invalid: invalid.has(key),
-        options: control.choices.map((choice) => ({ label: choice.label }))
-    };
-}
-
-function colourRow({ key, control }, answers, invalid) {
-    return {
-        key,
-        kind: "colour",
-        label: control.label,
-        hint: "or type #RRGGBB",
-        value: String(answers[key]),
-        invalid: invalid.has(key),
-        options: control.presets.map((colour) => ({ label: colour }))
+        options: (control.choices ?? control.presets).map(
+            (option) => ({ label: option.label ?? option })
+        )
     };
 }
 
@@ -1081,8 +1072,9 @@ function describeCrowding(count) {
 
 
 const FONT = {
-    prompt: "Typeface:",
-    label: "Typeface:"
+    prompt: "Typeface, by family name:",
+    label: "Typeface:",
+    hint: "or type a name"
 };
 
 const TEXT = {
@@ -1091,10 +1083,13 @@ const TEXT = {
     defaultAnswer: ""
 };
 
+const COLOUR_HINT = "or type #RRGGBB";
+
 const TEXT_COLOUR = {
     prompt: "Colour of the text:",
     label: "Text colour:",
     defaultAnswer: "#FFFFFF",
+    hint: COLOUR_HINT,
     presets: ["#FFFFFF", "#000000", "#FFD400", "#FF3B30"]
 };
 
@@ -1102,6 +1097,7 @@ const OUTLINE_COLOUR = {
     prompt: "Colour of the outline:",
     label: "Outline colour:",
     defaultAnswer: "#202020",
+    hint: COLOUR_HINT,
     presets: ["#202020", "#000000", "#FFFFFF"]
 };
 
@@ -1134,9 +1130,9 @@ function controlFor(row, fonts) {
 }
 
 const BUILDERS = {
-    choice: choiceRow,
-    font: choiceRow,
-    colour: colourRow,
+    choice: listRow,
+    font: listRow,
+    colour: listRow,
     number: numberRow,
     text: textRow
 };
@@ -1263,11 +1259,23 @@ function readText(answer, control) {
     return text;
 }
 
-const READERS = { choice: readChoice, colour: readColour, number: readNumber, text: readText };
+function readFont(answer, control) {
+    const name = String(answer).trim();
 
-function readerFor(row) {
-    return READERS[row.kind === "font" ? "choice" : row.kind];
+    if (name === "") {
+        throw new Error(`${control.label} name a face to draw with.`);
+    }
+
+    return name;
 }
+
+const READERS = {
+    choice: readChoice,
+    font: readFont,
+    colour: readColour,
+    number: readNumber,
+    text: readText
+};
 
 function readAnswers(answers, fonts) {
     const settings = {};
@@ -1275,7 +1283,7 @@ function readAnswers(answers, fonts) {
 
     for (const row of ORDER) {
         try {
-            settings[row.key] = readerFor(row)(
+            settings[row.key] = READERS[row.kind](
                 answers[row.key],
                 controlFor(row, fonts)
             );
@@ -1293,7 +1301,7 @@ function answersFromSettings(settings, fonts) {
     for (const row of ORDER) {
         const value = settings[row.key];
 
-        answers[row.key] = row.kind === "choice" || row.kind === "font"
+        answers[row.key] = row.kind === "choice"
             ? labelOfValue(controlFor(row, fonts), value)
             : String(value);
     }
@@ -1323,10 +1331,6 @@ function blank() {
     return { customText: "" };
 }
 
-function withKnownFont(held, fonts) {
-    return fonts.includes(held.font) ? held : { ...held, font: fonts[0] };
-}
-
 function rememberedAnswers(text, fonts) {
     try {
         const held = JSON.parse(String(text));
@@ -1335,10 +1339,7 @@ function rememberedAnswers(text, fonts) {
             return undefined;
         }
 
-        const settings = normalizeSettings({
-            ...defaultSettings(fonts),
-            ...withKnownFont(held, fonts)
-        });
+        const settings = normalizeSettings({ ...defaultSettings(fonts), ...held });
 
         return { ...answersFromSettings(settings, fonts), ...blank() };
     } catch {
@@ -2703,27 +2704,12 @@ function publishImage(job, stagedPath, chooseName) {
     return claimName(job, stagedPath, facts, chooseName);
 }
 
-/* ===== src/runtime/fonts.js ===== */
+/* ===== src/runtime/font-probe.js ===== */
 
-
-const CANDIDATES = [
-    "Helvetica Neue",
-    "Arial",
-    "Verdana",
-    "Avenir Next",
-    "Gill Sans",
-    "Georgia",
-    "Palatino",
-    "Baskerville",
-    "Menlo",
-    "Courier New"
-];
 
 const IMPOSSIBLE = "NoSuchFaceIsInstalledAnywhere";
 const PROBE_TEXT = "AWgy0123";
 const PROBE_SIZE = 40;
-
-const WEIGHTS = ["", " Bold"];
 
 function drawWith(where, font, output) {
     const { app, tools } = where;
@@ -2760,16 +2746,41 @@ function resolves(where, family, fallback) {
     }
 }
 
-function drawsWith(where, family) {
-    return resolves(where, family, fallbackDrawing(where));
+function probing(where) {
+    const fallback = fallbackDrawing(where);
+
+    return (family) => resolves(where, family, fallback);
 }
 
+function undrawable(family) {
+    return `Nothing draws with the typeface "${family}" on this Mac.\n\n` +
+        "Not every installed face answers to the name Font Book shows.";
+}
+
+/* ===== src/runtime/fonts.js ===== */
+
+
+const CANDIDATES = [
+    "Helvetica Neue",
+    "Arial",
+    "Verdana",
+    "Avenir Next",
+    "Gill Sans",
+    "Georgia",
+    "Palatino",
+    "Baskerville",
+    "Menlo",
+    "Courier New"
+];
+
+const WEIGHTS = ["", " Bold"];
+
 function availableFonts(where) {
-    const fallback = fallbackDrawing(where);
+    const draws = probing(where);
     const found = [];
 
     for (const family of CANDIDATES) {
-        if (resolves(where, family, fallback)) {
+        if (draws(family)) {
             found.push(...WEIGHTS.map((weight) => `${family}${weight}`));
         }
     }
@@ -3572,7 +3583,7 @@ function makeField(ns, text, rect) {
     return field;
 }
 
-function makeColourCombo(ns, row, rect) {
+function makeCombo(ns, row, rect) {
     const combo = ns.NSComboBox.alloc.initWithFrame(
         rectOf(ns, rect)
     );
@@ -3621,6 +3632,8 @@ const CONTROL_WIDTH = 260;
 const NUMBER_WIDTH = 70;
 
 const COLOUR_WIDTH = 100;
+
+const FONT_WIDTH = 165;
 
 const TEXT_WIDTH = 260;
 const CAPTION_LINES = 3;
@@ -3716,10 +3729,10 @@ function addTyped(context, row, rect, control) {
     return field;
 }
 
-function addColour(context, row, rect) {
-    return addTyped(context, row, rect, {
-        width: COLOUR_WIDTH,
-        make: (frame) => context.widgets.makeColourCombo(context.ns, row, frame)
+function addCombo(width) {
+    return (context, row, rect) => addTyped(context, row, rect, {
+        width,
+        make: (frame) => context.widgets.makeCombo(context.ns, row, frame)
     });
 }
 
@@ -3749,7 +3762,8 @@ function addNumber(context, row, rect) {
 
 const ADD_ROW = {
     choice: addChoice,
-    colour: addColour,
+    font: addCombo(FONT_WIDTH),
+    colour: addCombo(COLOUR_WIDTH),
     text: addText,
     number: addNumber
 };
@@ -3781,7 +3795,7 @@ const WIDGETS = {
     makePopup,
     addPopupItem,
     makeField,
-    makeColourCombo,
+    makeCombo,
     makeCaption,
     markInvalid,
     markHintInvalid,
@@ -3984,6 +3998,15 @@ function createMemory(objc, ns) {
 /* ===== src/runtime/settings-form.js ===== */
 
 
+function withDrawableFont(state, outcome, settings) {
+    return state.context.draws(settings.font)
+        ? { settings }
+        : {
+            answers: outcome.answers,
+            problems: [{ key: "font", message: undrawable(settings.font) }]
+        };
+}
+
 function formRound(bridge, present, state) {
     const outcome = present(
         bridge,
@@ -4001,7 +4024,7 @@ function formRound(bridge, present, state) {
     const read = readAnswers(outcome.answers, state.context.fonts);
 
     return read.settings
-        ? { settings: read.settings }
+        ? withDrawableFont(state, outcome, read.settings)
         : { answers: outcome.answers, problems: read.problems };
 }
 
@@ -4061,9 +4084,17 @@ function defaultMemory() {
     return createMemory(globalThis.ObjC, globalThis.$);
 }
 
+function drawableSettings(settings, context) {
+    if (!context.draws(settings.font)) {
+        throw new Error(undrawable(settings.font));
+    }
+
+    return settings;
+}
+
 function settingsFor(app, invocation, context, injected = {}) {
     if (invocation.headless) {
-        return normalizeSettings(invocation.settings);
+        return drawableSettings(normalizeSettings(invocation.settings), context);
     }
 
     const { openMemory = defaultMemory } = injected;
@@ -4546,26 +4577,27 @@ function whereToDraw(prepared, workspace) {
     return { app: prepared.app, tools: prepared.tools, workspace };
 }
 
-function fontsFor(prepared, workspace, progress) {
-    if (prepared.invocation.headless) {
+function fontsFor(where, headless, progress) {
+    if (headless) {
         return [];
     }
 
     progress.phase("Checking which fonts are installed");
 
-    return availableFonts(whereToDraw(prepared, workspace));
+    return availableFonts(where);
 }
 
-function requireDrawableFont(where, family, fonts) {
-    if (fonts.includes(family) || drawsWith(where, family)) {
-        return;
-    }
+function fontProbe(where, offered) {
+    const answered = new Map(offered.map((family) => [family, true]));
+    const draws = probing(where);
 
-    throw new Error(
-        `Nothing draws with the typeface "${family}" on this Mac.\n\n` +
-            "Not every installed face answers to the name Font Book shows. " +
-            "The settings window offers the ones this Mac does draw with."
-    );
+    return (family) => {
+        if (!answered.has(family)) {
+            answered.set(family, draws(family));
+        }
+
+        return answered.get(family);
+    };
 }
 
 function settingsFrom(app, invocation, context) {
@@ -4597,20 +4629,17 @@ function jobFor(prepared, settings, place) {
 }
 
 function assemble(prepared, place) {
+    const where = whereToDraw(prepared, place.workspace);
+    const fonts = fontsFor(where, prepared.invocation.headless, place.progress);
     const context = {
         count: prepared.selection.images.length,
-        fonts: fontsFor(prepared, place.workspace, place.progress)
+        fonts,
+        draws: fontProbe(where, fonts)
     };
 
     place.progress.pause();
 
     const settings = settingsFrom(prepared.app, prepared.invocation, context);
-
-    requireDrawableFont(
-        whereToDraw(prepared, place.workspace),
-        settings.font,
-        context.fonts
-    );
 
     return jobFor(prepared, settings, place);
 }

@@ -1,4 +1,4 @@
-STAMP IMAGES 1.0.0 - SHORTCUTS INSTALLATION
+STAMP IMAGES 1.1.0 - SHORTCUTS INSTALLATION
 
 Source, releases and build attestation:
 

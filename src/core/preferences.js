@@ -55,25 +55,16 @@ function encode(settings) {
  * function because the runtime has one question -- what should the form open
  * on -- and every way of failing to answer it has the same reply: the
  * compiled defaults, which is what the form shows when it is passed nothing.
+ *
+ * A typeface that has gone since is no longer one of those ways. It used to
+ * be read back through the list of faces this Mac drew with today, where an
+ * absent one has no label, and that raised -- so one removed font reset the
+ * size, the colours, the position and the margin along with it. The typeface
+ * is a name the field carries now, and the renderer says whether it draws.
  */
 // Nothing per-job was kept, so nothing per-job comes back.
 function blank() {
     return { customText: "" };
-}
-
-/*
- * A face that is not here any more is not a reason to forget the rest.
- *
- * The record is read back against the faces this Mac drew with today, and one
- * that has gone since -- uninstalled, or the record carried to another Mac --
- * is a value the form has no option for. Reading it raised, and the catch
- * below took the size, the colours, the position and the margin down with it:
- * one absent typeface reset every setting somebody had chosen. The default is
- * the first face this Mac does draw with, which is what a run with nothing
- * remembered opens on.
- */
-function withKnownFont(held, fonts) {
-    return fonts.includes(held.font) ? held : { ...held, font: fonts[0] };
 }
 
 function rememberedAnswers(text, fonts) {
@@ -84,10 +75,7 @@ function rememberedAnswers(text, fonts) {
             return undefined;
         }
 
-        const settings = normalizeSettings({
-            ...defaultSettings(fonts),
-            ...withKnownFont(held, fonts)
-        });
+        const settings = normalizeSettings({ ...defaultSettings(fonts), ...held });
 
         return { ...answersFromSettings(settings, fonts), ...blank() };
     } catch {

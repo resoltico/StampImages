@@ -10,7 +10,7 @@ const {
     markHintInvalid,
     makeAlert
 } = require("./appkit-widgets.js");
-const { makeField, makeColourCombo, makeCaption } = require("./appkit-fields.js");
+const { makeField, makeCombo, makeCaption } = require("./appkit-fields.js");
 const { buildForm } = require("./appkit-form.js");
 
 // Gathered into one object so a test can substitute the whole widget layer.
@@ -21,7 +21,7 @@ const WIDGETS = {
     makePopup,
     addPopupItem,
     makeField,
-    makeColourCombo,
+    makeCombo,
     makeCaption,
     markInvalid,
     markHintInvalid,

@@ -31,8 +31,13 @@ function present(responses, spec, duringModal) {
 function controlsIn(alert) {
     const views = alert.accessoryView.subviews;
 
+    // Three rows are combos now -- the typeface and the two colours -- so
+    // each is found by what it holds rather than by being the only one.
     return {
-        combo: views.find((view) => view.kind === "combo"),
+        combo: views.find((view) => view.kind === "combo" &&
+            view.stringValue === "#FFFFFF"),
+        fontCombo: views.find((view) => view.kind === "combo" &&
+            view.stringValue === FONTS[0]),
         popup: views.find((view) => view.kind === "popup"),
         size: views.find(
             (view) => view.kind === "field" && view.stringValue === "36"

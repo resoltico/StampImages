@@ -13,7 +13,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const {
     makeField,
-    makeColourCombo
+    makeCombo
 } = require("../../../src/runtime/appkit-fields.js");
 const { createFakeObjC } = require("./fake-objc.cjs");
 
@@ -41,7 +41,7 @@ test("a field keeps its value and its place", () => {
 });
 
 test("the colour control offers the presets and takes a typed value", () => {
-    const combo = makeColourCombo(bridge().ns, COLOUR_ROW, RECT);
+    const combo = makeCombo(bridge().ns, COLOUR_ROW, RECT);
 
     assert.deepEqual(combo.items, ["#FFFFFF", "#000000"]);
     assert.equal(combo.stringValue, "#FFFFFF");
@@ -52,14 +52,14 @@ test("the colour control offers the presets and takes a typed value", () => {
 test("completion is off, so what the field holds is what was typed", () => {
     // With it on, typing over a selected preset offers to finish the word,
     // and the value submitted is one the user did not write.
-    const combo = makeColourCombo(bridge().ns, COLOUR_ROW, RECT);
+    const combo = makeCombo(bridge().ns, COLOUR_ROW, RECT);
 
     assert.equal(combo.completes, false);
     assert.equal(combo.usesDataSource, false, "four static items need no source");
 });
 
 test("the list is as long as it has presets, and says what it is for", () => {
-    const combo = makeColourCombo(bridge().ns, COLOUR_ROW, RECT);
+    const combo = makeCombo(bridge().ns, COLOUR_ROW, RECT);
 
     assert.equal(combo.numberOfVisibleItems, COLOUR_ROW.options.length);
     assert.equal(

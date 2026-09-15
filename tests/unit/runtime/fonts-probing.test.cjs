@@ -12,11 +12,8 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const {
-    availableFonts,
-    CANDIDATES,
-    IMPOSSIBLE
-} = require("../../../src/runtime/fonts.js");
+const { availableFonts, CANDIDATES } = require("../../../src/runtime/fonts.js");
+const { IMPOSSIBLE } = require("../../../src/runtime/font-probe.js");
 const { createFakeHost, WORKSPACE } = require("./fake-host.cjs");
 
 function machine(settings = {}) {

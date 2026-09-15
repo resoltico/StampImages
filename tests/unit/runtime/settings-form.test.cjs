@@ -17,6 +17,7 @@ const {
     collectSettings
 } = require("../../../src/runtime/settings-form.js");
 const { defaultAnswers } = require("../../../src/core/form-defaults.js");
+const { askingContext } = require("./fake-assembly.cjs");
 const { createFakeApp } = require("./fake-app.cjs");
 
 const BRIDGE = { objc: {}, ns: {} };
@@ -40,7 +41,7 @@ function scripted(outcomes) {
 }
 
 function opening(answers = defaultAnswers(FONTS)) {
-    return { answers, context: { count: 1, fonts: FONTS } };
+    return { answers, context: askingContext(FONTS) };
 }
 
 test("the form's answers become the settings", () => {
@@ -92,7 +93,7 @@ test("the count travels with the form, so Cancel is a decision", () => {
 
     collectViaForm(BRIDGE, present, {
         answers: defaultAnswers(FONTS),
-        context: { count: 20, fonts: FONTS }
+        context: askingContext(FONTS, 20)
     });
 
     assert.match(present.seen[0].detail, /^20 photographs\./u);

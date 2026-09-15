@@ -20,6 +20,13 @@ const { chooseRequired, askUntil } = require("./prompts.js");
  * A choice is a list; everything else is typed, and what may be typed is
  * decided by the same reader the form uses -- so a colour refused in one is
  * refused in the other, in the same words.
+ *
+ * The typeface is the one place the two front ends differ, and deliberately.
+ * The form offers the faces this Mac drew with and takes the name of any
+ * other, because it can ask the renderer about what was typed and mark the
+ * field when nothing draws. A dialog cannot: it would have to accept a name,
+ * close, and fail the run several questions later. So here it stays a list of
+ * faces already known to draw, which is the answer that is always usable.
  */
 function askRow(app, row, answers, fonts) {
     const control = controlFor(row, fonts);
