@@ -61,6 +61,21 @@ function blank() {
     return { customText: "" };
 }
 
+/*
+ * A face that is not here any more is not a reason to forget the rest.
+ *
+ * The record is read back against the faces this Mac drew with today, and one
+ * that has gone since -- uninstalled, or the record carried to another Mac --
+ * is a value the form has no option for. Reading it raised, and the catch
+ * below took the size, the colours, the position and the margin down with it:
+ * one absent typeface reset every setting somebody had chosen. The default is
+ * the first face this Mac does draw with, which is what a run with nothing
+ * remembered opens on.
+ */
+function withKnownFont(held, fonts) {
+    return fonts.includes(held.font) ? held : { ...held, font: fonts[0] };
+}
+
 function rememberedAnswers(text, fonts) {
     try {
         const held = JSON.parse(String(text));
@@ -69,7 +84,10 @@ function rememberedAnswers(text, fonts) {
             return undefined;
         }
 
-        const settings = normalizeSettings({ ...defaultSettings(fonts), ...held });
+        const settings = normalizeSettings({
+            ...defaultSettings(fonts),
+            ...withKnownFont(held, fonts)
+        });
 
         return { ...answersFromSettings(settings, fonts), ...blank() };
     } catch {

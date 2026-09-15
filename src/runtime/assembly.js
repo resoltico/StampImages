@@ -3,7 +3,7 @@
 const { stampsNothing } = require("../core/settings.js");
 const { createWorkspace, removeWorkspace } = require("./workspace.js");
 const { createRenamer } = require("./exclusive-rename.js");
-const { availableFonts } = require("./fonts.js");
+const { availableFonts, drawsWith } = require("./fonts.js");
 const { settingsFor } = require("./settings-run.js");
 
 /*
@@ -39,16 +39,44 @@ function withWorkspace(app, unpublished, use) {
  * before it says anything, because every candidate is drawn with rather than
  * looked up.
  */
-function fontsFor(prepared, workspace, progress) {
-    const { app, invocation, tools } = prepared;
+function whereToDraw(prepared, workspace) {
+    return { app: prepared.app, tools: prepared.tools, workspace };
+}
 
-    if (invocation.headless) {
+function fontsFor(prepared, workspace, progress) {
+    if (prepared.invocation.headless) {
         return [];
     }
 
     progress.phase("Checking which fonts are installed");
 
-    return availableFonts({ app, tools, workspace });
+    return availableFonts(whereToDraw(prepared, workspace));
+}
+
+/*
+ * A run only ever draws with a face it has drawn with.
+ *
+ * The form's list is the probe's own output, so a typeface chosen from it
+ * needs no second opinion and gets none. A name that did not come from it has
+ * had none at all -- and pango answers every name, so a headless
+ * configuration asking for a face this Mac does not have was stamped in a
+ * default face and reported as a complete success, which is the one thing the
+ * form's list exists to prevent.
+ *
+ * Refused rather than repaired. Substituting a face nobody asked for is what
+ * this is about, and choosing the substitute here rather than letting pango
+ * choose it would be the same silence with better manners.
+ */
+function requireDrawableFont(where, family, fonts) {
+    if (fonts.includes(family) || drawsWith(where, family)) {
+        return;
+    }
+
+    throw new Error(
+        `Nothing draws with the typeface "${family}" on this Mac.\n\n` +
+            "Not every installed face answers to the name Font Book shows. " +
+            "The settings window offers the ones this Mac does draw with."
+    );
 }
 
 function settingsFrom(app, invocation, context) {
@@ -98,6 +126,12 @@ function assemble(prepared, place) {
     place.progress.pause();
 
     const settings = settingsFrom(prepared.app, prepared.invocation, context);
+
+    requireDrawableFont(
+        whereToDraw(prepared, place.workspace),
+        settings.font,
+        context.fonts
+    );
 
     return jobFor(prepared, settings, place);
 }

@@ -250,6 +250,44 @@ as the fallback while Helvetica Neue, Arial, Georgia and the rest draw as
 themselves. The question worth asking is not whether a font is installed but
 whether asking for it by that name draws it.
 
+## What the font probe did not cover
+
+The probe decides what the settings window offers. Two paths reach a typeface
+without going through it, and both were measured against the shipped 1.0.0
+artifact.
+
+**A headless configuration names its own.** `fontsFor` returns an empty list
+for a headless run -- there is no form to fill -- so the name in the file went
+straight to vips. pango answers every name: a configuration asking for
+"Definitely Not A Font 12345" stamped the photograph in a default face, exited
+0, and reported a complete success. That is exactly the silent substitution
+the form's list exists to prevent, allowed on the one path where nobody is
+watching.
+
+The rule now holds on both paths: **a run only ever draws with a face it has
+drawn with.** A typeface that came from the form's list has been drawn with
+already and is not asked about twice; anything else -- a configuration's -- is
+probed once, with a reference drawn for the purpose, and refused with the
+reason. Two renders per headless run, not per photograph.
+
+Refused rather than repaired, for the same reason the probe exists: choosing a
+substitute here rather than letting pango choose one is the same silence with
+better manners.
+
+One sharp edge is worth stating, because it looks like a bug and is the rule
+working. Measured: a configuration naming "Times New Roman" is now refused,
+and Font Book lists that font as installed. Asking for it by that name draws
+the fallback -- pango reads the trailing "Roman" as a style keyword -- so it
+fails the only question this asks. The message says so rather than sending
+somebody to Font Book to look at a font that is plainly there.
+
+**A remembered typeface that has since gone took every other setting with
+it.** The record is read back against the faces this Mac drew with today, and
+an unknown one has no label to come back as, so `answersFromSettings` raised
+and the catch around it discarded the whole record. One font removed reset the
+size, the colours, the position and the margin. The font alone falls back now,
+to the same first face a run with nothing remembered opens on.
+
 ## What the sibling's next release had to teach this one
 
 This product was ported from Image Files to PDF at that project's 1.4.0, and

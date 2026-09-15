@@ -11,38 +11,7 @@ const test = require("node:test");
 const { withWorkspace, assemble } = require("../../../src/runtime/assembly.js");
 const { defaultSettings } = require("../../../src/core/form-defaults.js");
 const { createFakeHost, WORKSPACE } = require("./fake-host.cjs");
-
-function recorder() {
-    const said = [];
-
-    return {
-        said,
-        stopped: () => false,
-        expect: () => undefined,
-        beginning: () => undefined,
-        phase: (text) => said.push(text),
-        finished: () => undefined,
-        pause: () => said.push("pause"),
-        close: () => said.push("close")
-    };
-}
-
-function prepared(host, headless = false) {
-    return {
-        app: host,
-        tools: {
-            vips: "/opt/homebrew/bin/vips",
-            vipsheader: "/opt/homebrew/bin/vipsheader",
-            exiftool: "/opt/homebrew/bin/exiftool"
-        },
-        invocation: { headless, settings: null },
-        selection: { images: [{}, {}], rejected: [] }
-    };
-}
-
-function place(progress, unpublished = new Set()) {
-    return { workspace: WORKSPACE, unpublished, progress };
-}
+const { recorder, prepared, place } = require("./fake-assembly.cjs");
 
 test("the fonts are probed, and the report says so before the wait", () => {
     // Every candidate is drawn with rather than looked up, which is the
@@ -78,23 +47,6 @@ test("the job carries what the run is invariant in", () => {
     assert.equal(job.unpublished, unpublished);
     assert.equal(job.stamps.size, 0, "one drawing per text, for the whole run");
     assert.equal(job.settings.font, "Menlo");
-});
-
-test("a headless run asks the machine nothing about its fonts", () => {
-    const host = createFakeHost();
-    const progress = recorder();
-    const invocation = {
-        headless: true,
-        settings: { ...defaultSettings(["Menlo"]), customText: "Riga" }
-    };
-
-    assemble({ ...prepared(host, true), invocation }, place(progress));
-
-    assert.deepEqual(progress.said, ["pause"]);
-    assert.deepEqual(
-        host.commands.filter((command) => command.includes("'text'")),
-        []
-    );
 });
 
 test("a request that would stamp nothing is refused before any work", () => {

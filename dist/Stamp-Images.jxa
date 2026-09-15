@@ -1323,6 +1323,10 @@ function blank() {
     return { customText: "" };
 }
 
+function withKnownFont(held, fonts) {
+    return fonts.includes(held.font) ? held : { ...held, font: fonts[0] };
+}
+
 function rememberedAnswers(text, fonts) {
     try {
         const held = JSON.parse(String(text));
@@ -1331,7 +1335,10 @@ function rememberedAnswers(text, fonts) {
             return undefined;
         }
 
-        const settings = normalizeSettings({ ...defaultSettings(fonts), ...held });
+        const settings = normalizeSettings({
+            ...defaultSettings(fonts),
+            ...withKnownFont(held, fonts)
+        });
 
         return { ...answersFromSettings(settings, fonts), ...blank() };
     } catch {
@@ -2751,6 +2758,10 @@ function resolves(where, family, fallback) {
 
         return false;
     }
+}
+
+function drawsWith(where, family) {
+    return resolves(where, family, fallbackDrawing(where));
 }
 
 function availableFonts(where) {
@@ -4531,16 +4542,30 @@ function withWorkspace(app, unpublished, use) {
     }
 }
 
-function fontsFor(prepared, workspace, progress) {
-    const { app, invocation, tools } = prepared;
+function whereToDraw(prepared, workspace) {
+    return { app: prepared.app, tools: prepared.tools, workspace };
+}
 
-    if (invocation.headless) {
+function fontsFor(prepared, workspace, progress) {
+    if (prepared.invocation.headless) {
         return [];
     }
 
     progress.phase("Checking which fonts are installed");
 
-    return availableFonts({ app, tools, workspace });
+    return availableFonts(whereToDraw(prepared, workspace));
+}
+
+function requireDrawableFont(where, family, fonts) {
+    if (fonts.includes(family) || drawsWith(where, family)) {
+        return;
+    }
+
+    throw new Error(
+        `Nothing draws with the typeface "${family}" on this Mac.\n\n` +
+            "Not every installed face answers to the name Font Book shows. " +
+            "The settings window offers the ones this Mac does draw with."
+    );
 }
 
 function settingsFrom(app, invocation, context) {
@@ -4580,6 +4605,12 @@ function assemble(prepared, place) {
     place.progress.pause();
 
     const settings = settingsFrom(prepared.app, prepared.invocation, context);
+
+    requireDrawableFont(
+        whereToDraw(prepared, place.workspace),
+        settings.font,
+        context.fonts
+    );
 
     return jobFor(prepared, settings, place);
 }

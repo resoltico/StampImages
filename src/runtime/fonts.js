@@ -15,21 +15,10 @@ const { sameBytes, verifyFileWritten } = require("./asking.js");
  * before it is offered, beside a name that certainly does not exist, and a
  * family whose drawing is that drawing did not resolve.
  *
- * The drawings are compared byte for byte. Comparing their widths was the
- * first attempt and it was wrong twice over: measured on this Mac, Georgia and
- * the unresolvable name both drew the probe 192 pixels wide, so a font that
- * was installed was dropped -- and a bold name that had fallen back drew 197
- * against the regular fallback's 192, so a font that was not installed was
- * offered. Two renderings of one font are byte-identical, measured; two
- * different faces at the same width are not.
- *
- * What this catches is not only a missing font. Measured with the fonts
- * present and listed by fontconfig: "Helvetica" and "Times New Roman" both
- * draw as the fallback, while Helvetica Neue, Arial, Georgia and the rest draw
- * as themselves. Whatever the reason -- pango reads a trailing "Roman" as a
- * style keyword, and the system's .ttc collections are their own story -- the
- * question worth asking is not "is this font installed" but "does asking for
- * it by this name draw it", and that is the question this asks.
+ * The drawings are compared byte for byte rather than by width, and what is
+ * asked is "does asking for it by this name draw it" rather than "is it
+ * installed": measured, "Helvetica" and "Times New Roman" are both present
+ * and both draw as the fallback. What each of those cost to learn is in QA.md.
  */
 
 /*
@@ -122,6 +111,16 @@ function resolves(where, family, fallback) {
 }
 
 /*
+ * Whether one named face draws, for a name that did not come from the list
+ * below: a headless configuration's, which nothing has probed. Asking for a
+ * face this Mac does not have used to stamp the photograph in a default one
+ * and report a complete success. The same question, asked the same way.
+ */
+function drawsWith(where, family) {
+    return resolves(where, family, fallbackDrawing(where));
+}
+
+/*
  * The faces to offer, in the order they are written down. A machine none of
  * them draws on is not one this can offer a choice on, and it says so rather
  * than offering a list that does nothing.
@@ -145,4 +144,4 @@ function availableFonts(where) {
     return found;
 }
 
-module.exports = { availableFonts, CANDIDATES, IMPOSSIBLE };
+module.exports = { availableFonts, drawsWith, CANDIDATES, IMPOSSIBLE };

@@ -95,10 +95,26 @@ test("a record edited into something invalid is refused entirely", () => {
     }
 });
 
-test("a font the record names but this Mac cannot draw is refused", () => {
+test("a font that has gone since is not a reason to forget the rest", () => {
     // The list is a fact about the machine, so a remembered font that is not
-    // on it has no label to come back as.
-    assert.equal(rememberedAnswers('{"font":"Zapfino"}', FONTS), undefined);
+    // on it has no label to come back as -- and reading it raised, which took
+    // the size, the colours, the position and the margin down with it. One
+    // absent typeface used to reset every setting somebody had chosen.
+    const kept = JSON.stringify({
+        ...defaultSettings(FONTS),
+        font: "Zapfino",
+        size: 120,
+        margin: 0
+    });
+    const restored = rememberedAnswers(kept, FONTS);
+
+    assert.equal(restored.size, "120");
+    assert.equal(restored.margin, "0");
+    assert.equal(
+        restored.font,
+        FONTS[0],
+        "and the typeface falls back to the one a run with no record opens on"
+    );
 });
 
 test("what is encoded can be remembered, which is the whole contract", () => {
