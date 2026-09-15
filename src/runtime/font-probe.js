@@ -118,13 +118,13 @@ function probing(where) {
  * Why a name was refused, in the one place every reader of it can reach.
  *
  * It names what was asked for rather than what is available, because what is
- * available is a handful of suggestions and the machine has hundreds -- and it
- * names the likeliest reason somebody is surprised. Measured: a font manager
- * activates a face through the system's own font machinery without putting a
- * file where these tools look, so Font Book, Word and every other app show it
- * while fontconfig has never heard of it. Reported from use, and the first
- * thing the message used to say was to set the weight elsewhere, which sent
- * somebody to try both weights of a face this cannot see at all.
+ * available is a handful of suggestions and the machine has hundreds -- and
+ * then it says where a font has to be, which is the one thing a person can
+ * act on. The folders are fontconfig's own, measured.
+ *
+ * Written for somebody who has only this sentence: an earlier one answered a
+ * question nobody had asked, and the one before that gave advice about a
+ * different problem.
  */
 const WEIGHT_IN_NAME = /\s(?:Bold|Italic|Oblique)$/iu;
 
@@ -141,10 +141,10 @@ function withoutTheWeight(family) {
 
 function undrawable(family) {
     return `This Mac does not draw with the typeface "${family}".\n\n` +
-        "Another app showing it is not the same as this being able to use " +
-        "it: a font activated by a font manager rather than installed is not " +
-        "where this looks. The settings window offers the faces it can " +
-        `draw with.${withoutTheWeight(family)}`;
+        "Fonts are read from the font folders: ~/Library/Fonts, " +
+        "/Library/Fonts and the system's own. A font kept somewhere else and " +
+        "switched on by a font manager cannot be read here, even when other " +
+        `apps can use it.${withoutTheWeight(family)}`;
 }
 
 module.exports = { drawWith, probing, undrawable, IMPOSSIBLE, PROBE_SIZE };

@@ -391,13 +391,18 @@ So vips cannot draw with it, and before this round it would have been stamped
 in Times New Roman with nothing said. That is the defect the resolver exists
 to catch, working.
 
-The message was not right. It ended "Set the weight with Weight rather than in
-the name", which is advice about a different problem, and it is what sent
-somebody to try both weights of a face this cannot see. It names the likeliest
-cause now -- another app showing a font is not the same as this being able to
-use it -- and the weight sentence appears only for a name that actually ends
-in a weight word, which is the one shape this can be sure about, because it is
-what 1.0.0 stored.
+The message was not right, twice over. It ended "Set the weight with Weight
+rather than in the name" -- advice about a different problem, and what sent
+somebody to try both weights of a face this cannot see at all. Rewritten, it
+opened "Another app showing it is not the same as this being able to use it",
+which answers a question the reader has not asked and reads as an argument
+with somebody who is not there.
+
+A message is read by a stranger with nothing but that message. What a stranger
+can act on is where a font has to be, so that is what it says: the folders
+fonts are read from, and the one exception people actually hit. The weight
+sentence appears only for a name that ends in a weight word, which is the one
+shape this can be sure about, because it is what 1.0.0 stored.
 
 **The remedy, measured rather than suggested.** Pointing fontconfig at the
 folder the manager keeps its fonts in takes this Mac from 671 families to

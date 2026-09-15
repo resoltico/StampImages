@@ -2892,10 +2892,10 @@ function withoutTheWeight(family) {
 
 function undrawable(family) {
     return `This Mac does not draw with the typeface "${family}".\n\n` +
-        "Another app showing it is not the same as this being able to use " +
-        "it: a font activated by a font manager rather than installed is not " +
-        "where this looks. The settings window offers the faces it can " +
-        `draw with.${withoutTheWeight(family)}`;
+        "Fonts are read from the font folders: ~/Library/Fonts, " +
+        "/Library/Fonts and the system's own. A font kept somewhere else and " +
+        "switched on by a font manager cannot be read here, even when other " +
+        `apps can use it.${withoutTheWeight(family)}`;
 }
 
 /* ===== src/runtime/fonts.js ===== */

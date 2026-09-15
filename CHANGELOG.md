@@ -8,43 +8,41 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Added
 
-- Any typeface this Mac has, not only the ten the settings window suggests.
+- Any typeface this Mac has, not only the ones the settings window suggests.
   The typeface control is a list you can also type into, the same way the
-  colours are — pick a suggestion, or write the family name of anything else.
-- Weight is a setting of its own, regular or bold. It used to be half of the
-  typeface's name, which is why "Arial Bold" and "Arial" were separate entries
-  in a list of ten faces.
+  colours are: pick a suggestion, or write the family name of anything else.
+- Weight is a setting of its own, Regular or Bold, chosen beside the typeface.
+
+### Changed
+
+- The typeface is a family name. A settings file that named a weight in it,
+  such as `"font": "Helvetica Neue Bold"`, now needs `"font": "Helvetica
+  Neue"` with `"weight": "bold"` beside it. Settings remembered from an
+  earlier run are carried over for you.
 
 ### Fixed
 
-- A typeface this cannot use says the likeliest reason. A font activated by a
-  font manager rather than installed is invisible to the tools this draws
-  with, however plainly Font Book and every other app show it — and the
-  refusal used to end by telling you to set the weight elsewhere, which is
-  advice about a different problem.
-- Typefaces whose name ends in a style word can be asked for at all. "Times
-  New Roman" was read as the family "Times New" and appeared to be missing;
-  "Arial Black" was read as Arial made bold. Both work now.
-- A typeface this Mac does not have is refused rather than quietly replaced.
-  The check used to compare two drawings, which could say yes to a family that
-  does not exist and no to one that does: "Noto Serif" is not on macOS at all —
-  there are 190 script-specific Noto families and not that one — and was
-  accepted, while Times New Roman was refused.
-- Bold is checked like everything else. The list used to offer a bold version
-  of every face without ever asking whether this Mac had one.
-- A Mac with none of the ten suggestions still opens the settings window, so
-  you can name a face it does have. It used to refuse to run.
-- The one-question-at-a-time fallback asks for the typeface the same way, and
-  refuses a name this Mac cannot draw instead of failing several questions
-  later. It had no way to enter a family that was not on the list.
-- A photograph that stores only greys no longer turns a coloured caption grey.
-  The copy is written in colour so the caption keeps the colour you chose, the
-  picture is unchanged, and the run says how many it did that to.
-- A colour profile that could not be read is no longer treated as a photograph
-  that has none. It used to be reported as a run where everything went well.
-  A photograph with a very long name triggered exactly that, because the file
-  the profile was written to was named after it and could be too long to
-  create.
+- Typefaces whose name ends in a style word can be chosen. "Times New Roman"
+  and "Arial Black" were read as different families and appeared to be
+  missing.
+- A typeface this Mac cannot draw with is refused, with the reason and where
+  fonts have to be kept. Some were accepted and then quietly drawn in another
+  face, and some that work were turned away.
+- Bold faces are checked like every other. The suggestions offered a bold
+  version of each without asking whether this Mac had one.
+- A Mac where none of the suggested faces are available still opens the
+  settings window, so you can name a typeface it does have. It used to refuse
+  to run at all.
+- The one-question-at-a-time settings, used when the window cannot be shown,
+  ask for the typeface the same way and refuse an unusable one at the question
+  rather than after the last one.
+- A black-and-white photograph no longer turns a coloured caption grey. The
+  copy is written in colour so the caption keeps the colour you chose, the
+  picture itself is unchanged, and the report says how many were treated that
+  way. Grey, white and black captions are unaffected.
+- A colour profile that cannot be read is reported rather than treated as a
+  photograph that has none — which had been counted as a run where everything
+  went well. Photographs with very long names could trigger it.
 
 ## [1.0.0] - 2026-09-14
 

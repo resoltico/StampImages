@@ -120,15 +120,15 @@ test("a drawing that cannot be compared is not a typeface that resolved", () => 
 });
 
 test("the refusal names the likeliest reason, and advises only where it can", () => {
-    // A font manager activates a face through the system's own machinery
-    // without putting a file where these tools look, so every other app shows
-    // it while fontconfig has never heard of it. The message used to end by
-    // telling people to set the weight elsewhere, which sent somebody to try
-    // both weights of a face this cannot see at all.
+    // Written for somebody who has only this sentence, so it says where a
+    // font has to be -- the one thing they can act on. An earlier one opened
+    // "another app showing it is not the same as...", which answers a question
+    // nobody asked, and the one before that gave advice about a different
+    // problem entirely.
     const said = undrawable("Source Serif 4");
 
     assert.match(said, /does not draw with the typeface "Source Serif 4"/u);
-    assert.match(said, /activated by a font manager rather than installed/u);
+    assert.match(said, /~\/Library\/Fonts/u, "and where fonts are read from");
     assert.doesNotMatch(said, /weight/iu, "no advice about a different problem");
 });
 
