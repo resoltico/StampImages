@@ -32,6 +32,7 @@ function counted(job, results, outcome) {
     results.outputs.push(outcome.output);
     results.crowded += outcome.crowded ? 1 : 0;
     results.unconverted += outcome.unconverted ? 1 : 0;
+    results.expanded += outcome.expanded ? 1 : 0;
     job.progress.finished("Saved");
 }
 
@@ -87,7 +88,8 @@ function runJob(job, images) {
         failures: [],
         nothing: [],
         crowded: 0,
-        unconverted: 0
+        unconverted: 0,
+        expanded: 0
     };
 
     for (const [index, image] of images.entries()) {

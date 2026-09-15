@@ -51,6 +51,27 @@ function asMarkup(text) {
     );
 }
 
+/*
+ * The description the renderer is given, built rather than typed.
+ *
+ * Pango reads "Family Style Size" and takes the words before the size as
+ * style instructions, so "Times New Roman 40" asks for the family "Times New"
+ * at normal weight and "Arial Black 40" asks for Arial at weight 900. Both
+ * measured. A comma ends the family, so "Times New Roman, 40" asks for the
+ * family somebody actually named -- which is why the setting is a family name
+ * and the weight is a setting of its own.
+ *
+ * Nothing here escapes the family: a comma inside it would end the name early,
+ * and a name with a comma in it is not a family fontconfig will match anyway.
+ * What guards the value is the resolver, which refuses a name this Mac does
+ * not have before any of it is drawn.
+ */
+const WEIGHT_WORDS = { regular: "", bold: "Bold " };
+
+function fontDescription(family, weight, size) {
+    return `${family}, ${WEIGHT_WORDS[weight]}${size}`;
+}
+
 function buildTextArgv(vipsPath, outputPath, text, font) {
     return [
         vipsPath,
@@ -116,6 +137,7 @@ function buildDilateArgv(vipsPath, inputPath, outputPath, outlineWidth) {
 }
 
 module.exports = {
+    fontDescription,
     asMarkup,
     buildTextArgv,
     buildEmbedArgv,

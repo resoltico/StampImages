@@ -86,7 +86,7 @@ function forget(job) {
  * in practice that is still one drawing per inscription.
  */
 function stampFor(job, drawn) {
-    const key = `${drawn.profile}\n${drawn.text}`;
+    const key = `${drawn.profile.path}\n${drawn.text}`;
     const held = job.stamps.get(key);
 
     if (held) {

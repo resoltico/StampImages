@@ -6,9 +6,9 @@ const { stagedPath } = require("../core/naming.js");
 const { outputExtension } = require("../core/formats.js");
 const { removeFile } = require("./shell.js");
 const { factsFor } = require("./facts.js");
-const { profileFor } = require("./colour-space.js");
 const { stampFor } = require("./render.js");
-const { readPhotograph, composite, saveCopy } = require("./image.js");
+const { composite, saveCopy } = require("./image.js");
+const { prepared } = require("./preparing.js");
 
 /*
  * One photograph, from the file that was selected to a finished copy waiting
@@ -27,15 +27,13 @@ const { readPhotograph, composite, saveCopy } = require("./image.js");
  * What this photograph needed on the way through, and nothing else's.
  *
  * The stages between the file and the copy are uncompressed: a 24-megapixel
- * photograph is about 70 megabytes oriented and rather more once the stamp
- * has been composited onto it. Kept until the end of the run, a batch of two
- * hundred would ask the disk for tens of gigabytes it was never told about.
+ * photograph is about 70 megabytes oriented and rather more once the stamp has
+ * been composited onto it. Kept until the end of the run, a batch of two
+ * hundred would ask the disk for tens of gigabytes nobody mentioned.
  *
  * Everything this photograph made is on the list, the finished copy included,
- * and the copy is spared only once there is one to hand back. A copy vips
- * wrote and that then failed its own check -- the wrong size, unreadable --
- * is not a copy of anything, and it used to wait for the workspace: a batch
- * of failures held one apiece.
+ * and the copy is spared only once there is one to hand back: a copy that
+ * failed its own check is not a copy of anything.
  */
 function clearIntermediates(job, intermediates, keeping) {
     for (const path of intermediates) {
@@ -45,13 +43,10 @@ function clearIntermediates(job, intermediates, keeping) {
     }
 }
 
-function stampOnto(job, photograph, image, token) {
+function stampOnto(job, photograph, drawn, token) {
     job.progress.phase("Drawing the stamp");
 
-    const stamp = stampFor(job, {
-        text: image.inscription.text,
-        profile: profileFor(job, image.path, token)
-    });
+    const stamp = stampFor(job, drawn);
     const at = placeStamp(photograph.size, stamp.size, job.settings);
 
     job.progress.phase("Stamping the photograph");
@@ -64,11 +59,12 @@ function stampOnto(job, photograph, image, token) {
 }
 
 function produce(job, image, token, intermediates) {
-    const photograph = readPhotograph(job, image.path, token);
-
-    intermediates.push(photograph.path);
-
-    const drawn = stampOnto(job, photograph, image, token);
+    const met = prepared(job, image, token, intermediates);
+    const { photograph } = met;
+    const drawn = stampOnto(job, photograph, {
+        text: image.inscription.text,
+        profile: met.profile
+    }, token);
 
     intermediates.push(drawn.stamped);
 
@@ -80,7 +76,8 @@ function produce(job, image, token, intermediates) {
     return {
         staged: target,
         crowded: drawn.crowded,
-        unconverted: drawn.unconverted
+        unconverted: drawn.unconverted,
+        expanded: met.expanded
     };
 }
 

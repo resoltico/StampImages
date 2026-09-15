@@ -1,18 +1,16 @@
 "use strict";
 
-const {
-    buildOrientArgv,
-    buildCompositeArgv,
-    buildFlattenArgv
-} = require("../core/commands.js");
+const { buildCompositeArgv, buildFlattenArgv } = require("../core/commands.js");
 const { savingPath } = require("../core/formats.js");
 const { runArgv } = require("./shell.js");
 const { verifyFileWritten } = require("./asking.js");
 const { sizeOf } = require("./tinting.js");
-const { refuseUnfaithful, hasAlpha } = require("./fidelity.js");
 
 /*
- * Taking one photograph from the file that was selected to a stamped copy.
+ * Putting the stamp on the photograph, and saving what comes out.
+ *
+ * What the photograph has to be first -- oriented, and in a space that can
+ * hold the caption's colour -- is preparing.js.
  *
  * The source is never written to and never even opened for writing. Every
  * stage reads one file and writes another, in a workspace of this run's own,
@@ -23,25 +21,6 @@ const { refuseUnfaithful, hasAlpha } = require("./fidelity.js");
  * saving it again at every step would lose a little more of the photograph
  * each time for nothing.
  */
-
-/*
- * Orientation is applied rather than carried. A photograph whose tag says to
- * rotate it is shown rotated by everything that displays it, so a stamp
- * composited before that happens would sit along an edge the viewer never
- * sees as the bottom.
- */
-function orient(job, source, token) {
-    const oriented = `${job.workspace}/oriented-${token}.v`;
-
-    runArgv(
-        job.app,
-        buildOrientArgv(job.tools.vips, source, oriented),
-        "reading the photograph"
-    );
-    verifyFileWritten(job.app, oriented, "the photograph");
-
-    return oriented;
-}
 
 function composite(job, base, stamp, token) {
     const stamped = `${job.workspace}/stamped-${token}.v`;
@@ -100,14 +79,4 @@ function saveCopy(job, stamped, target, source) {
     }
 }
 
-function readPhotograph(job, source, token) {
-    // Asked of the file, before it is decoded: a photograph this cannot copy
-    // faithfully should cost two header reads and nothing else.
-    refuseUnfaithful(job, source);
-
-    const path = orient(job, source, token);
-
-    return { path, size: sizeOf(job, path), hasAlpha: hasAlpha(job, path) };
-}
-
-module.exports = { readPhotograph, composite, saveCopy };
+module.exports = { composite, saveCopy };

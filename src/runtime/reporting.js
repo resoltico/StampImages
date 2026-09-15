@@ -5,7 +5,7 @@ const { plural } = require("../core/numbers.js");
 const { supportedFormatList } = require("../core/paths.js");
 const { describeCrowding } = require("../core/geometry.js");
 const { describeExcluded } = require("../core/naming.js");
-const { describeUnconverted } = require("../core/colour.js");
+const { describeExpanded, describeUnconverted } = require("../core/colour.js");
 const {
     writeReceipt,
     ledgerOf,
@@ -96,6 +96,7 @@ function detailOf(result) {
         ...named(result.rejected, (entry) => entry.reason),
         ...result.excluded.length > 0 ? [describeExcluded(result.excluded)] : [],
         ...result.crowded > 0 ? [describeCrowding(result.crowded)] : [],
+        ...result.expanded > 0 ? [describeExpanded(result.expanded)] : [],
         ...result.unconverted > 0 ? [describeUnconverted(result.unconverted)] : []
     ];
 

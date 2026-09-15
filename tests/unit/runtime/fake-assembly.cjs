@@ -14,7 +14,8 @@ const { WORKSPACE } = require("./fake-host.cjs");
 const TOOLS = Object.freeze({
     vips: "/opt/homebrew/bin/vips",
     vipsheader: "/opt/homebrew/bin/vipsheader",
-    exiftool: "/opt/homebrew/bin/exiftool"
+    exiftool: "/opt/homebrew/bin/exiftool",
+    "fc-match": "/opt/homebrew/bin/fc-match"
 });
 
 // Records what it was told rather than showing it, and is never stopped: where

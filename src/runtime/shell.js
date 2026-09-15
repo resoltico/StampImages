@@ -15,9 +15,7 @@ const { errorMessage, summarizeCommand } = require("../core/errors.js");
  * dressed up as a command that failed.
  */
 
-function runArgv(app, argumentsList, label) {
-    const command = shellJoin(argumentsList);
-
+function runCommand(app, command, label) {
     try {
         return app.doShellScript(command);
     } catch (error) {
@@ -34,6 +32,26 @@ function runArgv(app, argumentsList, label) {
 
         throw failure;
     }
+}
+
+function runArgv(app, argumentsList, label) {
+    return runCommand(app, shellJoin(argumentsList), label);
+}
+
+/*
+ * A command whose answer is a file rather than a line.
+ *
+ * exiftool writes a binary tag to standard output, and its own -w names the
+ * file after the photograph -- which is how a 250-character photograph name
+ * asked for a 264-byte filename, over what any Mac filesystem will take. The
+ * redirection goes through the same quoting every argument does.
+ */
+function runArgvInto(app, argumentsList, path, label) {
+    return runCommand(
+        app,
+        `${shellJoin(argumentsList)} > ${shellJoin([path])}`,
+        label
+    );
 }
 
 /*
@@ -65,4 +83,4 @@ function removeFile(app, path) {
     tryArgv(app, [RM, "-f", path]);
 }
 
-module.exports = { runArgv, tryArgv, readTextFile, removeFile };
+module.exports = { runArgv, runArgvInto, tryArgv, readTextFile, removeFile };

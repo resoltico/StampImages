@@ -122,9 +122,13 @@ function collectSettings(app, opening, injected) {
         }
     }
 
-    const { fonts } = opening.context;
+    const { context } = opening;
 
-    return collectDialogSettings(app, opening.answers ?? defaultAnswers(fonts), fonts);
+    return collectDialogSettings(
+        app,
+        opening.answers ?? defaultAnswers(context.fonts),
+        context
+    );
 }
 
 module.exports = { collectViaForm, collectSettings };

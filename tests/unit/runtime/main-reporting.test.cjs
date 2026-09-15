@@ -20,7 +20,8 @@ const { createFakeApp } = require("./fake-app.cjs");
 const TOOLS = [
     "/opt/homebrew/bin/vips",
     "/opt/homebrew/bin/vipsheader",
-    "/opt/homebrew/bin/exiftool"
+    "/opt/homebrew/bin/exiftool",
+    "/opt/homebrew/bin/fc-match"
 ];
 
 function machine(settings = {}) {

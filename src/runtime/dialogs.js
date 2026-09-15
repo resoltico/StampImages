@@ -2,6 +2,7 @@
 
 const { ORDER, controlFor } = require("../core/form-rows.js");
 const { readAnswers } = require("../core/answers.js");
+const { undrawable } = require("./font-probe.js");
 const { chooseRequired, askUntil } = require("./prompts.js");
 
 /*
@@ -21,17 +22,30 @@ const { chooseRequired, askUntil } = require("./prompts.js");
  * decided by the same reader the form uses -- so a colour refused in one is
  * refused in the other, in the same words.
  *
- * The typeface is the one place the two front ends differ, and deliberately.
- * The form offers the faces this Mac drew with and takes the name of any
- * other, because it can ask the renderer about what was typed and mark the
- * field when nothing draws. A dialog cannot: it would have to accept a name,
- * close, and fail the run several questions later. So here it stays a list of
- * faces already known to draw, which is the answer that is always usable.
+ * The typeface is typed here as well. It used to be a list, because a dialog
+ * cannot offer a list and a field at once and the list was the answer always
+ * known to work -- but that left this the one path where a family the person
+ * already uses could not be named, and the one path where nothing checked the
+ * answer at all. Asked as text and resolved by the same probe, it re-asks like
+ * a number out of range instead.
  */
-function askRow(app, row, answers, fonts) {
-    const control = controlFor(row, fonts);
+function refusal(context, row, typed) {
+    const read = readAnswers({ ...typed.answers, [row.key]: typed.text }, context.fonts);
+    const mine = (read.problems ?? []).find((problem) => problem.key === row.key);
 
-    if (row.kind === "choice" || row.kind === "font") {
+    if (mine) {
+        return mine.message;
+    }
+
+    return row.kind === "font" && !context.draws(read.settings[row.key])
+        ? undrawable(read.settings[row.key])
+        : "";
+}
+
+function askRow(app, row, answers, context) {
+    const control = controlFor(row, context.fonts);
+
+    if (row.kind === "choice") {
         return chooseRequired(app, control, answers[row.key]);
     }
 
@@ -41,27 +55,23 @@ function askRow(app, row, answers, fonts) {
             prompt: control.prompt,
             defaultAnswer: String(answers[row.key])
         },
-        (typed) => {
-            const read = readAnswers({ ...answers, [row.key]: typed }, fonts);
+        (text) => {
+            const said = refusal(context, row, { answers, text });
 
-            if (read.problems) {
-                const mine = read.problems.find((problem) => problem.key === row.key);
-
-                if (mine) {
-                    throw new Error(mine.message);
-                }
+            if (said) {
+                throw new Error(said);
             }
 
-            return typed;
+            return text;
         }
     );
 }
 
-function collectDialogSettings(app, answers, fonts) {
+function collectDialogSettings(app, answers, context) {
     const given = { ...answers };
 
     for (const row of ORDER) {
-        given[row.key] = askRow(app, row, given, fonts);
+        given[row.key] = askRow(app, row, given, context);
     }
 
     /*
@@ -71,7 +81,7 @@ function collectDialogSettings(app, answers, fonts) {
      * reach. What this call is for is the conversion: labels to values, text
      * to numbers.
      */
-    return readAnswers(given, fonts).settings;
+    return readAnswers(given, context.fonts).settings;
 }
 
 module.exports = { collectDialogSettings, askRow };

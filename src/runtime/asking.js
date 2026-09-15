@@ -19,14 +19,11 @@ const { isUserCancelled } = require("../core/errors.js");
  * on the strength of one.
  *
  * There is one failure this can tell apart, and one place it is safe to let
- * out. A cancellation is not an answer about a file: reported as one it
- * became "the stamped photograph is not a file with anything in it", which is
- * a wrong diagnosis rather than a late stop. Every other question here is put
- * somewhere a raise would cost something -- a staging place left in somebody's
- * folder, a finished copy nobody is told the whereabouts of, a name chosen
- * after the copy exists -- and those swallow it as before. What it costs, said
- * plainly: a stop landing exactly on one of those sub-millisecond tests is not
- * noticed. vips takes seconds and is where somebody actually asks.
+ * out. A cancellation is not an answer about a file: reported as one it became
+ * "the stamped photograph is not a file with anything in it", a wrong
+ * diagnosis rather than a late stop. Every other question here is put somewhere
+ * a raise would cost something, and those swallow it as before -- the cost of
+ * which is that a stop landing on a sub-millisecond test is not noticed.
  */
 
 function succeeds(app, argumentsList) {
@@ -107,6 +104,31 @@ function sameBytes(app, one, other) {
     return succeeds(app, [CMP, "-s", one, other]);
 }
 
+/*
+ * Three answers, because two are not enough.
+ *
+ * cmp exits 0 when the files match, 1 when they differ, and 2 when it could
+ * not read one of them -- and doShellScript raises the exit status, so the
+ * three are told apart here rather than collapsed into "the command failed".
+ * Collapsed, a comparison that could not be made read as "these differ", and
+ * a drawing that was never compared read as a typeface that resolved.
+ */
+const FILES_DIFFER = 1;
+
+function compareFiles(app, one, other) {
+    try {
+        app.doShellScript(shellJoin([CMP, "-s", one, other]));
+
+        return "same";
+    } catch (error) {
+        if (isUserCancelled(error)) {
+            throw error;
+        }
+
+        return error.errorNumber === FILES_DIFFER ? "differ" : "unreadable";
+    }
+}
+
 function verifyFileWritten(app, path, label) {
     if (!isRegularNonEmpty(app, path)) {
         throw new Error(
@@ -118,7 +140,9 @@ function verifyFileWritten(app, path, label) {
 module.exports = {
     succeeds,
     sameBytes,
+    compareFiles,
     isRegularFile,
+    isRegularNonEmpty,
     isDirectory,
     isExecutable,
     pathIsTaken,

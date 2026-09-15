@@ -27,7 +27,8 @@ const WORKSPACE = `${TEMPORARY}/StampImages.Fake01`;
 const INSTALLED_TOOLS = [
     "/opt/homebrew/bin/vips",
     "/opt/homebrew/bin/vipsheader",
-    "/opt/homebrew/bin/exiftool"
+    "/opt/homebrew/bin/exiftool",
+    "/opt/homebrew/bin/fc-match"
 ];
 
 /*

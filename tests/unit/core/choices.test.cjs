@@ -14,9 +14,6 @@ const {
     POSITION,
     DATE_FORMAT,
     COORDINATE_FORMAT,
-    SIZE,
-    MARGIN,
-    OUTLINE_WIDTH,
     labelsOf,
     defaultLabelOf,
     defaultValueOf,
@@ -121,29 +118,4 @@ test("every corner and both centres are offered, named for the edges", () => {
         "bottom-centre",
         "top-centre"
     ]);
-});
-
-test("a number is offered with its bounds and a default inside them", () => {
-    for (const control of [SIZE, MARGIN, OUTLINE_WIDTH]) {
-        const value = Number(control.defaultAnswer);
-
-        assert.ok(control.minimum <= value && value <= control.maximum, control.label);
-        assert.match(control.prompt, new RegExp(`${control.minimum}`, "u"));
-        assert.match(control.prompt, new RegExp(`${control.maximum}`, "u"));
-        assert.ok(control.hint.length > 0);
-    }
-});
-
-test("an outline may be asked for and may be declined", () => {
-    assert.equal(OUTLINE_WIDTH.minimum, 0);
-    assert.match(OUTLINE_WIDTH.hint, /0 for none/u);
-});
-
-test("every control says what it is asking, twice over", () => {
-    // The prompt is a sentence for the stepwise dialogs; the label is a
-    // column heading in the form. Neither reads as the other.
-    for (const control of [...CONTROLS, SIZE, MARGIN, OUTLINE_WIDTH]) {
-        assert.match(control.prompt, /:$/u);
-        assert.match(control.label, /:$/u);
-    }
 });

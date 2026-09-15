@@ -25,59 +25,52 @@ function machine(settings = {}) {
         app,
         where: {
             app,
-            tools: { vips: "/opt/homebrew/bin/vips" },
+            tools: {
+                vips: "/opt/homebrew/bin/vips",
+                "fc-match": "/opt/homebrew/bin/fc-match"
+            },
             workspace: WORKSPACE
         }
     };
 }
 
-test("a machine that draws everything offers every family in both weights", () => {
+test("a machine that has everything is offered every family, and no weights", () => {
+    // Families, because a weight is a setting of its own. The list used to
+    // offer each name twice, as itself and with " Bold" on the end, which made
+    // the value a font description rather than a name -- and the bold half was
+    // never resolved at all, because only the plain name was ever drawn with.
     const { where } = machine();
-    const found = availableFonts(where);
 
-    assert.deepEqual(found, CANDIDATES.flatMap(
-        (family) => [family, `${family} Bold`]
-    ));
-    assert.equal(found.length, CANDIDATES.length * 2);
+    assert.deepEqual(availableFonts(where), CANDIDATES);
 });
 
-test("a family that draws as the fallback is not offered", () => {
-    // Measured on this Mac with the fonts installed and listed by fontconfig:
-    // "Helvetica" and "Times New Roman" both draw as the fallback.
+test("a family this Mac has not is not offered", () => {
     const { where } = machine({ fonts: ["Helvetica Neue", "Menlo"] });
-    const found = availableFonts(where);
 
-    assert.deepEqual(found, [
-        "Helvetica Neue",
-        "Helvetica Neue Bold",
-        "Menlo",
-        "Menlo Bold"
-    ]);
+    assert.deepEqual(availableFonts(where), ["Helvetica Neue", "Menlo"]);
 });
 
-test("a family that cannot be drawn at all is not offered either", () => {
+test("a family fontconfig keeps but the renderer cannot draw is not offered", () => {
+    // Measured: Helvetica, Times, Hoefler Text and Iowan Old Style all keep
+    // their names through fontconfig and all draw as the fallback, because the
+    // files macOS keeps them in are not ones freetype will open. So the name
+    // has to survive both questions.
     const { where } = machine({
-        fonts: ["Menlo"],
+        fonts: ["Helvetica Neue", "Menlo"],
         failures: [["Helvetica Neue", new Error("vips: broken pipe")]]
     });
 
-    assert.deepEqual(availableFonts(where), ["Menlo", "Menlo Bold"]);
+    assert.deepEqual(availableFonts(where), ["Menlo"]);
 });
 
-test("a machine none of them draws on says so", () => {
+test("a machine none of them has is not a machine that cannot be used", () => {
+    // It used to refuse the run, which was right while the list was the only
+    // way to name a typeface: the field takes any family now, so a Mac with
+    // none of these ten and hundreds of others would have been stopped at the
+    // door for no reason.
     const { where } = machine({ fonts: [] });
 
-    assert.throws(
-        () => availableFonts(where),
-        (error) => {
-            assert.equal(
-                error.message,
-                "None of the fonts this action offers draws on this Mac."
-            );
-
-            return true;
-        }
-    );
+    assert.deepEqual(availableFonts(where), []);
 });
 
 test("a renderer that cannot draw at all is a broken tool, not a bare Mac", () => {
@@ -94,21 +87,34 @@ test("a renderer that cannot draw at all is a broken tool, not a bare Mac", () =
 });
 
 test("a probe somebody stopped is not a Mac with no fonts", () => {
-    // One vips render per candidate, and it is the longest thing a run does
+    // One question per candidate, and it is the longest thing a run does
     // before it says anything -- so it is where somebody waiting is most
     // likely to ask it to stop. Swallowed, that answered "this Mac does not
-    // have this font" about every remaining one, and the person was told
-    // their Mac had none at all.
+    // have this font" about every remaining one.
     const stopped = new Error("User cancelled.");
 
     stopped.errorNumber = -128;
 
     const { where } = machine({
-        fonts: ["Menlo"],
+        fonts: ["Helvetica Neue", "Menlo"],
         failures: [["Helvetica Neue", stopped]]
     });
 
-    // Wrapped by the layer that caught it, and still a cancellation: what
-    // comes out is not a font's verdict and not a failure of the run.
     assert.throws(() => availableFonts(where), (error) => isUserCancelled(error));
+});
+
+test("a drawing that cannot be compared is not a typeface that resolved", () => {
+    // Read as "these differ", a comparison that was never made made an
+    // undrawable name into a usable one -- the one direction this must never
+    // fail in. It stops the probe instead, and the name is refused.
+    const unreadable = new Error("cmp: no such file");
+
+    unreadable.errorNumber = 2;
+
+    const { where } = machine({
+        fonts: ["Helvetica Neue"],
+        failures: [["/cmp", unreadable]]
+    });
+
+    assert.deepEqual(availableFonts(where), []);
 });

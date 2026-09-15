@@ -68,6 +68,23 @@ function dialogSurface(app) {
     };
 }
 
+/*
+ * A refusal carries the exit status the shell would have raised. cmp says 1
+ * for files that differ, and the runtime reads that number to tell a
+ * comparison it made from one it could not.
+ */
+const FILES_DIFFER = 1;
+
+function refusedBy(command) {
+    const failure = new Error("test failed");
+
+    if (command.includes("/cmp")) {
+        failure.errorNumber = FILES_DIFFER;
+    }
+
+    return failure;
+}
+
 function createFakeApp(responses = []) {
     const app = {
         commands: [],
@@ -89,7 +106,7 @@ function createFakeApp(responses = []) {
             }
 
             if (refuses(app, command)) {
-                throw new Error("test failed");
+                throw refusedBy(command);
             }
 
             return answersFor(app, command) ?? "";

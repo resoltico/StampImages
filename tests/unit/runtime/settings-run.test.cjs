@@ -21,6 +21,7 @@ const CONTEXT = askingContext(FONTS);
 
 const HEADLESS = {
     font: "Menlo",
+    weight: "regular",
     size: 24,
     textColour: "#FFFFFF",
     outlineColour: "#000000",

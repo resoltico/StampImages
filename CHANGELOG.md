@@ -10,23 +10,36 @@ Notable changes to this project are documented in this file. The format is based
 
 - Any typeface this Mac has, not only the ten the settings window suggests.
   The typeface control is a list you can also type into, the same way the
-  colours are: pick one of the suggestions, or write the family name of
-  anything else — "Zapfino", "Optima", a font you installed yourself. The name
-  is drawn with before the run starts, so one that draws nothing comes back
-  with the field marked and your other answers where you left them, rather
-  than being stamped in whatever face the renderer picked instead. The reason
-  is the line at the top of the window: a name that seems obvious can be
-  absent — macOS ships 190 Noto families and not the plain "Noto Serif" — and
-  a name Font Book lists can still draw the fallback.
+  colours are — pick a suggestion, or write the family name of anything else.
+- Weight is a setting of its own, regular or bold. It used to be half of the
+  typeface's name, which is why "Arial Bold" and "Arial" were separate entries
+  in a list of ten faces.
 
 ### Fixed
 
-- A settings file naming a typeface this Mac cannot draw with is refused, with
-  the reason. The photograph used to be stamped in whatever face the renderer
-  picked instead, and the run reported as a complete success.
-- Your remembered settings survive a typeface going away. A font removed since
-  the last run used to reset the size, the colours, the position and the margin
-  along with it.
+- Typefaces whose name ends in a style word can be asked for at all. "Times
+  New Roman" was read as the family "Times New" and appeared to be missing;
+  "Arial Black" was read as Arial made bold. Both work now.
+- A typeface this Mac does not have is refused rather than quietly replaced.
+  The check used to compare two drawings, which could say yes to a family that
+  does not exist and no to one that does: "Noto Serif" is not on macOS at all —
+  there are 190 script-specific Noto families and not that one — and was
+  accepted, while Times New Roman was refused.
+- Bold is checked like everything else. The list used to offer a bold version
+  of every face without ever asking whether this Mac had one.
+- A Mac with none of the ten suggestions still opens the settings window, so
+  you can name a face it does have. It used to refuse to run.
+- The one-question-at-a-time fallback asks for the typeface the same way, and
+  refuses a name this Mac cannot draw instead of failing several questions
+  later. It had no way to enter a family that was not on the list.
+- A photograph that stores only greys no longer turns a coloured caption grey.
+  The copy is written in colour so the caption keeps the colour you chose, the
+  picture is unchanged, and the run says how many it did that to.
+- A colour profile that could not be read is no longer treated as a photograph
+  that has none. It used to be reported as a run where everything went well.
+  A photograph with a very long name triggered exactly that, because the file
+  the profile was written to was named after it and could be too long to
+  create.
 
 ## [1.0.0] - 2026-09-14
 

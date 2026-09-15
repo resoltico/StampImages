@@ -5,15 +5,18 @@ const { parseInteger } = require("./numbers.js");
 const { readNumeric, readWords } = require("./reading.js");
 const {
     POSITION,
+    WEIGHT,
     DATE_FORMAT,
-    COORDINATE_FORMAT,
+    COORDINATE_FORMAT
+} = require("./choices.js");
+const {
     MINIMUM_SIZE,
     MAXIMUM_SIZE,
     MINIMUM_MARGIN,
     MAXIMUM_MARGIN,
     MINIMUM_OUTLINE,
     MAXIMUM_OUTLINE
-} = require("./choices.js");
+} = require("./bounds.js");
 
 /*
  * What a setting means, and validation of whatever arrives -- from the form,
@@ -76,6 +79,22 @@ function isSettingsRecord(value) {
     return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+/*
+ * What 1.0.0 stored, read as what this version means: the typeface used to
+ * carry the weight in its name, and "Arial Bold" read as a family is a family
+ * nothing has. Applied to a record as it arrives from outside, before the
+ * defaults are laid under it; a record that names a weight is left alone.
+ */
+const TRAILING_BOLD = /\s+Bold$/u;
+
+function asFamilyAndWeight(settings) {
+    const font = String(settings.font ?? "");
+
+    return settings.weight === undefined && TRAILING_BOLD.test(font)
+        ? { ...settings, font: font.replace(TRAILING_BOLD, ""), weight: "bold" }
+        : settings;
+}
+
 function normalizeSettings(settings) {
     return {
         font: readWords(settings.font ?? "", "The typeface").trim(),
@@ -93,6 +112,7 @@ function normalizeSettings(settings) {
             MAXIMUM_OUTLINE,
             "Outline"
         ),
+        weight: assertChoice(settings.weight, WEIGHT, "weight"),
         position: assertChoice(settings.position, POSITION, "position"),
         margin: parseInteger(
             readNumeric(settings.margin, "Margin"),
@@ -123,6 +143,7 @@ function stampsNothing(settings) {
 
 module.exports = {
     isSettingsRecord,
+    asFamilyAndWeight,
     normalizeSettings,
     stampsNothing,
     CUSTOM_TEXT_LIMIT

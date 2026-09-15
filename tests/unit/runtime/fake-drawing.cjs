@@ -30,6 +30,32 @@ const HEADER_FIELDS = [
 const READS_FILE = /^'[^']*\/cat' '(?<path>.*)'$/u;
 
 /*
+ * Which family fontconfig would use for a name.
+ *
+ * It answers every name: asked for one the machine has not, it names the one
+ * it would substitute. So a machine is modelled by which families it has, and
+ * anything else comes back as the substitute -- which is what tells a family
+ * this Mac really has from one quietly stood in for.
+ */
+const SUBSTITUTE = "Verdana";
+// Not anchored at the end: the preflight probe appends "2>&1 || true" so it
+// can read what a broken build printed.
+const MATCHES = /fc-match' '-f' '[^']*' '(?<family>[^']*)'/u;
+
+function resolvedFamily(app, command) {
+    const asked = MATCHES.exec(command);
+
+    if (!asked) {
+        return undefined;
+    }
+
+    const { family } = asked.groups;
+    const has = app.fonts === undefined || app.fonts.includes(family);
+
+    return has ? family : SUBSTITUTE;
+}
+
+/*
  * Which font names this machine draws with.
  *
  * The real probe draws a candidate and the impossible name and compares the
@@ -39,7 +65,7 @@ const READS_FILE = /^'[^']*\/cat' '(?<path>.*)'$/u;
  * which is a Mac with all of them installed.
  */
 const DRAWS_FONT =
-    /'text' '(?<out>[^']+)' '[^']*' '--font' '(?<font>[^']+) \d+'/u;
+    /'text' '(?<out>[^']+)' '[^']*' '--font' '(?<font>[^']+), \d+'/u;
 const COMPARES = /^'[^']*\/cmp' '-s' '(?<one>[^']+)' '(?<other>[^']+)'$/u;
 
 function noteFontDrawn(app, command) {
@@ -71,4 +97,10 @@ function headerField(app, command) {
     return field ? String(app[field[1]] ?? field[2]) : undefined;
 }
 
-module.exports = { noteFontDrawn, refusesComparison, readsFile, headerField };
+module.exports = {
+    noteFontDrawn,
+    resolvedFamily,
+    refusesComparison,
+    readsFile,
+    headerField
+};

@@ -18,6 +18,7 @@ const {
 
 const GOOD = {
     font: "Helvetica Neue",
+    weight: "regular",
     size: 36,
     textColour: "#FFFFFF",
     outlineColour: "#000000",

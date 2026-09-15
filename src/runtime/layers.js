@@ -3,7 +3,8 @@
 const {
     buildTextArgv,
     buildEmbedArgv,
-    buildDilateArgv
+    buildDilateArgv,
+    fontDescription
 } = require("../core/lettering.js");
 const { runArgv } = require("./shell.js");
 const { verifyFileWritten } = require("./asking.js");
@@ -34,7 +35,12 @@ function drawMask(job, face, text) {
 
     runArgv(
         job.app,
-        buildTextArgv(tools.vips, face.raw, text, `${settings.font} ${settings.size}`),
+        buildTextArgv(
+            tools.vips,
+            face.raw,
+            text,
+            fontDescription(settings.font, settings.weight, settings.size)
+        ),
         "drawing the stamp"
     );
     verifyFileWritten(job.app, face.raw, "the drawn text");

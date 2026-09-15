@@ -29,7 +29,7 @@ function operations(host) {
 
 test("the glyphs are drawn once and coloured, and the outline grown from them", () => {
     const { host, job } = jobOn();
-    const stamp = stampFor(job, { text: "Riga", profile: "" });
+    const stamp = stampFor(job, { text: "Riga", profile: { path: "", failed: false } });
 
     assert.equal(stamp.path, `${WORKSPACE}/stamp-1.png`);
     assert.deepEqual(stamp.size, { width: 200, height: 60 });
@@ -47,13 +47,16 @@ test("the glyphs are drawn once and coloured, and the outline grown from them", 
     ]);
 });
 
-test("the mask is drawn with the font and size that were asked for", () => {
-    const { host, job } = jobOn({ font: "Menlo Bold", size: 72 });
+test("the mask is drawn with the family, the weight and the size", () => {
+    // A description rather than a name, and built rather than typed: pango
+    // reads the words before the size as style instructions, so a comma has
+    // to end the family before the weight can be named.
+    const { host, job } = jobOn({ font: "Menlo", weight: "bold", size: 72 });
 
-    stampFor(job, { text: "Riga", profile: "" });
+    stampFor(job, { text: "Riga", profile: { path: "", failed: false } });
     assert.ok(host.commands.some(
-        (command) => command.includes("'--font' 'Menlo Bold 72'")
-    ));
+        (command) => command.includes("'--font' 'Menlo, Bold 72'")
+    ), host.commands.join("\n"));
 });
 
 test("an outline of nothing is not drawn at all", () => {
@@ -61,7 +64,7 @@ test("an outline of nothing is not drawn at all", () => {
     // difference -- and with no outline there is nothing to make room for,
     // so the mask is not embedded either.
     const { host, job } = jobOn({ outlineWidth: 0 });
-    const stamp = stampFor(job, { text: "Riga", profile: "" });
+    const stamp = stampFor(job, { text: "Riga", profile: { path: "", failed: false } });
 
     assert.equal(stamp.path, `${WORKSPACE}/stamp-1-face.png`);
     assert.deepEqual(operations(host), ["text", "black", "linear", "bandjoin"]);
@@ -71,7 +74,7 @@ test("the drawing is given the room the outline will grow into", () => {
     // vips rank keeps its input's dimensions, so an outline grown without a
     // border is shaved flat against the glyphs on all four sides.
     const { host, job } = jobOn({ outlineWidth: 3 });
-    const stamp = stampFor(job, { text: "Riga", profile: "" });
+    const stamp = stampFor(job, { text: "Riga", profile: { path: "", failed: false } });
     const embedded = host.commands.find((command) => command.includes("'embed'"));
 
     assert.match(embedded, /'3' '3' '206' '66'/u);
@@ -81,7 +84,7 @@ test("the drawing is given the room the outline will grow into", () => {
 test("what the drawing was made from does not outlive it", () => {
     const { host, job } = jobOn();
 
-    stampFor(job, { text: "Riga", profile: "" });
+    stampFor(job, { text: "Riga", profile: { path: "", failed: false } });
 
     const left = [...host.files].filter((path) => path.includes("stamp-1"));
 
@@ -94,7 +97,7 @@ test("a drawing that produced nothing is not a drawing", () => {
     const job = { ...makeJob(host), workspace: WORKSPACE };
 
     assert.throws(
-        () => stampFor(job, { text: "Riga", profile: "" }),
+        () => stampFor(job, { text: "Riga", profile: { path: "", failed: false } }),
         /the drawn text is not a file with anything in it/u
     );
 });
@@ -104,7 +107,7 @@ test("a stamp that was not assembled is not a stamp", () => {
     const job = { ...makeJob(host), workspace: WORKSPACE };
 
     assert.throws(
-        () => stampFor(job, { text: "Riga", profile: "" }),
+        () => stampFor(job, { text: "Riga", profile: { path: "", failed: false } }),
         /the stamp is not a file with anything in it/u
     );
 });

@@ -9,10 +9,8 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const {
-    readPhotograph,
-    composite
-} = require("../../../src/runtime/image.js");
+const { composite } = require("../../../src/runtime/image.js");
+const { readPhotograph } = require("../../../src/runtime/preparing.js");
 const { bandsOf } = require("../../../src/runtime/fidelity.js");
 const { createFakeHost, WORKSPACE } = require("./fake-host.cjs");
 const { makeJob } = require("./fake-job.cjs");

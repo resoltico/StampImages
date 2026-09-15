@@ -84,7 +84,7 @@ test("a face that draws nothing is marked, with everything else still typed", ()
 
     const [, second] = present.seen;
 
-    assert.match(second.detail, /Nothing draws with the typeface "Comic Sans MS"/u);
+    assert.match(second.detail, /This Mac does not draw with the typeface "Comic Sans MS"/u);
     assert.equal(second.rows.find((row) => row.key === "font").invalid, true);
     assert.equal(
         second.rows.find((row) => row.key === "customText").value,

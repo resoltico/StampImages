@@ -38,7 +38,7 @@ test("a headless run asks about the one face it was told to use", () => {
 
     assert.deepEqual(progress.said, ["pause"], "and says nothing while it does");
     assert.equal(drawn.length, 2, "the face and the name that cannot resolve");
-    assert.ok(drawn.some((command) => command.includes("'Menlo 40'")));
+    assert.ok(drawn.some((command) => command.includes("'Menlo, 40'")));
 });
 
 test("a headless configuration naming a face this Mac has not is refused", () => {
@@ -49,7 +49,7 @@ test("a headless configuration naming a face this Mac has not is refused", () =>
 
     assert.throws(
         () => headlessWith(host, "Zapfino", recorder()),
-        /Nothing draws with the typeface "Zapfino" on this Mac/u
+        /This Mac does not draw with the typeface "Zapfino"/u
     );
 });
 
@@ -96,7 +96,7 @@ test("the faces the form suggests are answered before anybody asks", () => {
     const drawn = host.commands.filter((command) => command.includes("'text'"));
 
     assert.equal(
-        drawn.filter((command) => command.includes("'Menlo 40'")).length,
+        drawn.filter((command) => command.includes("'Menlo, 40'")).length,
         1,
         "drawn once, while the list was being found"
     );

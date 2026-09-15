@@ -114,10 +114,14 @@ What the review got wrong, measured rather than argued:
   orientation tag is normalised exactly once by `autorot`.
 - **Unresolved inputs do not disappear**; there is a rejection for each.
 - **The font probe is the more truthful oracle.** The review wanted a font
-  catalogue instead. Measured, the catalogue disagrees with the renderer:
-  `fc-match` resolves "Helvetica" and "Times New Roman" happily, and pango
-  draws both as the fallback. The question worth asking is not whether a font
-  is installed.
+  catalogue instead. Measured, the catalogue disagreed with the renderer:
+  `fc-match` resolved "Helvetica" and "Times New Roman" happily and pango drew
+  both as the fallback. **This was the wrong conclusion, and 1.1.0's audit
+  corrected it** -- see "What an audit of 1.1.0 found". Half of that
+  disagreement was our own malformed font description, and the rest is that
+  the two answer different questions: the catalogue says whether the name is
+  the family that will be used, the drawing says whether it can be rendered.
+  Both are asked now.
 
 Four of its prescriptions were rejected outright, each for one reason. A
 CoreText renderer would make drawing depend on AppKit inside the Shortcuts
@@ -244,11 +248,131 @@ font that was not installed was offered. The drawings are compared byte for
 byte now — two renderings of one font are identical, measured — and against a
 reference drawn at the same weight.
 
-What the probe catches is not only a missing font. Measured with the fonts
-present and listed by fontconfig, "Helvetica" and "Times New Roman" both draw
-as the fallback while Helvetica Neue, Arial, Georgia and the rest draw as
-themselves. The question worth asking is not whether a font is installed but
-whether asking for it by that name draws it.
+What the probe catches is not only a missing font: asking for a name and
+getting the fallback is the case a presence check misses entirely. What it
+cannot catch on its own is a name fontconfig would substitute, which is the
+half 1.1.0's audit found -- and the "Times New Roman" reading here was our own
+malformed description rather than a fact about the font. Both corrected in
+"What an audit of 1.1.0 found".
+
+## What an audit of 1.1.0 found, and what it cost
+
+Seven findings, reported against the shipped 1.1.0 artifact by an agent
+working on Linux with libvips 8.16.1 and Pango 1.56.3. Every one was
+reproduced here before anything was designed, and every one was real -- two of
+them worse on macOS than the report described. What follows is what the
+reproductions showed, because several of them correct things this file used to
+say.
+
+### The typeface was never verified at all
+
+The probe drew with a name, drew with a name nobody has, and accepted the name
+when the two drawings differed. That establishes that two rendering requests
+produced different files, which is not the same as the family being found, and
+it fails in both directions. Measured here:
+
+| asked for | drawing | fontconfig | truth |
+| --- | --- | --- | --- |
+| `ThisTypefaceDoesNotExist Bold` | differs | -- | **accepted**, and no such family |
+| `Noto Serif` | differs | answers "Times New Roman" | **accepted**, and no such family |
+| `Helvetica` | falls back | answers "Helvetica" | **refused**, and it is installed |
+| `Times New Roman` | falls back | answers "Times New Roman" | **refused**, and it works |
+
+The last two rows are the ones that matter most, because this file used to
+explain them the other way round. It said Helvetica and Times New Roman were
+present and drew as the fallback, and treated that as a fact about macOS
+fonts. Half of it was our own construction (below), and the rest is that
+fontconfig matching a name is not the same as pango rendering with it: the
+files macOS keeps Helvetica, Times, Hoefler Text and Iowan Old Style in are
+not ones freetype will open.
+
+So identity comes from fontconfig and rasterisation from a drawing, and both
+are asked. Neither is sufficient: Noto Serif passes the drawing and fails the
+identity, Helvetica passes the identity and fails the drawing. Measured
+against twelve families, the pair is right on all twelve.
+
+`fc-match` is the oracle, and it arrives with vips as part of fontconfig
+rather than being something else to install. It is probed in preflight like
+the others. Two details it taught: it answers every name, which is what makes
+it an identity rather than a yes; and several names can come back for one
+family, because a face carries its localized names too -- Hiragino Sans
+answers with four.
+
+### The name was never a family name
+
+`${settings.font} ${settings.size}` is a pango *description*, not a family
+name, and pango reads the words before the size as style instructions.
+Measured: "Times New Roman 40" asks for the family "Times New" at normal
+weight, and "Arial Black 40" asks for Arial at weight 900. A comma ends the
+family, so "Times New Roman, 40" asks for the family somebody actually named.
+
+This is the root of the audit. It is why a face that works looked missing, and
+it is why the list offered "Arial" and "Arial Bold" as separate entries: the
+value was a description, so the weight could live in it. The typeface is a
+family name now, the weight is a setting of its own, and the description is
+built rather than typed -- which also means the bold half of every suggestion
+is no longer manufactured from an unprobed name and then cached as verified.
+
+What 1.0.0 stored is migrated as it arrives, because a record this program
+wrote itself would otherwise be refused by the program that wrote it.
+
+### The suggestions were a prerequisite
+
+`availableFonts` refused the run when none of the ten drew, which was right
+while the list was the only way to name a typeface and wrong the moment the
+field took any family: a Mac with none of these ten and hundreds of others
+would have been stopped at the door. It returns what drew, including nothing.
+A renderer that cannot draw at all still fails loudly, because the reference
+drawing is not caught.
+
+### The fallback asked differently and checked nothing
+
+The stepwise dialogs offered the list and nothing else -- the one path where a
+family somebody already uses could not be named -- and their answer never went
+through the drawable check. That was a deliberate trade when the check could
+not follow into a dialog. It can: the typeface is typed there like a colour,
+and a name that draws nothing is re-asked rather than accepted and failed
+several questions later. All three paths -- form, dialogs, configuration --
+resolve through one probe now, memoised so the question is asked once per
+name.
+
+### A grey photograph cannot hold a colour
+
+The stamp's colour is moved into the photograph's own space before it is
+painted. Measured on this Mac: #FF3B30 moved into a grey profile is one band
+with the value 138, the transform succeeds, and the run reports the colour as
+handled -- so a red caption on a grey-profiled photograph came out grey and
+nothing said so. Confirmed end to end against the shipped artifact: exit 0,
+`unconverted: 0`, one band out.
+
+They meet in sRGB instead. The photograph is read into sRGB through its own
+profile, so its greys keep their meaning -- measured, 200 comes back 200, 200,
+200 -- and the caption keeps the colour that was chosen. Only when the colour
+needs it: white, black and the default outline are greys, so the ordinary run
+over a grey photograph is untouched and the copy stays as grey as the
+photograph was. The copy's change in kind is counted and said once for the
+run rather than assumed to be unremarkable.
+
+### A profile that could not be read looked like a photograph without one
+
+Both were the empty string, and the empty string takes the no-profile path,
+which reports the colour as handled. The trigger is concrete: the file the
+profile was written to was named after the photograph, so a 250-character name
+asked for a 264-byte filename -- longer than any Mac filesystem takes.
+Measured, that fails with ENAMETOOLONG, and the failure was swallowed.
+
+The name is the attempt's token now and nothing else, and the three outcomes
+are distinct. Measured: exiftool writing the tag to standard output exits 0
+with bytes for a photograph that has a profile, exits 0 with none for one that
+does not, and exits non-zero for a file it cannot read. A failure is counted
+rather than assumed away.
+
+### What the audit did not establish, and this round did
+
+The report's font-probe findings were reproduced against Linux fontconfig.
+They hold here, but the specific families differ by machine, so the measured
+table above is this Mac's rather than a claim about macOS. The grey-profile
+and filename findings were reproduced natively here as well as in the report.
 
 ## What a red hint claimed
 
@@ -283,8 +407,9 @@ anything. That invitation now has to carry the weight of a discovery: a name
 that seems obvious can be absent, and a name Font Book lists can draw the
 fallback anyway. Measured on this Mac, of twenty serif faces asked for by the
 name Font Book shows, nine draw -- Charter, Didot, Bodoni 72, Cochin, Optima,
-Palatino, Georgia, Baskerville, Academy Engraved LET -- and eleven do not,
-including Times New Roman, Hoefler Text, Iowan Old Style and New York. The
+Palatino, Georgia, Baskerville, Academy Engraved LET -- and eleven did
+not -- a measurement taken with the broken construction, and corrected in the
+section above: Times New Roman works. The
 refusal is doing its job in every one of those cases, which makes what the
 refusal says the thing worth getting right.
 

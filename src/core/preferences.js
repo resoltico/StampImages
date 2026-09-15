@@ -1,6 +1,10 @@
 "use strict";
 
-const { isSettingsRecord, normalizeSettings } = require("./settings.js");
+const {
+    isSettingsRecord,
+    asFamilyAndWeight,
+    normalizeSettings
+} = require("./settings.js");
 const { answersFromSettings } = require("./answers.js");
 const { defaultSettings } = require("./form-defaults.js");
 
@@ -75,7 +79,10 @@ function rememberedAnswers(text, fonts) {
             return undefined;
         }
 
-        const settings = normalizeSettings({ ...defaultSettings(fonts), ...held });
+        const settings = normalizeSettings({
+            ...defaultSettings(fonts),
+            ...asFamilyAndWeight(held)
+        });
 
         return { ...answersFromSettings(settings, fonts), ...blank() };
     } catch {

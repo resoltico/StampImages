@@ -5,6 +5,7 @@ const {
     sameContents,
     drawingToken
 } = require("./fake-contents.cjs");
+const { describe, extractProfile } = require("./fake-exiftool.cjs");
 
 /*
  * What the tools leave behind.
@@ -29,6 +30,7 @@ const VIPS_OUTPUT_ARGUMENT = {
     // vips names this one with an underscore; the table is keyed by what
     // vips is actually asked.
     "icc_transform": 3,
+    colourspace: 3,
     bandjoin: 3,
     autorot: 3,
     flatten: 3,
@@ -40,36 +42,32 @@ const VIPS_OUTPUT_ARGUMENT = {
 /*
  * A comparison of two files, answered from what each of them holds.
  */
+/*
+ * cmp exits 0 when the files match, 1 when they differ and 2 when it could
+ * not read one of them, and doShellScript raises the exit status -- so the
+ * fake raises it too. Collapsed into one failure, a comparison that could not
+ * be made would look exactly like two files that differ.
+ */
+function refused(message, status) {
+    const failure = new Error(message);
+
+    failure.errorNumber = status;
+
+    return failure;
+}
+
 function compare(state, argv) {
     for (const path of argv.slice(2)) {
         if (!state.files.has(path)) {
-            throw new Error("cmp: no such file");
+            throw refused("cmp: no such file", 2);
         }
     }
 
     if (!sameContents(state, argv[2], argv[3])) {
-        // cmp fails when the files differ.
-        throw new Error("files differ");
+        throw refused("files differ", 1);
     }
 
     return "";
-}
-
-/*
- * exiftool answers with a list of one entry, because it is built to be asked
- * about many files at once. A test gives the state a `metadata` map to say
- * what a particular photograph claims about itself.
- */
-function describe(state, argv) {
-    const path = argv.at(-1);
-
-    if (!state.files.has(path) && !state.runnable.has(path)) {
-        return "[]";
-    }
-
-    return JSON.stringify([
-        { SourceFile: path, ...state.metadata.get(path) }
-    ]);
 }
 
 /*
@@ -83,7 +81,9 @@ function contentsDrawn(state, argv, written) {
         return `file:${written}`;
     }
 
-    return drawingToken(state, String(argv[at + 1]).replace(/ \d+$/u, ""));
+    // The description is "Family, Weight Size" -- the comma is what keeps a
+    // family whose name ends in a style word from being read as a style.
+    return drawingToken(state, String(argv[at + 1]).replace(/,? [^,]*\d+$/u, ""));
 }
 
 /*
@@ -103,29 +103,6 @@ function drew(state, argv) {
     setContents(state, written, contentsDrawn(state, argv, written));
 
     return "";
-}
-
-/*
- * exiftool writing a photograph's colour profile out to a file, which is also
- * how the question "does this photograph carry one" is asked: a photograph
- * with none produces no file. The contents token is the profile itself, so
- * two photographs off one camera compare equal and share one drawing.
- */
-function extractProfile(state, argv) {
-    const source = argv.at(-1);
-    const profile = state.profiles.get(source);
-
-    if (!profile) {
-        return "0 output files created";
-    }
-
-    const stem = String(source).split("/").at(-1).replace(/\.[^.]*$/u, "");
-    const written = String(argv.at(-2)).replace("%f", stem);
-
-    state.files.add(written);
-    setContents(state, written, `profile:${profile}`);
-
-    return "1 output files created";
 }
 
 function produceOutput(state, argv, command) {

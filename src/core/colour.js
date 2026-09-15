@@ -78,6 +78,36 @@ function rgbOf(value, subject = "A colour") {
 }
 
 /*
+ * Whether a colour is a grey, which decides whether a grey photograph can
+ * hold it. White, black and the default outline are greys, so the ordinary
+ * run is unaffected by the question.
+ */
+function isGrey(value) {
+    const { red, green, blue } = rgbOf(value);
+
+    return red === green && green === blue;
+}
+
+/*
+ * What a run asks a photograph's space to hold: the text's colour, and the
+ * outline's when there is an outline to draw.
+ */
+function wantsColour(settings) {
+    return !isGrey(settings.textColour) ||
+        (settings.outlineWidth > 0 && !isGrey(settings.outlineColour));
+}
+
+/*
+ * A grey photograph cannot hold a colour, so the copy is made in sRGB and
+ * says so. Counted rather than mentioned per photograph: a folder of scans
+ * would say it two hundred times.
+ */
+function describeExpanded(count) {
+    return `${plural(count, "photograph")} stored its greys only, so the ` +
+        "copy is in colour and the caption keeps the colour you chose.";
+}
+
+/*
  * A colour that could not be moved into a photograph's own space is painted
  * as the numbers it is, which is what every copy was before the move existed.
  * Said once for the run: what it affects is how closely the stamp matches the
@@ -88,4 +118,12 @@ function describeUnconverted(count) {
         "could not read, so the stamp was drawn in plain sRGB.";
 }
 
-module.exports = { COLOUR_RULE, normalizeColour, rgbOf, describeUnconverted };
+module.exports = {
+    COLOUR_RULE,
+    normalizeColour,
+    rgbOf,
+    isGrey,
+    wantsColour,
+    describeExpanded,
+    describeUnconverted
+};

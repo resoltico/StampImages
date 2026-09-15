@@ -9,6 +9,11 @@ get stamped copies beside them — `holiday.jpg` becomes `holiday_stamped.jpg`,
 in the same folder and the same format. No preview, no photo viewer, no
 editing of the originals: one styled block of text, composited into new files.
 
+A photograph that stores only greys cannot hold a caption that is not grey.
+Where you ask for one, the copy is written in colour so the caption keeps the
+colour you chose, and the run says how many it did that to; the picture itself
+is unchanged.
+
 The metadata it reads is a record of what the camera wrote. A visible date or
 coordinate is a representation of that record, not proof that a clock or a
 location was right. A photograph that says nothing about itself still gets the
@@ -16,13 +21,17 @@ text you typed, and nothing standing in for what is missing.
 
 ## What you can choose
 
-Ten settings, asked once for the whole selection:
+Eleven settings, asked once for the whole selection:
 
 - how the date is written, or that it is not stamped
 - how the coordinates are written, or that they are not
 - text of your own, which may run to several lines
-- the typeface: one of the faces this Mac was seen to render with, or the
-  family name of any other it has — typed into the same control
+- the typeface, by family name: one of the faces this Mac was seen to draw
+  with, or any other family it has, typed into the same control. A name it
+  cannot draw is refused with the reason rather than quietly becoming another
+  face — and Font Book listing a font is not the same as this being able to
+  ask for it by that name
+- the weight, regular or bold, which is a setting rather than part of the name
 - the text size in points, and its colour
 - the outline width and colour, so light text stays readable on a light sky
 - which corner or edge the block goes in, and how far in from it

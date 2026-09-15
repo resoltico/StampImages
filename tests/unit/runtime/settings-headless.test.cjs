@@ -20,6 +20,7 @@ const CONTEXT = askingContext(FONTS);
 
 const HEADLESS = {
     font: "Menlo",
+    weight: "regular",
     size: 24,
     textColour: "#FFFFFF",
     outlineColour: "#000000",
@@ -94,6 +95,6 @@ test("a configuration naming a face this Mac does not draw with is refused", () 
             { headless: true, settings: { ...HEADLESS, font: "Zapfino" } },
             CONTEXT
         ),
-        /Nothing draws with the typeface "Zapfino" on this Mac/u
+        /This Mac does not draw with the typeface "Zapfino"/u
     );
 });

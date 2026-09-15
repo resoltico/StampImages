@@ -2,6 +2,7 @@
 
 const {
     noteFontDrawn,
+    resolvedFamily,
     refusesComparison,
     readsFile,
     headerField
@@ -88,6 +89,7 @@ function answersFor(app, command) {
 
     for (const answer of [
         searchesPath(app, command),
+        resolvedFamily(app, command),
         readsFile(app, command),
         headerField(app, command),
         cannedAnswer(app, command)

@@ -3,13 +3,12 @@
 const { listRow, numberRow, textRow } = require("./form-shapes.js");
 const {
     POSITION,
+    WEIGHT,
     DATE_FORMAT,
     COORDINATE_FORMAT,
-    SIZE,
-    MARGIN,
-    OUTLINE_WIDTH,
     labelOfValue
 } = require("./choices.js");
+const { SIZE, MARGIN, OUTLINE_WIDTH } = require("./bounds.js");
 
 /*
  * What the form asks, described as data.
@@ -25,10 +24,11 @@ const {
  */
 
 /*
- * The faces this Mac drew with are suggestions, not the whole truth: probing
- * every family fontconfig knows costs a render apiece, which on this Mac is
- * 671 of them. So anything may be typed instead, and a name that was typed is
- * drawn with before the run starts, exactly as the suggestions were.
+ * A family name, and nothing else: the weight is the setting below, and the
+ * description the renderer is given is built from the two -- see
+ * fontDescription in lettering.js for why that distinction is the whole of
+ * this. The faces this Mac drew with are suggestions rather than the whole
+ * truth, so any other family may be typed and is resolved the same way.
  */
 const FONT = {
     prompt: "Typeface, by family name:",
@@ -88,6 +88,7 @@ const ORDER = [
     { kind: "choice", key: "coordinateFormat", control: COORDINATE_FORMAT },
     { kind: "text", key: "customText", control: TEXT },
     { kind: "font", key: "font", control: FONT },
+    { kind: "choice", key: "weight", control: WEIGHT },
     { kind: "number", key: "size", control: SIZE },
     { kind: "colour", key: "textColour", control: TEXT_COLOUR },
     { kind: "number", key: "outlineWidth", control: OUTLINE_WIDTH },

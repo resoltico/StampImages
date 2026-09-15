@@ -51,43 +51,19 @@ const COORDINATE_FORMAT = {
     choices: COORDINATE_FORMATS
 };
 
-const MINIMUM_SIZE = 8;
-const MAXIMUM_SIZE = 400;
-const MINIMUM_MARGIN = 0;
-const MAXIMUM_MARGIN = 2000;
-const MINIMUM_OUTLINE = 0;
-const MAXIMUM_OUTLINE = 20;
+// Weight is its own setting because it is its own thing. It used to be half
+// of the typeface's name -- "Arial" and "Arial Bold" as separate entries --
+// which made the value a font description rather than a family name, and a
+// family whose real name ends in a style word could not be asked for at all.
+const WEIGHTS = [
+    { label: "Regular", value: "regular" },
+    { label: "Bold", value: "bold" }
+];
 
-/*
- * Text size is in points at the image's own scale, not a fraction of it: a
- * stamp that is a percentage of the picture is a different size on every
- * photograph in the batch, which is the opposite of what a batch is for.
- */
-const SIZE = {
-    prompt: `Text size in points (${MINIMUM_SIZE}-${MAXIMUM_SIZE}):`,
-    label: "Text size:",
-    hint: `${MINIMUM_SIZE}-${MAXIMUM_SIZE} pt`,
-    defaultAnswer: "36",
-    minimum: MINIMUM_SIZE,
-    maximum: MAXIMUM_SIZE
-};
-
-const MARGIN = {
-    prompt: `Margin in pixels (${MINIMUM_MARGIN}-${MAXIMUM_MARGIN}):`,
-    label: "Margin:",
-    hint: `${MINIMUM_MARGIN}-${MAXIMUM_MARGIN} px`,
-    defaultAnswer: "24",
-    minimum: MINIMUM_MARGIN,
-    maximum: MAXIMUM_MARGIN
-};
-
-const OUTLINE_WIDTH = {
-    prompt: `Outline width in pixels (${MINIMUM_OUTLINE}-${MAXIMUM_OUTLINE}):`,
-    label: "Outline:",
-    hint: `${MINIMUM_OUTLINE}-${MAXIMUM_OUTLINE} px, 0 for none`,
-    defaultAnswer: "2",
-    minimum: MINIMUM_OUTLINE,
-    maximum: MAXIMUM_OUTLINE
+const WEIGHT = {
+    prompt: "Weight:",
+    label: "Weight:",
+    choices: WEIGHTS
 };
 
 function labelsOf(control) {
@@ -129,17 +105,9 @@ function labelOfValue(control, value) {
 
 module.exports = {
     POSITION,
+    WEIGHT,
     DATE_FORMAT,
     COORDINATE_FORMAT,
-    SIZE,
-    MARGIN,
-    OUTLINE_WIDTH,
-    MINIMUM_SIZE,
-    MAXIMUM_SIZE,
-    MINIMUM_MARGIN,
-    MAXIMUM_MARGIN,
-    MINIMUM_OUTLINE,
-    MAXIMUM_OUTLINE,
     labelsOf,
     defaultLabelOf,
     defaultValueOf,

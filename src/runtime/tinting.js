@@ -31,18 +31,26 @@ function sizeOf(job, path) {
 }
 
 /*
- * The colour as the photograph will read it. A transform that fails leaves
- * the sRGB numbers, which is what every copy had before this existed, and the
- * run says how many photographs that applied to rather than saying nothing.
+ * The colour as the photograph will read it.
+ *
+ * Three cases, because a profile that could not be read is not a photograph
+ * without one: that used to take the no-profile path, which reports the colour
+ * as handled, so an extraction that failed was a stamp in unconverted numbers
+ * and a run that said everything went well. A transform that fails leaves the
+ * sRGB numbers too, and either way the run counts it.
  */
 function inSpaceOf(job, paths, profile) {
-    if (!profile) {
+    if (profile.failed) {
+        return { path: paths.colour, moved: false };
+    }
+
+    if (!profile.path) {
         return { path: paths.colour, moved: true };
     }
 
     const moved = succeeds(
         job.app,
-        buildIccArgv(job.tools.vips, paths.colour, paths.moved, profile)
+        buildIccArgv(job.tools.vips, paths.colour, paths.moved, profile.path)
     );
 
     return moved
@@ -96,4 +104,4 @@ function filesOf(paths) {
     return [paths.raw, paths.mask, paths.solid, paths.colour, paths.moved, paths.out];
 }
 
-module.exports = { sizeOf, tinted, pathsFor, filesOf };
+module.exports = { sizeOf, inSpaceOf, tinted, pathsFor, filesOf };

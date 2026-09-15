@@ -23,7 +23,10 @@ function machine(settings = {}) {
         app,
         where: {
             app,
-            tools: { vips: "/opt/homebrew/bin/vips" },
+            tools: {
+                vips: "/opt/homebrew/bin/vips",
+                "fc-match": "/opt/homebrew/bin/fc-match"
+            },
             workspace: WORKSPACE
         }
     };
@@ -31,7 +34,7 @@ function machine(settings = {}) {
 
 function fontsDrawn(app) {
     return app.commands
-        .map((command) => (/'--font' '(?<font>[^']+) \d+'/u).exec(command))
+        .map((command) => (/'--font' '(?<font>[^']+), \d+'/u).exec(command))
         .filter(Boolean)
         .map((match) => match.groups.font);
 }
@@ -76,7 +79,7 @@ test("the probe draws letters with ascenders, descenders and digits", () => {
 
     availableFonts(where);
     assert.ok(app.commands[0].includes("'AWgy0123'"), app.commands[0]);
-    assert.ok(app.commands[0].includes(`'${IMPOSSIBLE} 40'`), app.commands[0]);
+    assert.ok(app.commands[0].includes(`'${IMPOSSIBLE}, 40'`), app.commands[0]);
 });
 
 test("the drawings go in the workspace, not beside anybody's photographs", () => {

@@ -8,7 +8,10 @@ const { createFakeApp, failing } = require("./fake-app.cjs");
 const HOMEBREW = "/opt/homebrew/bin/vips";
 
 test("every tool the pipeline needs is named", () => {
-    assert.deepEqual(TOOL_NAMES, ["vips", "vipsheader", "exiftool"]);
+    assert.deepEqual(
+        TOOL_NAMES,
+        ["vips", "vipsheader", "exiftool", "fc-match"]
+    );
 });
 
 test("an environment override wins when it is executable", () => {
@@ -80,7 +83,8 @@ test("each tool has its own environment override, under its own name", () => {
     const expected = {
         vips: "STAMP_IMAGES_VIPS",
         vipsheader: "STAMP_IMAGES_VIPSHEADER",
-        exiftool: "STAMP_IMAGES_EXIFTOOL"
+        exiftool: "STAMP_IMAGES_EXIFTOOL",
+        "fc-match": "STAMP_IMAGES_FC_MATCH"
     };
 
     for (const name of TOOL_NAMES) {

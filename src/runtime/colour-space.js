@@ -1,8 +1,8 @@
 "use strict";
 
-const { basename, fileStem } = require("../core/paths.js");
-const { tryArgv, removeFile } = require("./shell.js");
-const { sameBytes, isRegularFile } = require("./asking.js");
+const { isUserCancelled } = require("../core/errors.js");
+const { runArgvInto, removeFile } = require("./shell.js");
+const { sameBytes, isRegularNonEmpty } = require("./asking.js");
 
 /*
  * Which colours a photograph's numbers mean.
@@ -17,13 +17,27 @@ const { sameBytes, isRegularFile } = require("./asking.js");
  * which is why the defaults never showed it.
  *
  * So the photograph's profile is taken out of it and the colour is moved into
- * that space before it is painted. exiftool writes the profile to a file and
- * writes nothing at all when there is none, which is also how the question
- * "does this photograph carry one" is asked.
- *
- * A photograph with no profile needs none of this: numbers with no profile
- * are sRGB by convention, which is what they already are.
+ * that space before it is painted. A photograph with no profile needs none of
+ * this: numbers with no profile are sRGB by convention, which is what they
+ * already are.
  */
+
+/*
+ * Three answers, because two were not enough.
+ *
+ * "There is no profile" and "the profile could not be read" used to be the
+ * same empty string, and the empty string took the no-profile path -- which
+ * reports the colour as handled. So an extraction that failed was a stamp
+ * painted in unconverted numbers and a run that said everything went well.
+ * They are told apart now, and a failure is counted rather than assumed away.
+ */
+function none() {
+    return { path: "", failed: false };
+}
+
+function unreadable() {
+    return { path: "", failed: true };
+}
 
 /*
  * One file per distinct profile rather than per photograph. A batch comes off
@@ -35,44 +49,62 @@ function known(job, path) {
     return job.profiles.find((seen) => sameBytes(job.app, seen, path)) ?? "";
 }
 
+/*
+ * Named for the attempt rather than for the photograph. exiftool's own -w
+ * names the file after the source, so a 250-character photograph name asked
+ * for a 264-byte filename -- longer than any Mac filesystem takes -- and the
+ * failure was swallowed as "this photograph has no profile".
+ */
 function extract(job, source, token) {
-    const written =
-        `${job.workspace}/profile-${token}-${fileStem(basename(source))}.icc`;
+    const written = `${job.workspace}/profile-${token}.icc`;
 
-    tryArgv(job.app, [
-        job.tools.exiftool,
-        "-icc_profile",
-        "-b",
-        "-w!",
-        `${job.workspace}/profile-${token}-%f.icc`,
-        source
-    ]);
+    try {
+        runArgvInto(
+            job.app,
+            [job.tools.exiftool, "-icc_profile", "-b", source],
+            written,
+            "reading the photograph's colour profile"
+        );
+    } catch (error) {
+        if (isUserCancelled(error)) {
+            throw error;
+        }
 
-    return isRegularFile(job.app, written) ? written : "";
+        return unreadable();
+    }
+
+    // exiftool succeeds and writes nothing at all for a photograph that
+    // carries no profile, which is how the question is asked.
+    if (!isRegularNonEmpty(job.app, written)) {
+        removeFile(job.app, written);
+
+        return none();
+    }
+
+    return { path: written, failed: false };
 }
 
 /*
- * The profile this photograph's colours are in, as a file this run owns, or
- * "" when the photograph carries none.
+ * The profile this photograph's colours are in, as a file this run owns.
  */
 function profileFor(job, source, token) {
-    const written = extract(job, source, token);
+    const found = extract(job, source, token);
 
-    if (!written) {
-        return "";
+    if (!found.path) {
+        return found;
     }
 
-    const seen = known(job, written);
+    const seen = known(job, found.path);
 
     if (!seen) {
-        job.profiles.push(written);
+        job.profiles.push(found.path);
 
-        return written;
+        return found;
     }
 
-    removeFile(job.app, written);
+    removeFile(job.app, found.path);
 
-    return seen;
+    return { path: seen, failed: false };
 }
 
 module.exports = { profileFor };

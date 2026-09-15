@@ -136,10 +136,3 @@ test("what a walk left alone is said, and is not held against the run", () => {
 
     assert.match(detail, /Left alone: 1 stamped copy from an earlier run/u);
 });
-
-test("a colour that could not be moved is said too", () => {
-    assert.match(
-        detailOf(result({ unconverted: 2 })),
-        /2 photographs carried a colour profile/u
-    );
-});

@@ -29,6 +29,7 @@ test("the rows read in the order somebody fills them in", () => {
         "coordinateFormat",
         "customText",
         "font",
+        "weight",
         "size",
         "textColour",
         "outlineWidth",

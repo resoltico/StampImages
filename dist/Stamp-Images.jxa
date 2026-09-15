@@ -401,6 +401,22 @@ function rgbOf(value, subject = "A colour") {
     };
 }
 
+function isGrey(value) {
+    const { red, green, blue } = rgbOf(value);
+
+    return red === green && green === blue;
+}
+
+function wantsColour(settings) {
+    return !isGrey(settings.textColour) ||
+        (settings.outlineWidth > 0 && !isGrey(settings.outlineColour));
+}
+
+function describeExpanded(count) {
+    return `${plural(count, "photograph")} stored its greys only, so the ` +
+        "copy is in colour and the caption keeps the colour you chose.";
+}
+
 function describeUnconverted(count) {
     return `${plural(count, "photograph")} carried a colour profile this ` +
         "could not read, so the stamp was drawn in plain sRGB.";
@@ -571,38 +587,15 @@ const COORDINATE_FORMAT = {
     choices: COORDINATE_FORMATS
 };
 
-const MINIMUM_SIZE = 8;
-const MAXIMUM_SIZE = 400;
-const MINIMUM_MARGIN = 0;
-const MAXIMUM_MARGIN = 2000;
-const MINIMUM_OUTLINE = 0;
-const MAXIMUM_OUTLINE = 20;
+const WEIGHTS = [
+    { label: "Regular", value: "regular" },
+    { label: "Bold", value: "bold" }
+];
 
-const SIZE = {
-    prompt: `Text size in points (${MINIMUM_SIZE}-${MAXIMUM_SIZE}):`,
-    label: "Text size:",
-    hint: `${MINIMUM_SIZE}-${MAXIMUM_SIZE} pt`,
-    defaultAnswer: "36",
-    minimum: MINIMUM_SIZE,
-    maximum: MAXIMUM_SIZE
-};
-
-const MARGIN = {
-    prompt: `Margin in pixels (${MINIMUM_MARGIN}-${MAXIMUM_MARGIN}):`,
-    label: "Margin:",
-    hint: `${MINIMUM_MARGIN}-${MAXIMUM_MARGIN} px`,
-    defaultAnswer: "24",
-    minimum: MINIMUM_MARGIN,
-    maximum: MAXIMUM_MARGIN
-};
-
-const OUTLINE_WIDTH = {
-    prompt: `Outline width in pixels (${MINIMUM_OUTLINE}-${MAXIMUM_OUTLINE}):`,
-    label: "Outline:",
-    hint: `${MINIMUM_OUTLINE}-${MAXIMUM_OUTLINE} px, 0 for none`,
-    defaultAnswer: "2",
-    minimum: MINIMUM_OUTLINE,
-    maximum: MAXIMUM_OUTLINE
+const WEIGHT = {
+    prompt: "Weight:",
+    label: "Weight:",
+    choices: WEIGHTS
 };
 
 function labelsOf(control) {
@@ -636,6 +629,43 @@ function labelOfValue(control, value) {
 
     return chosen.label;
 }
+
+/* ===== src/core/bounds.js ===== */
+
+
+const MINIMUM_SIZE = 8;
+const MAXIMUM_SIZE = 400;
+const MINIMUM_MARGIN = 0;
+const MAXIMUM_MARGIN = 2000;
+const MINIMUM_OUTLINE = 0;
+const MAXIMUM_OUTLINE = 20;
+
+const SIZE = {
+    prompt: `Text size in points (${MINIMUM_SIZE}-${MAXIMUM_SIZE}):`,
+    label: "Text size:",
+    hint: `${MINIMUM_SIZE}-${MAXIMUM_SIZE} pt`,
+    defaultAnswer: "36",
+    minimum: MINIMUM_SIZE,
+    maximum: MAXIMUM_SIZE
+};
+
+const MARGIN = {
+    prompt: `Margin in pixels (${MINIMUM_MARGIN}-${MAXIMUM_MARGIN}):`,
+    label: "Margin:",
+    hint: `${MINIMUM_MARGIN}-${MAXIMUM_MARGIN} px`,
+    defaultAnswer: "24",
+    minimum: MINIMUM_MARGIN,
+    maximum: MAXIMUM_MARGIN
+};
+
+const OUTLINE_WIDTH = {
+    prompt: `Outline width in pixels (${MINIMUM_OUTLINE}-${MAXIMUM_OUTLINE}):`,
+    label: "Outline:",
+    hint: `${MINIMUM_OUTLINE}-${MAXIMUM_OUTLINE} px, 0 for none`,
+    defaultAnswer: "2",
+    minimum: MINIMUM_OUTLINE,
+    maximum: MAXIMUM_OUTLINE
+};
 
 /* ===== src/core/form-shapes.js ===== */
 
@@ -734,6 +764,16 @@ function isSettingsRecord(value) {
     return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+const TRAILING_BOLD = /\s+Bold$/u;
+
+function asFamilyAndWeight(settings) {
+    const font = String(settings.font ?? "");
+
+    return settings.weight === undefined && TRAILING_BOLD.test(font)
+        ? { ...settings, font: font.replace(TRAILING_BOLD, ""), weight: "bold" }
+        : settings;
+}
+
 function normalizeSettings(settings) {
     return {
         font: readWords(settings.font ?? "", "The typeface").trim(),
@@ -751,6 +791,7 @@ function normalizeSettings(settings) {
             MAXIMUM_OUTLINE,
             "Outline"
         ),
+        weight: assertChoice(settings.weight, WEIGHT, "weight"),
         position: assertChoice(settings.position, POSITION, "position"),
         margin: parseInteger(
             readNumeric(settings.margin, "Margin"),
@@ -1108,6 +1149,7 @@ const ORDER = [
     { kind: "choice", key: "coordinateFormat", control: COORDINATE_FORMAT },
     { kind: "text", key: "customText", control: TEXT },
     { kind: "font", key: "font", control: FONT },
+    { kind: "choice", key: "weight", control: WEIGHT },
     { kind: "number", key: "size", control: SIZE },
     { kind: "colour", key: "textColour", control: TEXT_COLOUR },
     { kind: "number", key: "outlineWidth", control: OUTLINE_WIDTH },
@@ -1341,7 +1383,10 @@ function rememberedAnswers(text, fonts) {
             return undefined;
         }
 
-        const settings = normalizeSettings({ ...defaultSettings(fonts), ...held });
+        const settings = normalizeSettings({
+            ...defaultSettings(fonts),
+            ...asFamilyAndWeight(held)
+        });
 
         return { ...answersFromSettings(settings, fonts), ...blank() };
     } catch {
@@ -1385,6 +1430,12 @@ function asMarkup(text) {
         (written, [character, entity]) => written.split(character).join(entity),
         String(text)
     );
+}
+
+const WEIGHT_WORDS = { regular: "", bold: "Bold " };
+
+function fontDescription(family, weight, size) {
+    return `${family}, ${WEIGHT_WORDS[weight]}${size}`;
 }
 
 function buildTextArgv(vipsPath, outputPath, text, font) {
@@ -1480,6 +1531,22 @@ function buildIccArgv(vipsPath, inputPath, outputPath, profilePath) {
     ];
 }
 
+function buildToSrgbArgv(vipsPath, inputPath, outputPath, profilePath) {
+    return profilePath
+        ? [
+            vipsPath,
+            "icc_transform",
+            inputPath,
+            outputPath,
+            "srgb",
+            "--input-profile",
+            profilePath,
+            "--intent",
+            "relative"
+        ]
+        : [vipsPath, "colourspace", inputPath, outputPath, "srgb"];
+}
+
 /* ===== src/core/commands.js ===== */
 
 
@@ -1554,6 +1621,7 @@ const FAIL_ON_PROBE = "--fail-on=error";
 const PROBE_IMAGE = "/nonexistent-stamp-images-preflight.png";
 const PROBE_OUTPUT = "/nonexistent-stamp-images-preflight.v";
 const PROBE_WIDTH = "10";
+const PROBE_FAMILY = "NoSuchFaceIsInstalledAnywhere";
 
 function buildVipsProbeArgv(vipsPath) {
     return [
@@ -1567,6 +1635,14 @@ function buildVipsProbeArgv(vipsPath) {
         "srgb",
         FAIL_ON_PROBE
     ];
+}
+
+function buildFcMatchProbeArgv(fcMatchPath) {
+    return [fcMatchPath, "-f", "%{family}", PROBE_FAMILY];
+}
+
+function isFcMatchUsable(probeOutput) {
+    return String(probeOutput).trim() !== "";
 }
 
 function buildExiftoolProbeArgv(exiftoolPath) {
@@ -1615,9 +1691,7 @@ function describeSetupProblems(problems, hasHomebrew) {
 /* ===== src/runtime/shell.js ===== */
 
 
-function runArgv(app, argumentsList, label) {
-    const command = shellJoin(argumentsList);
-
+function runCommand(app, command, label) {
     try {
         return app.doShellScript(command);
     } catch (error) {
@@ -1632,6 +1706,18 @@ function runArgv(app, argumentsList, label) {
 
         throw failure;
     }
+}
+
+function runArgv(app, argumentsList, label) {
+    return runCommand(app, shellJoin(argumentsList), label);
+}
+
+function runArgvInto(app, argumentsList, path, label) {
+    return runCommand(
+        app,
+        `${shellJoin(argumentsList)} > ${shellJoin([path])}`,
+        label
+    );
 }
 
 function tryArgv(app, argumentsList) {
@@ -1709,6 +1795,22 @@ function sameBytes(app, one, other) {
     return succeeds(app, [CMP, "-s", one, other]);
 }
 
+const FILES_DIFFER = 1;
+
+function compareFiles(app, one, other) {
+    try {
+        app.doShellScript(shellJoin([CMP, "-s", one, other]));
+
+        return "same";
+    } catch (error) {
+        if (isUserCancelled(error)) {
+            throw error;
+        }
+
+        return error.errorNumber === FILES_DIFFER ? "differ" : "unreadable";
+    }
+}
+
 function verifyFileWritten(app, path, label) {
     if (!isRegularNonEmpty(app, path)) {
         throw new Error(
@@ -1723,12 +1825,13 @@ function verifyFileWritten(app, path, label) {
 const TOOL_SEARCH_PATH =
     "/opt/homebrew/bin:/usr/local/bin:/opt/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
 
-const TOOL_NAMES = ["vips", "vipsheader", "exiftool"];
+const TOOL_NAMES = ["vips", "vipsheader", "exiftool", "fc-match"];
 
 const ENVIRONMENT_OVERRIDES = {
     vips: "STAMP_IMAGES_VIPS",
     vipsheader: "STAMP_IMAGES_VIPSHEADER",
-    exiftool: "STAMP_IMAGES_EXIFTOOL"
+    exiftool: "STAMP_IMAGES_EXIFTOOL",
+    "fc-match": "STAMP_IMAGES_FC_MATCH"
 };
 
 function optionalEnvironment(app, name) {
@@ -1806,6 +1909,11 @@ const CAPABILITY_PROBES = {
         build: buildExiftoolProbeArgv,
         usable: isExiftoolUsable,
         flags: "answer -json -n with readable JSON"
+    },
+    "fc-match": {
+        build: buildFcMatchProbeArgv,
+        usable: isFcMatchUsable,
+        flags: "name the family a font name resolves to"
     }
 };
 
@@ -2712,16 +2820,20 @@ function publishImage(job, stagedPath, chooseName) {
 const IMPOSSIBLE = "NoSuchFaceIsInstalledAnywhere";
 const PROBE_TEXT = "AWgy0123";
 const PROBE_SIZE = 40;
+const FAMILY_FORMAT = "%{family}";
 
-function drawWith(where, font, output) {
-    const { app, tools } = where;
-
+function drawWith(where, family, output) {
     runArgv(
-        app,
-        buildTextArgv(tools.vips, output, PROBE_TEXT, `${font} ${PROBE_SIZE}`),
+        where.app,
+        buildTextArgv(
+            where.tools.vips,
+            output,
+            PROBE_TEXT,
+            fontDescription(family, "regular", PROBE_SIZE)
+        ),
         "checking which fonts are installed"
     );
-    verifyFileWritten(app, output, "the drawn text");
+    verifyFileWritten(where.app, output, "the drawn text");
 
     return output;
 }
@@ -2730,33 +2842,49 @@ function fallbackDrawing(where) {
     return drawWith(where, IMPOSSIBLE, `${where.workspace}/font-fallback.png`);
 }
 
-function resolves(where, family, fallback) {
-    try {
-        const drawn = drawWith(
-            where,
-            family,
-            `${where.workspace}/font-candidate.png`
-        );
+function keepsItsName(where, family) {
+    const answered = String(runArgv(
+        where.app,
+        [where.tools["fc-match"], "-f", FAMILY_FORMAT, family],
+        "checking which fonts are installed"
+    ));
+    const wanted = family.trim().toLowerCase();
 
-        return !sameBytes(where.app, drawn, fallback);
-    } catch (error) {
-        if (isUserCancelled(error)) {
-            throw error;
-        }
+    return answered.split(",").some((name) => name.trim().toLowerCase() === wanted);
+}
 
-        return false;
+function rasterises(where, family, fallback) {
+    const drawn = drawWith(where, family, `${where.workspace}/font-candidate.png`);
+    const answer = compareFiles(where.app, drawn, fallback);
+
+    if (answer === "unreadable") {
+        throw new Error("The drawings a typeface is checked by cannot be read.");
     }
+
+    return answer === "differ";
 }
 
 function probing(where) {
     const fallback = fallbackDrawing(where);
 
-    return (family) => resolves(where, family, fallback);
+    return (family) => {
+        try {
+            return keepsItsName(where, family) &&
+                rasterises(where, family, fallback);
+        } catch (error) {
+            if (isUserCancelled(error)) {
+                throw error;
+            }
+
+            return false;
+        }
+    };
 }
 
 function undrawable(family) {
-    return `Nothing draws with the typeface "${family}" on this Mac.\n\n` +
-        "Not every installed face answers to the name Font Book shows.";
+    return `This Mac does not draw with the typeface "${family}".\n\n` +
+        "Font Book may list it and still not answer to that name. " +
+        "Set the weight with Weight rather than in the name.";
 }
 
 /* ===== src/runtime/fonts.js ===== */
@@ -2775,25 +2903,10 @@ const CANDIDATES = [
     "Courier New"
 ];
 
-const WEIGHTS = ["", " Bold"];
-
 function availableFonts(where) {
     const draws = probing(where);
-    const found = [];
 
-    for (const family of CANDIDATES) {
-        if (draws(family)) {
-            found.push(...WEIGHTS.map((weight) => `${family}${weight}`));
-        }
-    }
-
-    if (found.length === 0) {
-        throw new Error(
-            "None of the fonts this action offers draws on this Mac."
-        );
-    }
-
-    return found;
+    return CANDIDATES.filter(draws);
 }
 
 /* ===== src/runtime/tinting.js ===== */
@@ -2810,13 +2923,17 @@ function sizeOf(job, path) {
 }
 
 function inSpaceOf(job, paths, profile) {
-    if (!profile) {
+    if (profile.failed) {
+        return { path: paths.colour, moved: false };
+    }
+
+    if (!profile.path) {
         return { path: paths.colour, moved: true };
     }
 
     const moved = succeeds(
         job.app,
-        buildIccArgv(job.tools.vips, paths.colour, paths.moved, profile)
+        buildIccArgv(job.tools.vips, paths.colour, paths.moved, profile.path)
     );
 
     return moved
@@ -2873,7 +2990,12 @@ function drawMask(job, face, text) {
 
     runArgv(
         job.app,
-        buildTextArgv(tools.vips, face.raw, text, `${settings.font} ${settings.size}`),
+        buildTextArgv(
+            tools.vips,
+            face.raw,
+            text,
+            fontDescription(settings.font, settings.weight, settings.size)
+        ),
         "drawing the stamp"
     );
     verifyFileWritten(job.app, face.raw, "the drawn text");
@@ -2990,7 +3112,7 @@ function forget(job) {
 }
 
 function stampFor(job, drawn) {
-    const key = `${drawn.profile}\n${drawn.text}`;
+    const key = `${drawn.profile.path}\n${drawn.text}`;
     const held = job.stamps.get(key);
 
     if (held) {
@@ -3072,19 +3194,6 @@ function hasAlpha(job, path) {
 /* ===== src/runtime/image.js ===== */
 
 
-function orient(job, source, token) {
-    const oriented = `${job.workspace}/oriented-${token}.v`;
-
-    runArgv(
-        job.app,
-        buildOrientArgv(job.tools.vips, source, oriented),
-        "reading the photograph"
-    );
-    verifyFileWritten(job.app, oriented, "the photograph");
-
-    return oriented;
-}
-
 function composite(job, base, stamp, token) {
     const stamped = `${job.workspace}/stamped-${token}.v`;
 
@@ -3126,14 +3235,6 @@ function saveCopy(job, stamped, target, source) {
     }
 }
 
-function readPhotograph(job, source, token) {
-    refuseUnfaithful(job, source);
-
-    const path = orient(job, source, token);
-
-    return { path, size: sizeOf(job, path), hasAlpha: hasAlpha(job, path) };
-}
-
 /* ===== src/runtime/facts.js ===== */
 
 
@@ -3171,44 +3272,128 @@ function factsFor(job, imagePath) {
 /* ===== src/runtime/colour-space.js ===== */
 
 
+function none() {
+    return { path: "", failed: false };
+}
+
+function unreadable() {
+    return { path: "", failed: true };
+}
+
 function known(job, path) {
     return job.profiles.find((seen) => sameBytes(job.app, seen, path)) ?? "";
 }
 
 function extract(job, source, token) {
-    const written =
-        `${job.workspace}/profile-${token}-${fileStem(basename(source))}.icc`;
+    const written = `${job.workspace}/profile-${token}.icc`;
 
-    tryArgv(job.app, [
-        job.tools.exiftool,
-        "-icc_profile",
-        "-b",
-        "-w!",
-        `${job.workspace}/profile-${token}-%f.icc`,
-        source
-    ]);
+    try {
+        runArgvInto(
+            job.app,
+            [job.tools.exiftool, "-icc_profile", "-b", source],
+            written,
+            "reading the photograph's colour profile"
+        );
+    } catch (error) {
+        if (isUserCancelled(error)) {
+            throw error;
+        }
 
-    return isRegularFile(job.app, written) ? written : "";
+        return unreadable();
+    }
+
+    if (!isRegularNonEmpty(job.app, written)) {
+        removeFile(job.app, written);
+
+        return none();
+    }
+
+    return { path: written, failed: false };
 }
 
 function profileFor(job, source, token) {
-    const written = extract(job, source, token);
+    const found = extract(job, source, token);
 
-    if (!written) {
-        return "";
+    if (!found.path) {
+        return found;
     }
 
-    const seen = known(job, written);
+    const seen = known(job, found.path);
 
     if (!seen) {
-        job.profiles.push(written);
+        job.profiles.push(found.path);
 
-        return written;
+        return found;
     }
 
-    removeFile(job.app, written);
+    removeFile(job.app, found.path);
 
-    return seen;
+    return { path: seen, failed: false };
+}
+
+/* ===== src/runtime/preparing.js ===== */
+
+
+const GREY_BANDS = 2;
+
+function orient(job, source, token) {
+    const oriented = `${job.workspace}/oriented-${token}.v`;
+
+    runArgv(
+        job.app,
+        buildOrientArgv(job.tools.vips, source, oriented),
+        "reading the photograph"
+    );
+    verifyFileWritten(job.app, oriented, "the photograph");
+
+    return oriented;
+}
+
+function inColour(job, oriented, profile, token) {
+    const expanded = `${job.workspace}/colour-${token}.v`;
+
+    runArgv(
+        job.app,
+        buildToSrgbArgv(job.tools.vips, oriented, expanded, profile),
+        "reading the photograph"
+    );
+    verifyFileWritten(job.app, expanded, "the photograph");
+
+    return expanded;
+}
+
+function readPhotograph(job, source, token) {
+    refuseUnfaithful(job, source);
+
+    const path = orient(job, source, token);
+
+    return { path, size: sizeOf(job, path), hasAlpha: hasAlpha(job, path) };
+}
+
+function meeting(job, photograph, profile, token) {
+    if (bandsOf(job, photograph.path) > GREY_BANDS || !wantsColour(job.settings)) {
+        return { photograph, profile, expanded: false };
+    }
+
+    return {
+        photograph: { ...photograph, path: inColour(job, photograph.path, profile.path, token) },
+        profile: { path: "", failed: profile.failed },
+        expanded: true
+    };
+}
+
+function prepared(job, image, token, intermediates) {
+    const read = readPhotograph(job, image.path, token);
+
+    intermediates.push(read.path);
+
+    const met = meeting(job, read, profileFor(job, image.path, token), token);
+
+    if (met.expanded) {
+        intermediates.push(met.photograph.path);
+    }
+
+    return met;
 }
 
 /* ===== src/runtime/stamping.js ===== */
@@ -3222,13 +3407,10 @@ function clearIntermediates(job, intermediates, keeping) {
     }
 }
 
-function stampOnto(job, photograph, image, token) {
+function stampOnto(job, photograph, drawn, token) {
     job.progress.phase("Drawing the stamp");
 
-    const stamp = stampFor(job, {
-        text: image.inscription.text,
-        profile: profileFor(job, image.path, token)
-    });
+    const stamp = stampFor(job, drawn);
     const at = placeStamp(photograph.size, stamp.size, job.settings);
 
     job.progress.phase("Stamping the photograph");
@@ -3241,11 +3423,12 @@ function stampOnto(job, photograph, image, token) {
 }
 
 function produce(job, image, token, intermediates) {
-    const photograph = readPhotograph(job, image.path, token);
-
-    intermediates.push(photograph.path);
-
-    const drawn = stampOnto(job, photograph, image, token);
+    const met = prepared(job, image, token, intermediates);
+    const { photograph } = met;
+    const drawn = stampOnto(job, photograph, {
+        text: image.inscription.text,
+        profile: met.profile
+    }, token);
 
     intermediates.push(drawn.stamped);
 
@@ -3257,7 +3440,8 @@ function produce(job, image, token, intermediates) {
     return {
         staged: target,
         crowded: drawn.crowded,
-        unconverted: drawn.unconverted
+        unconverted: drawn.unconverted,
+        expanded: met.expanded
     };
 }
 
@@ -3328,7 +3512,8 @@ function stampToFile(job, image, index) {
             output: saved.path,
             stopped: saved.stopped,
             crowded: made.crowded,
-            unconverted: made.unconverted
+            unconverted: made.unconverted,
+            expanded: made.expanded
         };
     } catch (error) {
         return isUserCancelled(error)
@@ -3349,6 +3534,7 @@ function counted(job, results, outcome) {
     results.outputs.push(outcome.output);
     results.crowded += outcome.crowded ? 1 : 0;
     results.unconverted += outcome.unconverted ? 1 : 0;
+    results.expanded += outcome.expanded ? 1 : 0;
     job.progress.finished("Saved");
 }
 
@@ -3382,7 +3568,8 @@ function runJob(job, images) {
         failures: [],
         nothing: [],
         crowded: 0,
-        unconverted: 0
+        unconverted: 0,
+        expanded: 0
     };
 
     for (const [index, image] of images.entries()) {
@@ -3913,10 +4100,23 @@ function askUntil(app, question, read) {
 /* ===== src/runtime/dialogs.js ===== */
 
 
-function askRow(app, row, answers, fonts) {
-    const control = controlFor(row, fonts);
+function refusal(context, row, typed) {
+    const read = readAnswers({ ...typed.answers, [row.key]: typed.text }, context.fonts);
+    const mine = (read.problems ?? []).find((problem) => problem.key === row.key);
 
-    if (row.kind === "choice" || row.kind === "font") {
+    if (mine) {
+        return mine.message;
+    }
+
+    return row.kind === "font" && !context.draws(read.settings[row.key])
+        ? undrawable(read.settings[row.key])
+        : "";
+}
+
+function askRow(app, row, answers, context) {
+    const control = controlFor(row, context.fonts);
+
+    if (row.kind === "choice") {
         return chooseRequired(app, control, answers[row.key]);
     }
 
@@ -3926,30 +4126,26 @@ function askRow(app, row, answers, fonts) {
             prompt: control.prompt,
             defaultAnswer: String(answers[row.key])
         },
-        (typed) => {
-            const read = readAnswers({ ...answers, [row.key]: typed }, fonts);
+        (text) => {
+            const said = refusal(context, row, { answers, text });
 
-            if (read.problems) {
-                const mine = read.problems.find((problem) => problem.key === row.key);
-
-                if (mine) {
-                    throw new Error(mine.message);
-                }
+            if (said) {
+                throw new Error(said);
             }
 
-            return typed;
+            return text;
         }
     );
 }
 
-function collectDialogSettings(app, answers, fonts) {
+function collectDialogSettings(app, answers, context) {
     const given = { ...answers };
 
     for (const row of ORDER) {
-        given[row.key] = askRow(app, row, given, fonts);
+        given[row.key] = askRow(app, row, given, context);
     }
 
-    return readAnswers(given, fonts).settings;
+    return readAnswers(given, context.fonts).settings;
 }
 
 /* ===== src/runtime/preferences.js ===== */
@@ -4086,9 +4282,13 @@ function collectSettings(app, opening, injected) {
         }
     }
 
-    const { fonts } = opening.context;
+    const { context } = opening;
 
-    return collectDialogSettings(app, opening.answers ?? defaultAnswers(fonts), fonts);
+    return collectDialogSettings(
+        app,
+        opening.answers ?? defaultAnswers(context.fonts),
+        context
+    );
 }
 
 /* ===== src/runtime/settings-run.js ===== */
@@ -4711,6 +4911,7 @@ function detailOf(result) {
         ...named(result.rejected, (entry) => entry.reason),
         ...result.excluded.length > 0 ? [describeExcluded(result.excluded)] : [],
         ...result.crowded > 0 ? [describeCrowding(result.crowded)] : [],
+        ...result.expanded > 0 ? [describeExpanded(result.expanded)] : [],
         ...result.unconverted > 0 ? [describeUnconverted(result.unconverted)] : []
     ];
 

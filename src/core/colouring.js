@@ -72,7 +72,31 @@ function buildIccArgv(vipsPath, inputPath, outputPath, profilePath) {
     ];
 }
 
+/*
+ * A grey photograph, read into sRGB.
+ *
+ * Through its own profile when it has one, so the greys keep their meaning --
+ * measured, a value of 200 comes back 200, 200, 200. Without a profile there
+ * is nothing to read it through and the numbers are already what they are.
+ */
+function buildToSrgbArgv(vipsPath, inputPath, outputPath, profilePath) {
+    return profilePath
+        ? [
+            vipsPath,
+            "icc_transform",
+            inputPath,
+            outputPath,
+            "srgb",
+            "--input-profile",
+            profilePath,
+            "--intent",
+            "relative"
+        ]
+        : [vipsPath, "colourspace", inputPath, outputPath, "srgb"];
+}
+
 module.exports = {
+    buildToSrgbArgv,
     buildSolidArgv,
     buildColourArgv,
     buildBandjoinArgv,

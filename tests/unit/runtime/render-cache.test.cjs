@@ -32,10 +32,10 @@ function operations(host) {
 test("the colour is moved into the photograph's space before it is painted", () => {
     const { host, job } = jobOn();
 
-    stampFor(job, { text: "Riga", profile: "/w/profile-1-a.icc" });
+    stampFor(job, { text: "Riga", profile: { path: "/w/profile-1.icc", failed: false } });
     assert.ok(host.commands.some(
         (command) => command.includes("'icc_transform'") &&
-            command.includes("'/w/profile-1-a.icc'")
+            command.includes("'/w/profile-1.icc'")
     ));
 });
 
@@ -44,7 +44,7 @@ test("a colour that could not be moved is painted as it is, and said so", () => 
         failures: [["icc_transform", new Error("vips: bad profile")]]
     });
     const job = { ...makeJob(host), workspace: WORKSPACE };
-    const stamp = stampFor(job, { text: "Riga", profile: "/w/profile-1-a.icc" });
+    const stamp = stampFor(job, { text: "Riga", profile: { path: "/w/profile-1.icc", failed: false } });
 
     assert.equal(stamp.moved, false);
     assert.ok(stamp.path.length > 0, "and the stamp is still drawn");
@@ -52,7 +52,7 @@ test("a colour that could not be moved is painted as it is, and said so", () => 
 
 test("the same words for two colour spaces are two drawings", () => {
     const { job } = jobOn();
-    const plain = stampFor(job, { text: "Riga", profile: "" });
+    const plain = stampFor(job, { text: "Riga", profile: { path: "", failed: false } });
     const wide = stampFor(job, { text: "Riga", profile: "/w/p3.icc" });
 
     assert.notEqual(wide.path, plain.path);
@@ -66,7 +66,7 @@ test("the drawings a run keeps are bounded, and an evicted one goes", () => {
     const { host, job } = jobOn();
 
     for (let index = 0; index < 12; index += 1) {
-        stampFor(job, { text: `Riga ${index}`, profile: "" });
+        stampFor(job, { text: `Riga ${index}`, profile: { path: "", failed: false } });
     }
 
     assert.equal(job.stamps.size, 8);
@@ -78,8 +78,8 @@ test("the drawings a run keeps are bounded, and an evicted one goes", () => {
 
 test("the same text is drawn once, however many photographs carry it", () => {
     const { host, job } = jobOn();
-    const first = stampFor(job, { text: "Riga", profile: "" });
-    const again = stampFor(job, { text: "Riga", profile: "" });
+    const first = stampFor(job, { text: "Riga", profile: { path: "", failed: false } });
+    const again = stampFor(job, { text: "Riga", profile: { path: "", failed: false } });
 
     assert.equal(again, first);
     assert.equal(operations(host).filter((each) => each === "text").length, 1);
@@ -88,6 +88,6 @@ test("the same text is drawn once, however many photographs carry it", () => {
 test("different text is a different stamp, with its own files", () => {
     const { job } = jobOn();
 
-    assert.notEqual(stampFor(job, { text: "Riga", profile: "" }).path, stampFor(job, { text: "Liepāja", profile: "" }).path);
+    assert.notEqual(stampFor(job, { text: "Riga", profile: { path: "", failed: false } }).path, stampFor(job, { text: "Liepāja", profile: { path: "", failed: false } }).path);
     assert.equal(job.stamps.size, 2);
 });

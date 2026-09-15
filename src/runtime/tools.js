@@ -18,12 +18,19 @@ const { isExecutable } = require("./asking.js");
 const TOOL_SEARCH_PATH =
     "/opt/homebrew/bin:/usr/local/bin:/opt/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
 
-const TOOL_NAMES = ["vips", "vipsheader", "exiftool"];
+/*
+ * fc-match answers which family a name resolves to, which is the only way to
+ * tell a family this Mac has from one fontconfig quietly substitutes. It
+ * arrives with vips -- fontconfig is a dependency of it -- rather than being
+ * something else to install.
+ */
+const TOOL_NAMES = ["vips", "vipsheader", "exiftool", "fc-match"];
 
 const ENVIRONMENT_OVERRIDES = {
     vips: "STAMP_IMAGES_VIPS",
     vipsheader: "STAMP_IMAGES_VIPSHEADER",
-    exiftool: "STAMP_IMAGES_EXIFTOOL"
+    exiftool: "STAMP_IMAGES_EXIFTOOL",
+    "fc-match": "STAMP_IMAGES_FC_MATCH"
 };
 
 /*

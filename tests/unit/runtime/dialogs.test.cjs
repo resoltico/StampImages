@@ -15,6 +15,7 @@ const { collectDialogSettings } = require("../../../src/runtime/dialogs.js");
 const { ORDER } = require("../../../src/core/form-rows.js");
 const { defaultAnswers } = require("../../../src/core/form-defaults.js");
 const { createFakeApp } = require("./fake-app.cjs");
+const { askingContext } = require("./fake-assembly.cjs");
 
 const FONTS = ["Menlo", "Menlo Bold"];
 
@@ -24,10 +25,10 @@ function asked(app) {
 
 test("every row is asked, and the choices are chosen from a list", () => {
     const app = createFakeApp();
-    const settings = collectDialogSettings(app, defaultAnswers(FONTS), FONTS);
-    const chosen = ORDER.filter(
-        (row) => row.kind === "choice" || row.kind === "font"
-    ).length;
+    const settings = collectDialogSettings(app, defaultAnswers(FONTS), askingContext(FONTS));
+    // The typeface is typed here, like a colour: a dialog cannot offer a list
+    // and a field at once, and a name nothing checked was the worse half.
+    const chosen = ORDER.filter((row) => row.kind === "choice").length;
 
     assert.deepEqual(asked(app), {
         lists: chosen,
@@ -40,7 +41,7 @@ test("every row is asked, and the choices are chosen from a list", () => {
 test("the questions are asked in the order the form lays them out", () => {
     const app = createFakeApp();
 
-    collectDialogSettings(app, defaultAnswers(FONTS), FONTS);
+    collectDialogSettings(app, defaultAnswers(FONTS), askingContext(FONTS));
 
     assert.match(app.listPrompts[0].settings.withPrompt, /the date the photograph was taken/u);
     assert.match(app.dialogs[0].message, /Text of your own to stamp/u);
@@ -52,7 +53,7 @@ test("each question opens on the answer it was given", () => {
     const app = createFakeApp();
     const opening = { ...defaultAnswers(FONTS), size: "72", customText: "Riga" };
 
-    collectDialogSettings(app, opening, FONTS);
+    collectDialogSettings(app, opening, askingContext(FONTS));
 
     const boxes = app.dialogs.map((dialog) => dialog.options.defaultAnswer);
 
@@ -65,9 +66,10 @@ test("what may be typed is decided by the reader the form uses", () => {
     // same words.
     const app = createFakeApp();
 
-    app.nextAnswer = ["", "huge", "36", "#FFFFFF", "2", "#202020", "24"];
+    // The typeface is typed now too, and the caption is asked for before it.
+    app.nextAnswer = ["", "Menlo", "huge", "36", "#FFFFFF", "2", "#202020", "24"];
 
-    const settings = collectDialogSettings(app, defaultAnswers(FONTS), FONTS);
+    const settings = collectDialogSettings(app, defaultAnswers(FONTS), askingContext(FONTS));
 
     assert.equal(settings.size, 36);
     assert.ok(
@@ -76,28 +78,55 @@ test("what may be typed is decided by the reader the form uses", () => {
     );
 });
 
-test("the typeface stays a list here, where a typed one could not be checked", () => {
-    // The one place the two front ends differ, and deliberately: the form can
-    // ask the renderer about a name somebody typed and mark the field when
-    // nothing draws. A dialog would have to accept the name, close, and fail
-    // the run several questions later -- so it offers faces already known to
-    // draw, which is the answer that is always usable.
+test("the typeface is typed here too, and checked the same way", () => {
+    // It used to be a list, because a dialog cannot offer a list and a field
+    // at once -- which left this the one path where a family somebody already
+    // uses could not be named, and the one path where nothing checked the
+    // answer at all.
     const app = createFakeApp();
 
-    collectDialogSettings(app, defaultAnswers(FONTS), FONTS);
+    collectDialogSettings(app, defaultAnswers(FONTS), askingContext(FONTS));
 
-    const fontPrompt = app.listPrompts.find(
-        (prompt) => prompt.settings.withPrompt.startsWith("Typeface")
+    const typeface = app.dialogs.find(
+        (dialog) => String(dialog.message).startsWith("Typeface")
     );
 
-    assert.deepEqual(fontPrompt.options, FONTS);
+    assert.ok(typeface, "the typeface was asked for in a field");
+    assert.deepEqual(
+        app.listPrompts.filter(
+            (prompt) => prompt.settings.withPrompt.startsWith("Typeface")
+        ),
+        [],
+        "and not offered as a list"
+    );
 });
 
 test("answers are read together at the end, not one at a time", () => {
     // The last question can invalidate an earlier answer -- a margin that no
     // longer fits, say -- so what is returned is what the whole set reads as.
     const app = createFakeApp();
-    const settings = collectDialogSettings(app, defaultAnswers(FONTS), FONTS);
+    const settings = collectDialogSettings(app, defaultAnswers(FONTS), askingContext(FONTS));
 
     assert.deepEqual(Object.keys(settings).sort(), ORDER.map((row) => row.key).sort());
+});
+
+test("a typeface this Mac has not is re-asked, not carried to the end", () => {
+    // The fallback used to be the one path where nothing checked the answer:
+    // it would have accepted the name, closed, and failed the run several
+    // questions later.
+    const app = createFakeApp();
+
+    app.nextAnswer = ["", "Zapfino", "Menlo", "36", "#FFFFFF", "2", "#202020", "24"];
+
+    const settings = collectDialogSettings(
+        app,
+        defaultAnswers(FONTS),
+        askingContext(FONTS)
+    );
+
+    assert.equal(settings.font, "Menlo");
+    assert.ok(
+        app.dialogs.some((dialog) => (/does not draw with the typeface/u).test(dialog.message)),
+        "and it said why"
+    );
 });

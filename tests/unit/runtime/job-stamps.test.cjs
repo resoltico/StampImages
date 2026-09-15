@@ -49,6 +49,9 @@ test("what a photograph needed is removed by name, and nothing else is", () => {
         .map((path) => path.replace(`${WORKSPACE}/`, ""));
 
     assert.deepEqual(removed, [
+        // The empty file the profile extraction's redirection left, for a
+        // photograph that carries none.
+        "profile-1.icc",
         "stamp-1-face-raw.png",
         "stamp-1-face-mask.png",
         "stamp-1-face-solid.v",

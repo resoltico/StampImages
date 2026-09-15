@@ -97,7 +97,7 @@ test("a form asked for with no answers shows the defaults, fonts and all", () =>
     // beside it showed a face.
     const shown = spec();
 
-    assert.equal(shown.rows.length, 10);
+    assert.equal(shown.rows.length, 11);
     assert.equal(shown.rows.find((row) => row.key === "size").value, "36");
     assert.equal(shown.rows.find((row) => row.key === "font").value, "Menlo");
 });

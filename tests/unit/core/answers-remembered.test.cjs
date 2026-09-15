@@ -38,7 +38,8 @@ test("the two directions are each other's inverse", () => {
     const given = answers({
         dateFormat: "2026-09-09",
         coordinateFormat: "56°56'58.6\"N 24°6'18.7\"E",
-        font: "Menlo Bold",
+        font: "Menlo",
+        weight: "Bold",
         size: "72",
         margin: "0",
         outlineWidth: "0",
