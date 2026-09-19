@@ -4,7 +4,7 @@ Notable changes to this project are documented in this file. The format is based
 
 ## [Unreleased]
 
-## [1.1.0] - 2026-09-15
+## [1.1.0] - 2026-09-19
 
 ### Added
 
@@ -19,6 +19,9 @@ Notable changes to this project are documented in this file. The format is based
 - A typeface your Mac does not have is refused, with the reason, before any
   photograph is touched. Ask a family for a style it does not come in, and the
   message says which styles it does come in.
+- Instructions for removing the action. INSTALL.txt now ends with how to take
+  it off your Mac and what it leaves there: one preferences entry, holding the
+  appearance of your last run.
 
 ### Changed
 
@@ -37,6 +40,17 @@ Notable changes to this project are documented in this file. The format is based
   Photographs with very long names were the likeliest way to hit it.
 - A Mac with none of the suggested typefaces available opens the settings
   window, so you can name one it does have. It used to refuse to run at all.
+- Your remembered settings are kept when the typeface you last used is no
+  longer on your Mac. They were all forgotten; now only the typeface has to be
+  chosen again.
+- A settings file that names a typeface your Mac does not have stops with the
+  reason, instead of stamping every photograph in a stand-in face and
+  reporting success.
+
+### Internal
+
+- Property-based tests for coordinates and dates, and a reorganised quality
+  record.
 
 ## [1.0.0] - 2026-09-14
 
