@@ -48,3 +48,25 @@ Install the Quick Action
        dist/Stamp-Images.jxa
 
 10. Save the shortcut as "Stamp Images".
+
+Remove it
+=========
+
+1. In the Shortcuts app, delete the "Stamp Images" shortcut.
+2. To forget the settings it remembered, open Terminal and run:
+
+       defaults delete com.resoltico.StampImages
+
+That is everything it leaves on your Mac. It keeps one preferences entry,
+under that name, holding the appearance of your last run -- never the text you
+typed, and nothing about your photographs. Its working files go in the system
+temporary folder and are cleared away as each run ends; a run that could not
+save a finished copy leaves them in place on purpose, and the message says
+where they are.
+
+exiftool and vips are yours rather than this action's, and anything else on
+your Mac may be using them, so they are left alone. Remove them with
+
+    brew uninstall exiftool vips
+
+if nothing else needs them.

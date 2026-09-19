@@ -42,6 +42,9 @@ come in says which styles it does.
 
 The settings are remembered from one run to the next. Your own text is not: it
 is about one job, and it is the field most likely to say something private.
+They are kept in one preferences entry named `com.resoltico.StampImages`,
+which is the only thing this leaves on your Mac; `INSTALL.txt` says how to
+remove it.
 
 A long run can be stopped: hold the Option key, and it stops at the next thing
 it is about to do. Nothing half-made is left in your folder. The panel says
