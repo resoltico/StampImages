@@ -6,7 +6,6 @@
  */
 
 const { headerField } = require("./fake-vipsheader.cjs");
-const { resolvedFamily } = require("./fake-drawing.cjs");
 const { CMP } = require("../../../src/core/executables.js");
 
 const TEMPORARY = "/var/folders/xx/T";
@@ -60,12 +59,6 @@ function dispatch(fs, argv, command, host) {
 
     if (command.includes("vipsheader")) {
         return headerField(host, command);
-    }
-
-    const family = resolvedFamily(host, command);
-
-    if (family !== undefined) {
-        return family;
     }
 
     return fs.produce(argv, command);

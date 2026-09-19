@@ -6,7 +6,7 @@
  * It has to mean the same thing every time it is used, so nothing is read from
  * the last run and nothing is written for the next -- and nothing is even
  * opened. What it names has still to be usable, which for a typeface means
- * the renderer draws with it: nothing offered this caller a list.
+ * this Mac has it: nothing offered this caller a list.
  */
 
 const assert = require("node:assert/strict");
@@ -20,7 +20,6 @@ const CONTEXT = askingContext(FONTS);
 
 const HEADLESS = {
     font: "Menlo",
-    weight: "regular",
     size: 24,
     textColour: "#FFFFFF",
     outlineColour: "#000000",
@@ -55,7 +54,11 @@ test("a headless run uses the file it was given, validated", () => {
         CONTEXT
     );
 
-    assert.deepEqual(settings, HEADLESS);
+    assert.deepEqual(settings, {
+        ...HEADLESS,
+        // What the name turned out to mean, worked out once for the run.
+        typeface: { family: "Menlo", face: "" }
+    });
 });
 
 test("a headless configuration that is wrong is refused, naming the setting", () => {
@@ -95,6 +98,6 @@ test("a configuration naming a face this Mac does not draw with is refused", () 
             { headless: true, settings: { ...HEADLESS, font: "Zapfino" } },
             CONTEXT
         ),
-        /This Mac does not draw with the typeface "Zapfino"/u
+        /This Mac has no typeface called "Zapfino"/u
     );
 });

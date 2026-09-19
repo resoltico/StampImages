@@ -1,11 +1,7 @@
 "use strict";
 
-const {
-    buildTextArgv,
-    buildEmbedArgv,
-    buildDilateArgv,
-    fontDescription
-} = require("../core/lettering.js");
+const { buildTextArgv, fontDescription } = require("../core/lettering.js");
+const { buildEmbedArgv, buildDilateArgv } = require("../core/outlining.js");
 const { runArgv } = require("./shell.js");
 const { verifyFileWritten } = require("./asking.js");
 const { sizeOf, tinted, pathsFor, filesOf } = require("./tinting.js");
@@ -39,7 +35,7 @@ function drawMask(job, face, text) {
             tools.vips,
             face.raw,
             text,
-            fontDescription(settings.font, settings.weight, settings.size)
+            fontDescription(settings.typeface, settings.size)
         ),
         "drawing the stamp"
     );

@@ -21,27 +21,24 @@ text you typed, and nothing standing in for what is missing.
 
 ## What you can choose
 
-Eleven settings, asked once for the whole selection:
+Ten settings, asked once for the whole selection:
 
 - how the date is written, or that it is not stamped
 - how the coordinates are written, or that they are not
 - text of your own, which may run to several lines
-- the typeface, by family name: one of the faces this Mac was seen to draw
-  with, or any other family it has, typed into the same control. A name it
-  cannot draw is refused with the reason rather than quietly becoming another
-  face — and Font Book listing a font is not the same as this being able to
-  ask for it by that name
-- the weight, regular or bold, which is a setting rather than part of the name
-
-Fonts are read from the font folders — `~/Library/Fonts`, `/Library/Fonts`
-and the system's own. A font kept somewhere else and switched on by a font
-manager cannot be read, even when other apps can use it; install it, or point
-fontconfig at the folder it lives in, and it becomes available. A typeface
-that cannot be drawn with is refused with the reason rather than quietly
-replaced by another face.
+- the typeface, by name: one of the suggestions, or any other face your Mac
+  has, typed into the same control
 - the text size in points, and its colour
 - the outline width and colour, so light text stays readable on a light sky
 - which corner or edge the block goes in, and how far in from it
+
+Name a typeface as Font Book does: the family on its own, such as `Georgia`,
+or the family and the style you want after it, such as `Georgia Bold`,
+`Avenir Black` or `Source Serif 4 Semibold`. Every face on your Mac is
+available that way, including fonts switched on by a font manager and the
+named styles of a variable font. A name your Mac has not is refused with the
+reason before anything is stamped, and asking a family for a style it does not
+come in says which styles it does.
 
 The settings are remembered from one run to the next. Your own text is not: it
 is about one job, and it is the field most likely to say something private.

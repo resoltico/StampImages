@@ -16,8 +16,7 @@ const { createFakeApp } = require("./fake-app.cjs");
 const ALL_TOOLS = [
     "/opt/homebrew/bin/vips",
     "/opt/homebrew/bin/vipsheader",
-    "/opt/homebrew/bin/exiftool",
-    "/opt/homebrew/bin/fc-match"
+    "/opt/homebrew/bin/exiftool"
 ];
 
 function machineWith(installed, settings = {}) {
@@ -28,8 +27,7 @@ test("a healthy machine yields the located tools", () => {
     assert.deepEqual(checkTools(machineWith(ALL_TOOLS)), {
         vips: "/opt/homebrew/bin/vips",
         vipsheader: "/opt/homebrew/bin/vipsheader",
-        exiftool: "/opt/homebrew/bin/exiftool",
-        "fc-match": "/opt/homebrew/bin/fc-match"
+        exiftool: "/opt/homebrew/bin/exiftool"
     });
 });
 

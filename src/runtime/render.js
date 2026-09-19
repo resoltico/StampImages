@@ -84,9 +84,17 @@ function forget(job) {
  * same words painted for a Display P3 photograph are different numbers from
  * the same words painted for an sRGB one. A batch comes off one camera, so
  * in practice that is still one drawing per inscription.
+ *
+ * A space is the profile and whether it could be read, not the profile alone.
+ * Those are different spaces that share a path: a photograph carrying no
+ * profile is drawn for in sRGB and reported as handled, and one whose profile
+ * could not be read is drawn for in sRGB and counted as unconverted. Keyed on
+ * the path alone the second took the first's drawing, and with it the first's
+ * verdict -- so a photograph this program could not read the colours of was
+ * reported as one whose colours were fine.
  */
 function stampFor(job, drawn) {
-    const key = `${drawn.profile.path}\n${drawn.text}`;
+    const key = `${drawn.profile.failed}\n${drawn.profile.path}\n${drawn.text}`;
     const held = job.stamps.get(key);
 
     if (held) {

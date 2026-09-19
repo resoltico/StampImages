@@ -59,6 +59,23 @@ test("the same words for two colour spaces are two drawings", () => {
     assert.equal(job.stamps.size, 2);
 });
 
+test("a profile that could not be read is not a photograph without one", () => {
+    // Two spaces that share a path, and two different verdicts: no profile is
+    // drawn in sRGB and reported as handled, an unreadable one is drawn in
+    // sRGB and counted as unconverted. Keyed on the path alone the second took
+    // the first's drawing and with it the first's verdict, so a photograph
+    // this program could not read the colours of was reported as one whose
+    // colours were fine.
+    const { job } = jobOn();
+    const none = stampFor(job, { text: "Riga", profile: { path: "", failed: false } });
+    const unreadable = stampFor(job, { text: "Riga", profile: { path: "", failed: true } });
+
+    assert.notEqual(unreadable.path, none.path);
+    assert.equal(none.moved, true);
+    assert.equal(unreadable.moved, false, "and it is counted, not assumed away");
+    assert.equal(job.stamps.size, 2);
+});
+
 test("the drawings a run keeps are bounded, and an evicted one goes", () => {
     // The cache is for photographs that say the same thing, which is a burst
     // taken in one minute. A thousand different inscriptions would otherwise

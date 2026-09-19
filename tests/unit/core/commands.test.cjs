@@ -11,12 +11,37 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const {
     buildTextArgv,
+    fontDescription
+} = require("../../../src/core/lettering.js");
+const {
     buildEmbedArgv,
     buildDilateArgv,
     windowFor
-} = require("../../../src/core/lettering.js");
+} = require("../../../src/core/outlining.js");
 
 const VIPS = "/v/vips";
+
+test("a description names the family, then the style, then the size", () => {
+    // Pango reads the words before the size as style instructions and a comma
+    // ends the family, so the two halves are joined here and nowhere else.
+    // Measured: "Menlo Bold, 72" draws nothing but the fallback face.
+    assert.equal(
+        fontDescription({ family: "Menlo", face: "Bold" }, 72),
+        "Menlo, Bold 72"
+    );
+    assert.equal(
+        fontDescription({ family: "Menlo", face: "" }, 72),
+        "Menlo, 72",
+        "a family with no style named is its own default face"
+    );
+});
+
+test("a typeface that could not be split is written for pango to split", () => {
+    // Which is worse and is the point: without a catalogue there is nothing
+    // to split it with, and pango's own reading of "Menlo Bold 72" reaches the
+    // face while a comma after the whole name reaches nothing.
+    assert.equal(fontDescription({ name: "Menlo Bold" }, 72), "Menlo Bold 72");
+});
 
 test("text is drawn as a coverage mask at a fixed DPI", () => {
     // 72 DPI is what makes a size asked for in points come out in pixels, and

@@ -12,41 +12,45 @@ const { withWorkspace, assemble } = require("../../../src/runtime/assembly.js");
 const { defaultSettings } = require("../../../src/core/form-defaults.js");
 const { createFakeHost, WORKSPACE } = require("./fake-host.cjs");
 const { recorder, prepared, place } = require("./fake-assembly.cjs");
+const { catalogueOf } = require("./fake-typefaces.cjs");
 
-test("the fonts are probed, and the report says so before the wait", () => {
-    // Every candidate is drawn with rather than looked up, which is the
-    // longest thing a run does before it says anything.
-    const host = createFakeHost({ fonts: ["Menlo"] });
+const KNOWN = catalogueOf({ Menlo: ["Regular", "Bold"] });
+
+test("finding the faces says nothing, because it takes no time", () => {
+    // It used to be the longest thing a run did before it said anything --
+    // ten candidates and an impossible name, drawn and compared -- and it
+    // announced itself for that reason. The font system answers in one call,
+    // and a phase nobody can see is a phase worth not naming.
     const progress = recorder();
 
-    assemble(prepared(host), place(progress));
-    assert.ok(progress.said.includes("Checking which fonts are installed"));
+    assemble(prepared(createFakeHost()), place(progress), KNOWN);
+    assert.deepEqual(progress.said, ["pause"]);
 });
 
 test("the report is paused before a question is asked", () => {
     // A panel at the floating window level would otherwise sit over the form,
     // and re-arming means a run quick enough to need no window still gets none.
-    const host = createFakeHost({ fonts: ["Menlo"] });
     const progress = recorder();
 
-    assemble(prepared(host), place(progress));
-
-    const asked = progress.said.indexOf("pause");
-
-    assert.ok(asked > 0);
+    assemble(prepared(createFakeHost()), place(progress), KNOWN);
     assert.equal(progress.said.at(-1), "pause", "nothing is said after it");
 });
 
 test("the job carries what the run is invariant in", () => {
-    const host = createFakeHost({ fonts: ["Menlo"] });
+    const host = createFakeHost();
     const unpublished = new Set();
-    const job = assemble(prepared(host), place(recorder(), unpublished));
+    const job = assemble(
+        prepared(host),
+        place(recorder(), unpublished),
+        KNOWN
+    );
 
     assert.equal(job.app, host);
     assert.equal(job.workspace, WORKSPACE);
     assert.equal(job.unpublished, unpublished);
     assert.equal(job.stamps.size, 0, "one drawing per text, for the whole run");
     assert.equal(job.settings.font, "Menlo");
+    assert.deepEqual(job.settings.typeface, { family: "Menlo", face: "" });
 });
 
 test("a request that would stamp nothing is refused before any work", () => {

@@ -47,11 +47,16 @@ test("the glyphs are drawn once and coloured, and the outline grown from them", 
     ]);
 });
 
-test("the mask is drawn with the family, the weight and the size", () => {
+test("the mask is drawn with the family, the face and the size", () => {
     // A description rather than a name, and built rather than typed: pango
     // reads the words before the size as style instructions, so a comma has
-    // to end the family before the weight can be named.
-    const { host, job } = jobOn({ font: "Menlo", weight: "bold", size: 72 });
+    // to end the family before the face can be named. Measured: without it,
+    // "Menlo Bold, 72" draws nothing but the fallback face.
+    const { host, job } = jobOn({
+        font: "Menlo Bold",
+        typeface: { family: "Menlo", face: "Bold" },
+        size: 72
+    });
 
     stampFor(job, { text: "Riga", profile: { path: "", failed: false } });
     assert.ok(host.commands.some(

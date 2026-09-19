@@ -4,7 +4,7 @@ const { stampsNothing } = require("../core/settings.js");
 const { createWorkspace, removeWorkspace } = require("./workspace.js");
 const { createRenamer } = require("./exclusive-rename.js");
 const { availableFonts } = require("./fonts.js");
-const { probing } = require("./font-probe.js");
+const { catalogue } = require("./typefaces.js");
 const { settingsFor } = require("./settings-run.js");
 
 /*
@@ -35,49 +35,16 @@ function withWorkspace(app, unpublished, use) {
 }
 
 /*
- * Which faces this Mac will actually render with, asked only when somebody is
- * going to be offered a choice of them. It is the longest thing a run does
- * before it says anything, because every candidate is drawn with rather than
- * looked up.
- */
-function whereToDraw(prepared, workspace) {
-    return { app: prepared.app, tools: prepared.tools, workspace };
-}
-
-function fontsFor(where, headless, progress) {
-    if (headless) {
-        return [];
-    }
-
-    progress.phase("Checking which fonts are installed");
-
-    return availableFonts(where);
-}
-
-/*
- * Whether a face draws, asked once per name.
+ * Which faces to suggest, asked only when somebody is going to be offered a
+ * choice of them.
  *
- * The faces the form suggests were drawn with to find them, so they are
- * answered before anybody asks. A name that was typed, or that came from a
- * headless configuration, costs a drawing the first time it is seen and
- * nothing afterwards -- which is what lets the same question be asked wherever
- * it matters without anyone counting the renderings.
- *
- * It goes in the context beside the count and the suggestions because it is
- * the same sort of thing: what the front ends need in order to ask. Neither of
- * them can answer this one, and both of them have to.
+ * It used to be the longest thing a run did before it said anything, because
+ * every candidate was drawn with and compared. It is now a question put to the
+ * font system, which answers in one call and answers about every family on the
+ * machine rather than about ten.
  */
-function fontProbe(where, offered) {
-    const answered = new Map(offered.map((family) => [family, true]));
-    const draws = probing(where);
-
-    return (family) => {
-        if (!answered.has(family)) {
-            answered.set(family, draws(family));
-        }
-
-        return answered.get(family);
-    };
+function fontsFor(known, headless) {
+    return headless ? [] : availableFonts(known);
 }
 
 function settingsFrom(app, invocation, context) {
@@ -118,13 +85,15 @@ function jobFor(prepared, settings, place) {
  * window level would otherwise sit over the form, and re-arming it means a run
  * quick enough to need no window still does not get one.
  */
-function assemble(prepared, place) {
-    const where = whereToDraw(prepared, place.workspace);
-    const fonts = fontsFor(where, prepared.invocation.headless, place.progress);
+function assemble(prepared, place, known = catalogue()) {
+    // What this Mac has, read once. It goes in the context beside the count
+    // and the suggestions because it is the same sort of thing: what the front
+    // ends need in order to ask. Neither of them can answer it, and both have
+    // to -- a headless run has no suggestions and still names a typeface.
     const context = {
         count: prepared.selection.images.length,
-        fonts,
-        draws: fontProbe(where, fonts)
+        fonts: fontsFor(known, prepared.invocation.headless),
+        known
     };
 
     place.progress.pause();

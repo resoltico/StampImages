@@ -2,7 +2,7 @@
 
 const { ORDER, controlFor } = require("../core/form-rows.js");
 const { readAnswers } = require("../core/answers.js");
-const { undrawable } = require("./font-probe.js");
+const { resolved } = require("../core/typeface-refusal.js");
 const { chooseRequired, askUntil } = require("./prompts.js");
 
 /*
@@ -26,8 +26,8 @@ const { chooseRequired, askUntil } = require("./prompts.js");
  * cannot offer a list and a field at once and the list was the answer always
  * known to work -- but that left this the one path where a family the person
  * already uses could not be named, and the one path where nothing checked the
- * answer at all. Asked as text and resolved by the same probe, it re-asks like
- * a number out of range instead.
+ * answer at all. Asked as text and resolved by the same function the form
+ * uses, it re-asks like a number out of range instead.
  */
 function refusal(context, row, typed) {
     const read = readAnswers({ ...typed.answers, [row.key]: typed.text }, context.fonts);
@@ -37,8 +37,8 @@ function refusal(context, row, typed) {
         return mine.message;
     }
 
-    return row.kind === "font" && !context.draws(read.settings[row.key])
-        ? undrawable(read.settings[row.key])
+    return row.kind === "font"
+        ? resolved(context.known, read.settings[row.key]).problem ?? ""
         : "";
 }
 

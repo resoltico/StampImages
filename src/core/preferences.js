@@ -1,10 +1,6 @@
 "use strict";
 
-const {
-    isSettingsRecord,
-    asFamilyAndWeight,
-    normalizeSettings
-} = require("./settings.js");
+const { isSettingsRecord, normalizeSettings } = require("./settings.js");
 const { answersFromSettings } = require("./answers.js");
 const { defaultSettings } = require("./form-defaults.js");
 
@@ -41,13 +37,18 @@ const { defaultSettings } = require("./form-defaults.js");
 const DOMAIN = "com.resoltico.StampImages";
 const KEY = "lastSettings.v1";
 
-// What a run is about, rather than how it should look.
-const PER_JOB = ["customText"];
+/*
+ * What a run is about rather than how it should look, and what was worked out
+ * from something else that is kept. The typeface is stored as the name that
+ * was typed; which family and face that name turned out to mean is a fact
+ * about the machine as it was today, and is worked out again next time.
+ */
+const NOT_KEPT = ["customText", "typeface"];
 
 function encode(settings) {
     const kept = { ...settings };
 
-    for (const key of PER_JOB) {
+    for (const key of NOT_KEPT) {
         delete kept[key];
     }
 
@@ -81,7 +82,7 @@ function rememberedAnswers(text, fonts) {
 
         const settings = normalizeSettings({
             ...defaultSettings(fonts),
-            ...asFamilyAndWeight(held)
+            ...held
         });
 
         return { ...answersFromSettings(settings, fonts), ...blank() };

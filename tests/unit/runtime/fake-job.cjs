@@ -11,7 +11,7 @@ const { SILENT } = require("../../../src/runtime/progress.js");
 
 const SETTINGS = Object.freeze({
     font: "Helvetica Neue",
-    weight: "regular",
+    typeface: { family: "Helvetica Neue", face: "" },
     size: 24,
     textColour: "#FFFFFF",
     outlineColour: "#000000",
@@ -28,8 +28,7 @@ const SETTINGS = Object.freeze({
 const TOOLS = Object.freeze({
     vips: "/v/vips",
     vipsheader: "/v/vipsheader",
-    exiftool: "/v/exiftool",
-    "fc-match": "/v/fc-match"
+    exiftool: "/v/exiftool"
 });
 
 function makeJob(app, settings = {}) {

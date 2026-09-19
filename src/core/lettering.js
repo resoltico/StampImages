@@ -2,7 +2,7 @@
 
 /*
  * The exact argument vectors that draw the shape of the letters: the glyphs
- * as a coverage mask, the room the outline needs, and the outline itself.
+ * as a coverage mask, and the description of the face that shapes them.
  *
  * A mask says how much of each pixel a glyph covers and nothing about what
  * colour it is, which is what lets one drawing serve both the text and its
@@ -22,9 +22,6 @@
  * points is the size it comes out.
  */
 const RENDER_DPI = "72";
-
-// Either side of the pixel itself, which is what a width means for an outline.
-const BOTH_SIDES = 2;
 
 /*
  * What vips reads is not the text: it is pango markup.
@@ -58,18 +55,29 @@ function asMarkup(text) {
  * style instructions, so "Times New Roman 40" asks for the family "Times New"
  * at normal weight and "Arial Black 40" asks for Arial at weight 900. Both
  * measured. A comma ends the family, so "Times New Roman, 40" asks for the
- * family somebody actually named -- which is why the setting is a family name
- * and the weight is a setting of its own.
+ * family somebody actually named -- which is why the two halves of a typeface
+ * are kept apart and joined here, with the comma between them.
  *
- * Nothing here escapes the family: a comma inside it would end the name early,
- * and a name with a comma in it is not a family fontconfig will match anyway.
- * What guards the value is the resolver, which refuses a name this Mac does
- * not have before any of it is drawn.
+ * The face goes where pango reads style words, and the style words pango reads
+ * are the ones the font system uses: measured, "Avenir, Black 40" draws Avenir
+ * Black and "Source Serif 4, Semibold 40" draws that named instance. A family
+ * with no face named is its own default one.
+ *
+ * A typeface that could not be split is written without the comma, and pango
+ * splits it instead -- which is worse and is the point: measured, "Helvetica
+ * Neue Bold, 40" draws nothing but the fallback face, because there is no
+ * family by that name, while "Helvetica Neue Bold 40" draws the face asked
+ * for. That shape is what a host with no font catalogue falls back to.
+ *
+ * Nothing here escapes either half: a comma inside a family would end the name
+ * early, and no family or face on this Mac contains one -- measured across all
+ * 217 families. What guards the values is typeface.js, which refuses a name
+ * the machine does not have before any of it is drawn.
  */
-const WEIGHT_WORDS = { regular: "", bold: "Bold " };
-
-function fontDescription(family, weight, size) {
-    return `${family}, ${WEIGHT_WORDS[weight]}${size}`;
+function fontDescription(typeface, size) {
+    return typeface.family
+        ? `${typeface.family}, ${typeface.face ? `${typeface.face} ` : ""}${size}`
+        : `${typeface.name} ${size}`;
 }
 
 function buildTextArgv(vipsPath, outputPath, text, font) {
@@ -85,62 +93,4 @@ function buildTextArgv(vipsPath, outputPath, text, font) {
     ];
 }
 
-/*
- * Room for the outline to grow into.
- *
- * vips rank keeps its input's dimensions -- documented, and measured: a mask
- * dilated by four pixels came back the same size with the growth cut off at
- * every edge, so every stamp this program drew had its outline shaved flat
- * against the glyphs. The mask is embedded in a border first, and the border
- * is what the outline grows into.
- *
- * The glyphs are embedded in the same border rather than only the copy that
- * is dilated, because the two are composited on top of each other and two
- * images of different sizes do not line up.
- */
-function buildEmbedArgv(vipsPath, around, size, border) {
-    return [
-        vipsPath,
-        "embed",
-        around.input,
-        around.output,
-        String(border),
-        String(border),
-        String(size.width + border * BOTH_SIDES),
-        String(size.height + border * BOTH_SIDES),
-        "--background",
-        "0"
-    ];
-}
-
-/*
- * The outline is the same mask grown by a few pixels: a maximum filter over a
- * square window, which is what dilation is. The window is the width either
- * side plus the pixel itself, and the index selects the largest of them.
- */
-function windowFor(outlineWidth) {
-    return outlineWidth * BOTH_SIDES + 1;
-}
-
-function buildDilateArgv(vipsPath, inputPath, outputPath, outlineWidth) {
-    const size = windowFor(outlineWidth);
-
-    return [
-        vipsPath,
-        "rank",
-        inputPath,
-        outputPath,
-        String(size),
-        String(size),
-        String(size * size - 1)
-    ];
-}
-
-module.exports = {
-    fontDescription,
-    asMarkup,
-    buildTextArgv,
-    buildEmbedArgv,
-    buildDilateArgv,
-    windowFor
-};
+module.exports = { fontDescription, asMarkup, buildTextArgv };

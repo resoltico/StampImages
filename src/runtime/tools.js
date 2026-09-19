@@ -19,18 +19,19 @@ const TOOL_SEARCH_PATH =
     "/opt/homebrew/bin:/usr/local/bin:/opt/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
 
 /*
- * fc-match answers which family a name resolves to, which is the only way to
- * tell a family this Mac has from one fontconfig quietly substitutes. It
- * arrives with vips -- fontconfig is a dependency of it -- rather than being
- * something else to install.
+ * Three, and fc-match is not among them any more. It was asked which family a
+ * name resolves to, which turned out to be a question about fontconfig's
+ * catalogue while the renderer draws from the system's own -- so the answer
+ * was about the wrong machine. The font system is asked directly now, across
+ * the same bridge the form is built with, and nothing has to be installed for
+ * it.
  */
-const TOOL_NAMES = ["vips", "vipsheader", "exiftool", "fc-match"];
+const TOOL_NAMES = ["vips", "vipsheader", "exiftool"];
 
 const ENVIRONMENT_OVERRIDES = {
     vips: "STAMP_IMAGES_VIPS",
     vipsheader: "STAMP_IMAGES_VIPSHEADER",
-    exiftool: "STAMP_IMAGES_EXIFTOOL",
-    "fc-match": "STAMP_IMAGES_FC_MATCH"
+    exiftool: "STAMP_IMAGES_EXIFTOOL"
 };
 
 /*

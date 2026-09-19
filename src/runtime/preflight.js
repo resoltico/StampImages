@@ -3,8 +3,6 @@
 const { shellJoin } = require("../core/shell.js");
 const {
     buildVipsProbeArgv,
-    buildFcMatchProbeArgv,
-    isFcMatchUsable,
     buildExiftoolProbeArgv,
     isVipsUsable,
     isExiftoolUsable,
@@ -51,11 +49,6 @@ const CAPABILITY_PROBES = {
         build: buildExiftoolProbeArgv,
         usable: isExiftoolUsable,
         flags: "answer -json -n with readable JSON"
-    },
-    "fc-match": {
-        build: buildFcMatchProbeArgv,
-        usable: isFcMatchUsable,
-        flags: "name the family a font name resolves to"
     }
 };
 

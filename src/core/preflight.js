@@ -38,7 +38,6 @@ const FAIL_ON_PROBE = "--fail-on=error";
 const PROBE_IMAGE = "/nonexistent-stamp-images-preflight.png";
 const PROBE_OUTPUT = "/nonexistent-stamp-images-preflight.v";
 const PROBE_WIDTH = "10";
-const PROBE_FAMILY = "NoSuchFaceIsInstalledAnywhere";
 
 function buildVipsProbeArgv(vipsPath) {
     return [
@@ -58,24 +57,6 @@ function buildVipsProbeArgv(vipsPath) {
  * Asked about itself, because preflight runs before anybody has chosen a
  * photograph and a probe needs a file that exists.
  */
-/*
- * Asked about a name nothing has, because that is the answer that matters: a
- * build that works names the family it would substitute, and the program reads
- * that name to tell a real family from a substituted one.
- */
-function buildFcMatchProbeArgv(fcMatchPath) {
-    return [fcMatchPath, "-f", "%{family}", PROBE_FAMILY];
-}
-
-/*
- * Any family name at all. An empty answer is a build that cannot tell this
- * program anything, and every question it would be asked would be answered
- * "no family" -- which would refuse every typeface on the machine.
- */
-function isFcMatchUsable(probeOutput) {
-    return String(probeOutput).trim() !== "";
-}
-
 function buildExiftoolProbeArgv(exiftoolPath) {
     return [exiftoolPath, "-json", "-n", "-FileType", exiftoolPath];
 }
@@ -141,8 +122,6 @@ function describeSetupProblems(problems, hasHomebrew) {
 
 module.exports = {
     buildVipsProbeArgv,
-    buildFcMatchProbeArgv,
-    isFcMatchUsable,
     buildExiftoolProbeArgv,
     isVipsUsable,
     isExiftoolUsable,

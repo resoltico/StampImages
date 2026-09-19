@@ -3,10 +3,11 @@
 # Which face a copy is stamped in.
 #
 # pango answers every name: asked for one it cannot place it draws in a default
-# face and says nothing. So a name nobody verified is a stamp in a face nobody
-# chose -- and the form's list is verified by drawing with it, while a name
-# typed there or written into a configuration is verified the same way before
-# the run starts. Only the second half can be exercised without a person.
+# face and says nothing. So a name nobody checked is a stamp in a face nobody
+# chose. Every name is checked against the machine's own font catalogue -- the
+# one the renderer draws through -- before a run starts, and a typed name goes
+# through exactly the same door a configuration file does. Only the second half
+# can be exercised without a person.
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
@@ -33,65 +34,57 @@ stamp() {
 named() {
     settings_file "$1" "Riga"
     sed -i '' "s/\"font\": \"[^\"]*\"/\"font\": \"$2\"/" "$1"
-    sed -i '' 's/"weight": "[^"]*"/"weight": "regular"/' "$1"
+}
+
+# drawn_with <face> -- how many pixels the stamp covers, drawn in that face
+drawn_with() {
+    named "$WORK/case.json" "$1"
+    rm -f "$WORK/photo_stamped.jpg"
+    stamp "$WORK/case.json" "$WORK/photo.jpg" > /dev/null
+    stamped_pixels "$WORK/photo_stamped.jpg" 380 440 520 160 "$BACKGROUND"
+}
+
+# refused <face> -- the run's complaint, or a failure if it was accepted
+refused() {
+    named "$WORK/case.json" "$1"
+    rm -f "$WORK/photo_stamped.jpg"
+
+    if stamp "$WORK/case.json" "$WORK/photo.jpg" > /dev/null 2> "$WORK/err.txt"; then
+        fail "a configuration naming \"$1\" was accepted"
+    fi
+
+    test ! -f "$WORK/photo_stamped.jpg" ||
+        fail "a copy was stamped in a face nobody asked for"
+    cat "$WORK/err.txt"
 }
 
 solid "$WORK/photo.jpg" 900 600 "$GREY"
 
 # ---------------------------------------------------------------------------
-# A face this Mac draws with is stamped, and the copy carries it.
+# A family this Mac has is stamped, and the copy carries it.
 # ---------------------------------------------------------------------------
 
-named "$WORK/menlo.json" "Menlo"
-stamp "$WORK/menlo.json" "$WORK/photo.jpg" > /dev/null
-
-DRAWN=$(stamped_pixels "$WORK/photo_stamped.jpg" 380 440 520 160 "$BACKGROUND")
-test "$DRAWN" -gt 100 || fail "nothing was drawn in the face that resolves: $DRAWN"
+DRAWN=$(drawn_with "Menlo")
+test "$DRAWN" -gt 100 || fail "nothing was drawn in a family this Mac has: $DRAWN"
 
 # ---------------------------------------------------------------------------
 # A name no face answers to is refused, and nothing is published.
 # ---------------------------------------------------------------------------
 
-named "$WORK/nosuch.json" "Definitely Not A Font 12345"
-
-if stamp "$WORK/nosuch.json" "$WORK/photo.jpg" > /dev/null 2> "$WORK/err.txt"; then
-    fail "a configuration naming a face this Mac has not was accepted"
-fi
-
-assert_contains "$(cat "$WORK/err.txt")" \
-    "does not draw with the typeface" "the refusal says what was wrong"
-test ! -f "$WORK/photo_stamped_2.jpg" ||
-    fail "a copy was stamped in a face nobody asked for"
+assert_contains "$(refused "Definitely Not A Font 12345")" \
+    'has no typeface called "Definitely Not A Font 12345"' \
+    "the refusal names what was asked for"
 
 # ---------------------------------------------------------------------------
-# A family fontconfig would quietly stand in for is refused, however well the
-# substitute draws. "Noto Serif" is the case that taught this: macOS ships 190
-# script-specific Noto families and not that one, so fontconfig answers with a
-# different family -- and drawing with it produces something that is not the
-# fallback, so a drawing alone called it available.
+# A family the machine has, asked for in a style it has not, is told which
+# styles it does come in. A sentence only a real catalogue can write.
 # ---------------------------------------------------------------------------
 
-named "$WORK/substituted.json" "Noto Serif"
+SAID=$(refused "Georgia Ultrablack")
 
-if stamp "$WORK/substituted.json" "$WORK/photo.jpg" > /dev/null 2> "$WORK/err.txt"; then
-    fail "a family fontconfig substitutes was accepted"
-fi
-
-assert_contains "$(cat "$WORK/err.txt")" \
-    "does not draw with the typeface" "the substitution was caught"
-
-# ---------------------------------------------------------------------------
-# And a family fontconfig keeps but the renderer cannot draw. Measured:
-# Helvetica, Times, Hoefler Text and Iowan Old Style all keep their names and
-# all draw as the fallback, because the files macOS keeps them in are not ones
-# freetype will open. Neither question is enough on its own.
-# ---------------------------------------------------------------------------
-
-named "$WORK/unrasterisable.json" "Helvetica"
-
-if stamp "$WORK/unrasterisable.json" "$WORK/photo.jpg" > /dev/null 2> "$WORK/err.txt"; then
-    fail "a family that keeps its name but draws as the fallback was accepted"
-fi
+assert_contains "$SAID" 'Georgia has no style called "Ultrablack"' \
+    "the refusal separates a wrong style from an unknown family"
+assert_contains "$SAID" "Bold Italic" "and says what the family comes in"
 
 # ---------------------------------------------------------------------------
 # A family whose own name ends in a style word is asked for by that name.
@@ -99,33 +92,43 @@ fi
 # The description used to be "Family Size", and pango reads the words before
 # the size as style instructions -- so "Times New Roman 40" asked for the
 # family "Times New" and this face appeared to be missing. A comma ends the
-# family, and the weight is a setting of its own.
+# family, and the style goes after it.
 # ---------------------------------------------------------------------------
 
-named "$WORK/roman.json" "Times New Roman"
-rm -f "$WORK/photo_stamped.jpg"
-stamp "$WORK/roman.json" "$WORK/photo.jpg" > /dev/null
-
-DRAWN=$(stamped_pixels "$WORK/photo_stamped.jpg" 380 440 520 160 "$BACKGROUND")
+DRAWN=$(drawn_with "Times New Roman")
 test "$DRAWN" -gt 100 || fail "Times New Roman did not draw: $DRAWN"
 
 # ---------------------------------------------------------------------------
-# And the weight reaches the renderer as a weight rather than as part of the
+# A style reaches the renderer as a style rather than as part of the family
 # name: bold is heavier, so it covers more pixels than regular.
 # ---------------------------------------------------------------------------
 
-named "$WORK/regular.json" "Georgia"
-rm -f "$WORK/photo_stamped.jpg"
-stamp "$WORK/regular.json" "$WORK/photo.jpg" > /dev/null
-REGULAR=$(stamped_pixels "$WORK/photo_stamped.jpg" 380 440 520 160 "$BACKGROUND")
-
-named "$WORK/bold.json" "Georgia"
-sed -i '' 's/"weight": "[^"]*"/"weight": "bold"/' "$WORK/bold.json"
-rm -f "$WORK/photo_stamped.jpg"
-stamp "$WORK/bold.json" "$WORK/photo.jpg" > /dev/null
-BOLD=$(stamped_pixels "$WORK/photo_stamped.jpg" 380 440 520 160 "$BACKGROUND")
+REGULAR=$(drawn_with "Georgia")
+BOLD=$(drawn_with "Georgia Bold")
 
 test "$BOLD" -gt "$REGULAR" ||
     fail "bold covered no more than regular: $BOLD against $REGULAR"
+
+# ---------------------------------------------------------------------------
+# And a style no weight menu could have offered. Avenir comes in Book, Light,
+# Medium, Heavy and Black -- a Regular-or-Bold setting reaches none of them,
+# which is why the typeface is one name rather than a family and a weight.
+#
+# Asserted as two copies that differ rather than as one covering more pixels
+# than the other: the count is of pixels that are not the background, and an
+# outline two pixels wide puts a halo round every glyph, so a heavier face
+# barely moves it. Measured: Avenir Light and Avenir Black come out within 7
+# pixels of each other and are plainly different drawings.
+# ---------------------------------------------------------------------------
+
+LIGHT=$(drawn_with "Avenir Light")
+test "$LIGHT" -gt 100 || fail "Avenir Light did not draw: $LIGHT"
+mv "$WORK/photo_stamped.jpg" "$WORK/light.jpg"
+
+BLACK=$(drawn_with "Avenir Black")
+test "$BLACK" -gt 100 || fail "Avenir Black did not draw: $BLACK"
+
+cmp -s "$WORK/light.jpg" "$WORK/photo_stamped.jpg" &&
+    fail "Avenir Light and Avenir Black drew the same picture"
 
 printf 'macOS typeface integration passed\n'

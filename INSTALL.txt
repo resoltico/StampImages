@@ -29,9 +29,8 @@ Open Terminal and run:
 
     brew install exiftool vips
 
-That is three tools: exiftool, vips, and fc-match, which arrives with vips as
-part of fontconfig. fc-match is what tells a typeface this Mac has from one it
-would quietly stand in for.
+Nothing else has to be installed. Typefaces are read from the font system
+macOS already provides.
 
 Install the Quick Action
 ========================

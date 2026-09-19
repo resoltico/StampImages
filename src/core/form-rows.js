@@ -3,7 +3,6 @@
 const { listRow, numberRow, textRow } = require("./form-shapes.js");
 const {
     POSITION,
-    WEIGHT,
     DATE_FORMAT,
     COORDINATE_FORMAT,
     labelOfValue
@@ -24,14 +23,15 @@ const { SIZE, MARGIN, OUTLINE_WIDTH } = require("./bounds.js");
  */
 
 /*
- * A family name, and nothing else: the weight is the setting below, and the
- * description the renderer is given is built from the two -- see
- * fontDescription in lettering.js for why that distinction is the whole of
- * this. The faces this Mac drew with are suggestions rather than the whole
- * truth, so any other family may be typed and is resolved the same way.
+ * The whole name of a face: the family, and the style after it when a
+ * particular one is wanted -- "Georgia", "Georgia Bold", "Avenir Black".
+ * One field rather than a family and a weight menu, because a menu can only
+ * offer the weights somebody thought of and a name reaches every face the
+ * family has. What the list holds is a handful of suggestions; any other name
+ * may be typed, and typeface.js resolves both the same way.
  */
 const FONT = {
-    prompt: "Typeface, by family name:",
+    prompt: "Typeface, by name:",
     label: "Typeface:",
     hint: "or type a name",
     // Offers rather than requires, so it is not marked with a refused value:
@@ -88,7 +88,6 @@ const ORDER = [
     { kind: "choice", key: "coordinateFormat", control: COORDINATE_FORMAT },
     { kind: "text", key: "customText", control: TEXT },
     { kind: "font", key: "font", control: FONT },
-    { kind: "choice", key: "weight", control: WEIGHT },
     { kind: "number", key: "size", control: SIZE },
     { kind: "colour", key: "textColour", control: TEXT_COLOUR },
     { kind: "number", key: "outlineWidth", control: OUTLINE_WIDTH },
@@ -99,9 +98,9 @@ const ORDER = [
 
 /*
  * The typefaces are not written down here. Which ones exist is a fact about
- * the machine, established by drawing with each of them, so the list arrives
- * with the answers rather than being a constant that might name a font this
- * Mac would quietly render as something else.
+ * the machine, read from the font system the renderer draws through, so the
+ * list arrives with the answers rather than being a constant that might name a
+ * font this Mac would quietly render as something else.
  */
 function fontControl(fonts) {
     return {
@@ -112,8 +111,8 @@ function fontControl(fonts) {
 
 /*
  * The typeface row, with the machine's answer in it. Every reader of a row
- * goes through here, so nothing else has to know that one of the ten is only
- * a list once the fonts are known.
+ * goes through here, so nothing else has to know that one of them is only a
+ * list once the fonts are known.
  */
 function resolvedRow(row, fonts) {
     return row.kind === "font" ? { ...row, control: fontControl(fonts) } : row;

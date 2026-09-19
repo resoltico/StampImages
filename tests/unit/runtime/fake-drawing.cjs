@@ -1,9 +1,8 @@
 "use strict";
 
 /*
- * What the drawing tools answer: the header fields vipsheader reports, the
- * comparison that decides whether a font name resolved, and the contents of a
- * file the runtime reads.
+ * What the drawing tools answer: the header fields vipsheader reports, and
+ * the contents of a file the runtime reads.
  *
  * Apart from the rest of the machine because this half models the tools rather
  * than the installation: which of them exist is fake-shell.cjs's, and what
@@ -29,62 +28,6 @@ const HEADER_FIELDS = [
 
 const READS_FILE = /^'[^']*\/cat' '(?<path>.*)'$/u;
 
-/*
- * Which family fontconfig would use for a name.
- *
- * It answers every name: asked for one the machine has not, it names the one
- * it would substitute. So a machine is modelled by which families it has, and
- * anything else comes back as the substitute -- which is what tells a family
- * this Mac really has from one quietly stood in for.
- */
-const SUBSTITUTE = "Verdana";
-// Not anchored at the end: the preflight probe appends "2>&1 || true" so it
-// can read what a broken build printed.
-const MATCHES = /fc-match' '-f' '[^']*' '(?<family>[^']*)'/u;
-
-function resolvedFamily(app, command) {
-    const asked = MATCHES.exec(command);
-
-    if (!asked) {
-        return undefined;
-    }
-
-    const { family } = asked.groups;
-    const has = app.fonts === undefined || app.fonts.includes(family);
-
-    return has ? family : SUBSTITUTE;
-}
-
-/*
- * Which font names this machine draws with.
- *
- * The real probe draws a candidate and the impossible name and compares the
- * two files, so a machine is modelled by remembering which family was last
- * drawn into the candidate file and answering the comparison accordingly:
- * identical means the name fell back. Left unsaid, every candidate draws,
- * which is a Mac with all of them installed.
- */
-const DRAWS_FONT =
-    /'text' '(?<out>[^']+)' '[^']*' '--font' '(?<font>[^']+), \d+'/u;
-const COMPARES = /^'[^']*\/cmp' '-s' '(?<one>[^']+)' '(?<other>[^']+)'$/u;
-
-function noteFontDrawn(app, command) {
-    const drawn = DRAWS_FONT.exec(command);
-
-    if (drawn && drawn.groups.out.endsWith("font-candidate.png")) {
-        app.lastFontDrawn = drawn.groups.font;
-    }
-}
-
-function refusesComparison(app, command) {
-    const compared = COMPARES.exec(command);
-
-    // cmp fails when the files differ, which is what a name that resolved to
-    // its own face looks like.
-    return Boolean(compared) &&
-        (app.fonts === undefined || app.fonts.includes(app.lastFontDrawn));
-}
-
 function readsFile(app, command) {
     const read = READS_FILE.exec(command);
 
@@ -97,10 +40,4 @@ function headerField(app, command) {
     return field ? String(app[field[1]] ?? field[2]) : undefined;
 }
 
-module.exports = {
-    noteFontDrawn,
-    resolvedFamily,
-    refusesComparison,
-    readsFile,
-    headerField
-};
+module.exports = { readsFile, headerField };

@@ -587,17 +587,6 @@ const COORDINATE_FORMAT = {
     choices: COORDINATE_FORMATS
 };
 
-const WEIGHTS = [
-    { label: "Regular", value: "regular" },
-    { label: "Bold", value: "bold" }
-];
-
-const WEIGHT = {
-    prompt: "Weight:",
-    label: "Weight:",
-    choices: WEIGHTS
-};
-
 function labelsOf(control) {
     return control.choices.map((choice) => choice.label);
 }
@@ -764,16 +753,6 @@ function isSettingsRecord(value) {
     return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-const TRAILING_BOLD = /\s+Bold$/u;
-
-function asFamilyAndWeight(settings) {
-    const font = String(settings.font ?? "");
-
-    return settings.weight === undefined && TRAILING_BOLD.test(font)
-        ? { ...settings, font: font.replace(TRAILING_BOLD, ""), weight: "bold" }
-        : settings;
-}
-
 function normalizeSettings(settings) {
     return {
         font: readWords(settings.font ?? "", "The typeface").trim(),
@@ -791,7 +770,6 @@ function normalizeSettings(settings) {
             MAXIMUM_OUTLINE,
             "Outline"
         ),
-        weight: assertChoice(settings.weight, WEIGHT, "weight"),
         position: assertChoice(settings.position, POSITION, "position"),
         margin: parseInteger(
             readNumeric(settings.margin, "Margin"),
@@ -1114,7 +1092,7 @@ function describeCrowding(count) {
 
 
 const FONT = {
-    prompt: "Typeface, by family name:",
+    prompt: "Typeface, by name:",
     label: "Typeface:",
     hint: "or type a name",
     suggests: true
@@ -1149,7 +1127,6 @@ const ORDER = [
     { kind: "choice", key: "coordinateFormat", control: COORDINATE_FORMAT },
     { kind: "text", key: "customText", control: TEXT },
     { kind: "font", key: "font", control: FONT },
-    { kind: "choice", key: "weight", control: WEIGHT },
     { kind: "number", key: "size", control: SIZE },
     { kind: "colour", key: "textColour", control: TEXT_COLOUR },
     { kind: "number", key: "outlineWidth", control: OUTLINE_WIDTH },
@@ -1359,12 +1336,12 @@ function answersFromSettings(settings, fonts) {
 const DOMAIN = "com.resoltico.StampImages";
 const KEY = "lastSettings.v1";
 
-const PER_JOB = ["customText"];
+const NOT_KEPT = ["customText", "typeface"];
 
 function encode(settings) {
     const kept = { ...settings };
 
-    for (const key of PER_JOB) {
+    for (const key of NOT_KEPT) {
         delete kept[key];
     }
 
@@ -1385,7 +1362,7 @@ function rememberedAnswers(text, fonts) {
 
         const settings = normalizeSettings({
             ...defaultSettings(fonts),
-            ...asFamilyAndWeight(held)
+            ...held
         });
 
         return { ...answersFromSettings(settings, fonts), ...blank() };
@@ -1416,12 +1393,112 @@ function buildSizeArgv(vipsheaderPath, imagePath, field) {
     return [vipsheaderPath, "-f", field, imagePath];
 }
 
+/* ===== src/core/typeface.js ===== */
+
+
+const SPACE = /\s+/u;
+
+function sameName(one, other) {
+    return String(one).trim().toLowerCase() === String(other).trim().toLowerCase();
+}
+
+function familyIn(known, name) {
+    return known.families.find((family) => sameName(family, name)) ?? "";
+}
+
+function faceIn(known, family, name) {
+    return known.facesOf(family).find((face) => sameName(face, name)) ?? "";
+}
+
+function wordsOf(name) {
+    return String(name).trim().split(SPACE).filter(Boolean);
+}
+
+function splitAt(known, words, taken) {
+    const family = familyIn(known, words.slice(0, taken).join(" "));
+
+    if (!family) {
+        return null;
+    }
+
+    const rest = words.slice(taken).join(" ");
+
+    if (rest === "") {
+        return { family, face: "" };
+    }
+
+    const face = faceIn(known, family, rest);
+
+    return face ? { family, face } : null;
+}
+
+function faceOf(known, name) {
+    const words = wordsOf(name);
+
+    for (let taken = words.length; taken > 0; taken -= 1) {
+        const found = splitAt(known, words, taken);
+
+        if (found) {
+            return found;
+        }
+    }
+
+    return null;
+}
+
+function nearestFamily(known, name) {
+    const words = wordsOf(name);
+
+    for (let taken = words.length - 1; taken > 0; taken -= 1) {
+        const family = familyIn(known, words.slice(0, taken).join(" "));
+
+        if (family) {
+            return { family, rest: words.slice(taken).join(" ") };
+        }
+    }
+
+    return { family: "", rest: "" };
+}
+
+/* ===== src/core/typeface-refusal.js ===== */
+
+
+
+function inWords(names) {
+    return names.length > 1
+        ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`
+        : names.join("");
+}
+
+const NAMING = "Name it as Font Book does -- the family, and the style after " +
+    "it if you want a particular one. \"Helvetica Neue\", \"Helvetica Neue " +
+    "Bold\" and \"Avenir Black\" are all names this takes.";
+
+function unknownTypeface(known, name) {
+    const near = nearestFamily(known, name);
+
+    return near.family
+        ? `${near.family} has no style called "${near.rest}".\n\n` +
+            `It comes in ${inWords(known.facesOf(near.family))}.`
+        : `This Mac has no typeface called "${name}".\n\n${NAMING}`;
+}
+
+function resolved(known, name) {
+    if (!known) {
+        return { typeface: { name } };
+    }
+
+    const found = faceOf(known, name);
+
+    return found
+        ? { typeface: found }
+        : { problem: unknownTypeface(known, name) };
+}
+
 /* ===== src/core/lettering.js ===== */
 
 
 const RENDER_DPI = "72";
-
-const BOTH_SIDES = 2;
 
 const MARKUP = [["&", "&amp;"], ["<", "&lt;"], [">", "&gt;"]];
 
@@ -1432,10 +1509,10 @@ function asMarkup(text) {
     );
 }
 
-const WEIGHT_WORDS = { regular: "", bold: "Bold " };
-
-function fontDescription(family, weight, size) {
-    return `${family}, ${WEIGHT_WORDS[weight]}${size}`;
+function fontDescription(typeface, size) {
+    return typeface.family
+        ? `${typeface.family}, ${typeface.face ? `${typeface.face} ` : ""}${size}`
+        : `${typeface.name} ${size}`;
 }
 
 function buildTextArgv(vipsPath, outputPath, text, font) {
@@ -1450,6 +1527,11 @@ function buildTextArgv(vipsPath, outputPath, text, font) {
         RENDER_DPI
     ];
 }
+
+/* ===== src/core/outlining.js ===== */
+
+
+const BOTH_SIDES = 2;
 
 function buildEmbedArgv(vipsPath, around, size, border) {
     return [
@@ -1621,7 +1703,6 @@ const FAIL_ON_PROBE = "--fail-on=error";
 const PROBE_IMAGE = "/nonexistent-stamp-images-preflight.png";
 const PROBE_OUTPUT = "/nonexistent-stamp-images-preflight.v";
 const PROBE_WIDTH = "10";
-const PROBE_FAMILY = "NoSuchFaceIsInstalledAnywhere";
 
 function buildVipsProbeArgv(vipsPath) {
     return [
@@ -1635,14 +1716,6 @@ function buildVipsProbeArgv(vipsPath) {
         "srgb",
         FAIL_ON_PROBE
     ];
-}
-
-function buildFcMatchProbeArgv(fcMatchPath) {
-    return [fcMatchPath, "-f", "%{family}", PROBE_FAMILY];
-}
-
-function isFcMatchUsable(probeOutput) {
-    return String(probeOutput).trim() !== "";
 }
 
 function buildExiftoolProbeArgv(exiftoolPath) {
@@ -1795,22 +1868,6 @@ function sameBytes(app, one, other) {
     return succeeds(app, [CMP, "-s", one, other]);
 }
 
-const FILES_DIFFER = 1;
-
-function compareFiles(app, one, other) {
-    try {
-        app.doShellScript(shellJoin([CMP, "-s", one, other]));
-
-        return "same";
-    } catch (error) {
-        if (isUserCancelled(error)) {
-            throw error;
-        }
-
-        return error.errorNumber === FILES_DIFFER ? "differ" : "unreadable";
-    }
-}
-
 function verifyFileWritten(app, path, label) {
     if (!isRegularNonEmpty(app, path)) {
         throw new Error(
@@ -1825,13 +1882,12 @@ function verifyFileWritten(app, path, label) {
 const TOOL_SEARCH_PATH =
     "/opt/homebrew/bin:/usr/local/bin:/opt/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
 
-const TOOL_NAMES = ["vips", "vipsheader", "exiftool", "fc-match"];
+const TOOL_NAMES = ["vips", "vipsheader", "exiftool"];
 
 const ENVIRONMENT_OVERRIDES = {
     vips: "STAMP_IMAGES_VIPS",
     vipsheader: "STAMP_IMAGES_VIPSHEADER",
-    exiftool: "STAMP_IMAGES_EXIFTOOL",
-    "fc-match": "STAMP_IMAGES_FC_MATCH"
+    exiftool: "STAMP_IMAGES_EXIFTOOL"
 };
 
 function optionalEnvironment(app, name) {
@@ -1909,11 +1965,6 @@ const CAPABILITY_PROBES = {
         build: buildExiftoolProbeArgv,
         usable: isExiftoolUsable,
         flags: "answer -json -n with readable JSON"
-    },
-    "fc-match": {
-        build: buildFcMatchProbeArgv,
-        usable: isFcMatchUsable,
-        flags: "name the family a font name resolves to"
     }
 };
 
@@ -2814,112 +2865,6 @@ function publishImage(job, stagedPath, chooseName) {
     return claimName(job, stagedPath, facts, chooseName);
 }
 
-/* ===== src/runtime/font-probe.js ===== */
-
-
-const IMPOSSIBLE = "NoSuchFaceIsInstalledAnywhere";
-const PROBE_TEXT = "AWgy0123";
-const PROBE_SIZE = 40;
-const FAMILY_FORMAT = "%{family}";
-
-function drawWith(where, family, output) {
-    runArgv(
-        where.app,
-        buildTextArgv(
-            where.tools.vips,
-            output,
-            PROBE_TEXT,
-            fontDescription(family, "regular", PROBE_SIZE)
-        ),
-        "checking which fonts are installed"
-    );
-    verifyFileWritten(where.app, output, "the drawn text");
-
-    return output;
-}
-
-function fallbackDrawing(where) {
-    return drawWith(where, IMPOSSIBLE, `${where.workspace}/font-fallback.png`);
-}
-
-function keepsItsName(where, family) {
-    const answered = String(runArgv(
-        where.app,
-        [where.tools["fc-match"], "-f", FAMILY_FORMAT, family],
-        "checking which fonts are installed"
-    ));
-    const wanted = family.trim().toLowerCase();
-
-    return answered.split(",").some((name) => name.trim().toLowerCase() === wanted);
-}
-
-function rasterises(where, family, fallback) {
-    const drawn = drawWith(where, family, `${where.workspace}/font-candidate.png`);
-    const answer = compareFiles(where.app, drawn, fallback);
-
-    if (answer === "unreadable") {
-        throw new Error("The drawings a typeface is checked by cannot be read.");
-    }
-
-    return answer === "differ";
-}
-
-function probing(where) {
-    const fallback = fallbackDrawing(where);
-
-    return (family) => {
-        try {
-            return keepsItsName(where, family) &&
-                rasterises(where, family, fallback);
-        } catch (error) {
-            if (isUserCancelled(error)) {
-                throw error;
-            }
-
-            return false;
-        }
-    };
-}
-
-const WEIGHT_IN_NAME = /\s(?:Bold|Italic|Oblique)$/iu;
-
-function withoutTheWeight(family) {
-    return WEIGHT_IN_NAME.test(family)
-        ? ` The weight is a setting of its own: try "${
-            family.replace(WEIGHT_IN_NAME, "")}" and set Weight.`
-        : "";
-}
-
-function undrawable(family) {
-    return `This Mac does not draw with the typeface "${family}".\n\n` +
-        "Fonts are read from the font folders: ~/Library/Fonts, " +
-        "/Library/Fonts and the system's own. A font kept somewhere else and " +
-        "switched on by a font manager cannot be read here, even when other " +
-        `apps can use it.${withoutTheWeight(family)}`;
-}
-
-/* ===== src/runtime/fonts.js ===== */
-
-
-const CANDIDATES = [
-    "Helvetica Neue",
-    "Arial",
-    "Verdana",
-    "Avenir Next",
-    "Gill Sans",
-    "Georgia",
-    "Palatino",
-    "Baskerville",
-    "Menlo",
-    "Courier New"
-];
-
-function availableFonts(where) {
-    const draws = probing(where);
-
-    return CANDIDATES.filter(draws);
-}
-
 /* ===== src/runtime/tinting.js ===== */
 
 
@@ -3005,7 +2950,7 @@ function drawMask(job, face, text) {
             tools.vips,
             face.raw,
             text,
-            fontDescription(settings.font, settings.weight, settings.size)
+            fontDescription(settings.typeface, settings.size)
         ),
         "drawing the stamp"
     );
@@ -3123,7 +3068,7 @@ function forget(job) {
 }
 
 function stampFor(job, drawn) {
-    const key = `${drawn.profile.path}\n${drawn.text}`;
+    const key = `${drawn.profile.failed}\n${drawn.profile.path}\n${drawn.text}`;
     const held = job.stamps.get(key);
 
     if (held) {
@@ -3682,6 +3627,81 @@ function perform(target, method) {
     return target[method];
 }
 
+/* ===== src/runtime/typefaces.js ===== */
+
+
+const FACE_NAME = 1;
+
+function manager(bridge) {
+    return bridge.ns.NSFontManager.sharedFontManager;
+}
+
+function familiesFrom(bridge) {
+    return manager(bridge).availableFontFamilies.js.map((name) => String(name.js));
+}
+
+function facesFrom(bridge, family) {
+    const rows = manager(bridge).availableMembersOfFontFamily(bridge.ns(family)).js;
+
+    return (rows ?? []).map((row) => String(row.js[FACE_NAME].js));
+}
+
+function catalogue(bridge = appkitBridge(globalThis.ObjC, globalThis.$)) {
+    if (!bridge) {
+        return null;
+    }
+
+    const families = familiesFrom(bridge);
+    const faces = new Map();
+
+    return {
+        families,
+        facesOf(family) {
+            if (!faces.has(family)) {
+                faces.set(family, facesFrom(bridge, family));
+            }
+
+            return faces.get(family);
+        }
+    };
+}
+
+/* ===== src/runtime/fonts.js ===== */
+
+
+const CANDIDATES = [
+    "Helvetica Neue",
+    "Arial",
+    "Verdana",
+    "Avenir Next",
+    "Gill Sans",
+    "Georgia",
+    "Palatino",
+    "Baskerville",
+    "Menlo",
+    "Courier New"
+];
+
+const BOLD = "Bold";
+
+function suggestionsFor(known, name) {
+    const family = familyIn(known, name);
+
+    if (!family) {
+        return [];
+    }
+
+    return known.facesOf(family).includes(BOLD)
+        ? [family, `${family} ${BOLD}`]
+        : [family];
+}
+
+function availableFonts(known) {
+    return known
+        ? CANDIDATES.flatMap((name) => suggestionsFor(known, name))
+        : [...CANDIDATES];
+}
+
 /* ===== src/runtime/appkit-widgets.js ===== */
 
 
@@ -4119,8 +4139,8 @@ function refusal(context, row, typed) {
         return mine.message;
     }
 
-    return row.kind === "font" && !context.draws(read.settings[row.key])
-        ? undrawable(read.settings[row.key])
+    return row.kind === "font"
+        ? resolved(context.known, read.settings[row.key]).problem ?? ""
         : "";
 }
 
@@ -4220,12 +4240,14 @@ function createMemory(objc, ns) {
 
 
 function withDrawableFont(state, outcome, settings) {
-    return state.context.draws(settings.font)
-        ? { settings }
-        : {
+    const answer = resolved(state.context.known, settings.font);
+
+    return answer.problem
+        ? {
             answers: outcome.answers,
-            problems: [{ key: "font", message: undrawable(settings.font) }]
-        };
+            problems: [{ key: "font", message: answer.problem }]
+        }
+        : { settings };
 }
 
 function formRound(bridge, present, state) {
@@ -4310,11 +4332,13 @@ function defaultMemory() {
 }
 
 function drawableSettings(settings, context) {
-    if (!context.draws(settings.font)) {
-        throw new Error(undrawable(settings.font));
+    const answer = resolved(context.known, settings.font);
+
+    if (answer.problem) {
+        throw new Error(answer.problem);
     }
 
-    return settings;
+    return { ...settings, typeface: answer.typeface };
 }
 
 function settingsFor(app, invocation, context, injected = {}) {
@@ -4328,7 +4352,10 @@ function settingsFor(app, invocation, context, injected = {}) {
         context,
         answers: rememberedAnswers(memory.recall(), context.fonts)
     };
-    const settings = normalizeSettings(collectSettings(app, opening, injected));
+    const settings = drawableSettings(
+        normalizeSettings(collectSettings(app, opening, injected)),
+        context
+    );
 
     memory.remember(encode(settings));
 
@@ -4798,31 +4825,8 @@ function withWorkspace(app, unpublished, use) {
     }
 }
 
-function whereToDraw(prepared, workspace) {
-    return { app: prepared.app, tools: prepared.tools, workspace };
-}
-
-function fontsFor(where, headless, progress) {
-    if (headless) {
-        return [];
-    }
-
-    progress.phase("Checking which fonts are installed");
-
-    return availableFonts(where);
-}
-
-function fontProbe(where, offered) {
-    const answered = new Map(offered.map((family) => [family, true]));
-    const draws = probing(where);
-
-    return (family) => {
-        if (!answered.has(family)) {
-            answered.set(family, draws(family));
-        }
-
-        return answered.get(family);
-    };
+function fontsFor(known, headless) {
+    return headless ? [] : availableFonts(known);
 }
 
 function settingsFrom(app, invocation, context) {
@@ -4853,13 +4857,11 @@ function jobFor(prepared, settings, place) {
     };
 }
 
-function assemble(prepared, place) {
-    const where = whereToDraw(prepared, place.workspace);
-    const fonts = fontsFor(where, prepared.invocation.headless, place.progress);
+function assemble(prepared, place, known = catalogue()) {
     const context = {
         count: prepared.selection.images.length,
-        fonts,
-        draws: fontProbe(where, fonts)
+        fonts: fontsFor(known, prepared.invocation.headless),
+        known
     };
 
     place.progress.pause();

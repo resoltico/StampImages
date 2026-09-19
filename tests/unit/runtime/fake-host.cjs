@@ -27,8 +27,7 @@ const WORKSPACE = `${TEMPORARY}/StampImages.Fake01`;
 const INSTALLED_TOOLS = [
     "/opt/homebrew/bin/vips",
     "/opt/homebrew/bin/vipsheader",
-    "/opt/homebrew/bin/exiftool",
-    "/opt/homebrew/bin/fc-match"
+    "/opt/homebrew/bin/exiftool"
 ];
 
 /*
@@ -72,7 +71,6 @@ function filesystemFor(settings) {
             danglingLinks: settings.danglingLinks ?? [],
             metadata: settings.metadata ?? [],
             texts: settings.texts ?? [],
-            fonts: settings.fonts,
             profiles: settings.profiles ?? []
         }
     );

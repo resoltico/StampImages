@@ -7,7 +7,6 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const {
-    compareFiles,
     isRegularFile,
     isExecutable,
     pathIsTaken,
@@ -104,41 +103,3 @@ test("every other question still answers no when it cannot be put", () => {
     assert.equal(pathIsTaken(app, "/a.png"), false);
 });
 
-test("a comparison that could not be made is not two files that differ", () => {
-    // cmp exits 0 for the same, 1 for different and 2 when it cannot read
-    // one. Collapsed into "the command failed", a comparison that was never
-    // made read as "these differ" -- and a drawing that was never compared
-    // read as a typeface that resolved.
-    const app = createFakeApp();
-
-    // A machine with no font drawn, so the fake's comparison succeeds.
-    app.fonts = [];
-    assert.equal(compareFiles(app, "/a.png", "/b.png"), "same");
-
-    const differ = new Error("files differ");
-
-    differ.errorNumber = 1;
-    assert.equal(
-        compareFiles(createFakeApp([["/cmp", differ]]), "/a.png", "/b.png"),
-        "differ"
-    );
-
-    const unreadable = new Error("cmp: no such file");
-
-    unreadable.errorNumber = 2;
-    assert.equal(
-        compareFiles(createFakeApp([["/cmp", unreadable]]), "/a.png", "/b.png"),
-        "unreadable"
-    );
-});
-
-test("a cancellation during a comparison is a stop, not an answer", () => {
-    const stopped = new Error("User cancelled.");
-
-    stopped.errorNumber = -128;
-
-    assert.throws(
-        () => compareFiles(createFakeApp([["/cmp", stopped]]), "/a.png", "/b.png"),
-        (error) => error === stopped
-    );
-});

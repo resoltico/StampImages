@@ -51,21 +51,13 @@ const COORDINATE_FORMAT = {
     choices: COORDINATE_FORMATS
 };
 
-// Weight is its own setting because it is its own thing. It used to be half
-// of the typeface's name -- "Arial" and "Arial Bold" as separate entries --
-// which made the value a font description rather than a family name, and a
-// family whose real name ends in a style word could not be asked for at all.
-const WEIGHTS = [
-    { label: "Regular", value: "regular" },
-    { label: "Bold", value: "bold" }
-];
-
-const WEIGHT = {
-    prompt: "Weight:",
-    label: "Weight:",
-    choices: WEIGHTS
-};
-
+/*
+ * The typeface is not here, and neither is a weight. A closed choice is one
+ * where this program knows every answer, and which faces a Mac has is a fact
+ * about that Mac -- see typeface.js. A weight setting lived here briefly and
+ * offered Regular and Bold, which reaches two of Avenir's twelve faces and
+ * none of the named instances of a variable font.
+ */
 function labelsOf(control) {
     return control.choices.map((choice) => choice.label);
 }
@@ -105,7 +97,6 @@ function labelOfValue(control, value) {
 
 module.exports = {
     POSITION,
-    WEIGHT,
     DATE_FORMAT,
     COORDINATE_FORMAT,
     labelsOf,

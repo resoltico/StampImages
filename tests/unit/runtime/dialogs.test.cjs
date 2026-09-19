@@ -126,7 +126,9 @@ test("a typeface this Mac has not is re-asked, not carried to the end", () => {
 
     assert.equal(settings.font, "Menlo");
     assert.ok(
-        app.dialogs.some((dialog) => (/does not draw with the typeface/u).test(dialog.message)),
+        app.dialogs.some(
+            (dialog) => (/has no typeface called "Zapfino"/u).test(dialog.message)
+        ),
         "and it said why"
     );
 });

@@ -12,7 +12,7 @@ const SETTINGS_PATH = "/a/settings.json";
 
 const SETTINGS = {
     font: "Menlo",
-    weight: "regular",
+    typeface: { family: "Menlo", face: "" },
     size: 24,
     textColour: "#FFFFFF",
     outlineColour: "#202020",

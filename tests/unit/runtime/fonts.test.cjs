@@ -1,140 +1,76 @@
 "use strict";
 
 /*
- * Which fonts this machine will actually render with.
+ * Which faces the form suggests.
  *
- * pango answers every name: asked for one it cannot place, it draws in a
- * default face and says nothing. So each family is drawn with before it is
- * offered, beside a name that certainly does not exist, and a family whose
- * drawing is that drawing did not resolve.
+ * A handful, from a list of families macOS ships, kept only where this Mac
+ * really has them -- and each with its bold face beside it where the family
+ * really has one. Everything else on the machine is a name away, which is why
+ * the list can be short.
  */
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { isUserCancelled } = require("../../../src/core/errors.js");
 const { availableFonts, CANDIDATES } = require("../../../src/runtime/fonts.js");
-const { IMPOSSIBLE, undrawable } = require("../../../src/runtime/font-probe.js");
-const { createFakeHost } = require("./fake-host.cjs");
+const { catalogueOf } = require("./fake-typefaces.cjs");
 
-const WORKSPACE = "/var/folders/xx/T/StampImages.Fake01";
-
-function machine(settings = {}) {
-    const app = createFakeHost(settings);
-
-    return {
-        app,
-        where: {
-            app,
-            tools: {
-                vips: "/opt/homebrew/bin/vips",
-                "fc-match": "/opt/homebrew/bin/fc-match"
-            },
-            workspace: WORKSPACE
-        }
-    };
+function withEvery(faces) {
+    return catalogueOf(
+        Object.fromEntries(CANDIDATES.map((family) => [family, faces]))
+    );
 }
 
-test("a machine that has everything is offered every family, and no weights", () => {
-    // Families, because a weight is a setting of its own. The list used to
-    // offer each name twice, as itself and with " Bold" on the end, which made
-    // the value a font description rather than a name -- and the bold half was
-    // never resolved at all, because only the plain name was ever drawn with.
-    const { where } = machine();
+test("every family is offered as itself and in bold", () => {
+    // Bold is the variation nearly everybody wants and the one worth saving
+    // somebody from typing. 1.0.0 offered it too, and never checked it: only
+    // the plain name was ever drawn with, so the bold half of the list was ten
+    // names nothing had confirmed. It is confirmed here, against the family's
+    // own faces.
+    const offered = availableFonts(withEvery(["Regular", "Italic", "Bold"]));
 
-    assert.deepEqual(availableFonts(where), CANDIDATES);
+    assert.deepEqual(offered.slice(0, 4), [
+        "Helvetica Neue",
+        "Helvetica Neue Bold",
+        "Arial",
+        "Arial Bold"
+    ]);
+    assert.equal(offered.length, CANDIDATES.length * 2);
+});
+
+test("a family with no bold face is offered alone", () => {
+    const offered = availableFonts(withEvery(["Regular", "Heavy"]));
+
+    assert.deepEqual(offered, CANDIDATES);
 });
 
 test("a family this Mac has not is not offered", () => {
-    const { where } = machine({ fonts: ["Helvetica Neue", "Menlo"] });
-
-    assert.deepEqual(availableFonts(where), ["Helvetica Neue", "Menlo"]);
-});
-
-test("a family fontconfig keeps but the renderer cannot draw is not offered", () => {
-    // Measured: Helvetica, Times, Hoefler Text and Iowan Old Style all keep
-    // their names through fontconfig and all draw as the fallback, because the
-    // files macOS keeps them in are not ones freetype will open. So the name
-    // has to survive both questions.
-    const { where } = machine({
-        fonts: ["Helvetica Neue", "Menlo"],
-        failures: [["Helvetica Neue", new Error("vips: broken pipe")]]
-    });
-
-    assert.deepEqual(availableFonts(where), ["Menlo"]);
-});
-
-test("a machine none of them has is not a machine that cannot be used", () => {
-    // It used to refuse the run, which was right while the list was the only
-    // way to name a typeface: the field takes any family now, so a Mac with
-    // none of these ten and hundreds of others would have been stopped at the
-    // door for no reason.
-    const { where } = machine({ fonts: [] });
-
-    assert.deepEqual(availableFonts(where), []);
-});
-
-test("a renderer that cannot draw at all is a broken tool, not a bare Mac", () => {
-    // Saying this Mac has no fonts would send somebody to Font Book over a
-    // vips that cannot draw a line of text.
-    const { where } = machine({
-        failures: [[IMPOSSIBLE, new Error("vips: no such operation")]]
-    });
-
-    assert.throws(
-        () => availableFonts(where),
-        /Command failed while checking which fonts are installed/u
+    const offered = availableFonts(
+        catalogueOf({ Menlo: ["Regular"], Georgia: ["Regular", "Bold"] })
     );
+
+    assert.deepEqual(offered, ["Georgia", "Georgia Bold", "Menlo"]);
 });
 
-test("a probe somebody stopped is not a Mac with no fonts", () => {
-    // One question per candidate, and it is the longest thing a run does
-    // before it says anything -- so it is where somebody waiting is most
-    // likely to ask it to stop. Swallowed, that answered "this Mac does not
-    // have this font" about every remaining one.
-    const stopped = new Error("User cancelled.");
-
-    stopped.errorNumber = -128;
-
-    const { where } = machine({
-        fonts: ["Helvetica Neue", "Menlo"],
-        failures: [["Helvetica Neue", stopped]]
-    });
-
-    assert.throws(() => availableFonts(where), (error) => isUserCancelled(error));
+test("a machine with none of them is not a machine that cannot be used", () => {
+    // The field takes any name, so a Mac with none of these ten and hundreds
+    // of others must not be stopped at the door.
+    assert.deepEqual(availableFonts(catalogueOf({})), []);
 });
 
-test("a drawing that cannot be compared is not a typeface that resolved", () => {
-    // Read as "these differ", a comparison that was never made made an
-    // undrawable name into a usable one -- the one direction this must never
-    // fail in. It stops the probe instead, and the name is refused.
-    const unreadable = new Error("cmp: no such file");
-
-    unreadable.errorNumber = 2;
-
-    const { where } = machine({
-        fonts: ["Helvetica Neue"],
-        failures: [["/cmp", unreadable]]
-    });
-
-    assert.deepEqual(availableFonts(where), []);
+test("a host with no catalogue is offered the candidates unfiltered", () => {
+    // Nothing can be checked without one, and offering nothing at all on a
+    // machine that has them would be the worse failure. A catalogue is not
+    // something a person can go and install.
+    assert.deepEqual(availableFonts(null), CANDIDATES);
 });
 
-test("the refusal names the likeliest reason, and advises only where it can", () => {
-    // Written for somebody who has only this sentence, so it says where a
-    // font has to be -- the one thing they can act on. An earlier one opened
-    // "another app showing it is not the same as...", which answers a question
-    // nobody asked, and the one before that gave advice about a different
-    // problem entirely.
-    const said = undrawable("Source Serif 4");
+test("the names offered are the ones that resolve", () => {
+    // A suggestion that would be refused the moment it was chosen is worse
+    // than no suggestion, so the list and the resolver read the same answer.
+    const { faceOf } = require("../../../src/core/typeface.js");
+    const known = withEvery(["Regular", "Bold"]);
 
-    assert.match(said, /does not draw with the typeface "Source Serif 4"/u);
-    assert.match(said, /~\/Library\/Fonts/u, "and where fonts are read from");
-    assert.doesNotMatch(said, /weight/iu, "no advice about a different problem");
-});
-
-test("a name that carries its weight is told where the weight goes", () => {
-    // Which is the one shape this can be sure about: it is what 1.0.0 stored.
-    const said = undrawable("Helvetica Neue Bold");
-
-    assert.match(said, /try "Helvetica Neue" and set Weight/u);
+    for (const offered of availableFonts(known)) {
+        assert.ok(faceOf(known, offered), offered);
+    }
 });

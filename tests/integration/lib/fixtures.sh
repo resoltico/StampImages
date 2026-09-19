@@ -47,8 +47,7 @@ taken_at() {
 settings_file() {
     cat > "$1" <<JSON
 {
-  "font": "Helvetica Neue",
-  "weight": "bold",
+  "font": "Helvetica Neue Bold",
   "size": 28,
   "textColour": "#FFFFFF",
   "outlineColour": "#000000",

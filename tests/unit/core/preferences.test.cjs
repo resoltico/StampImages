@@ -48,37 +48,43 @@ test("what is kept is the appearance, and what is written is not", () => {
 
 test("a remembered run comes back as the answers it gave", () => {
     assert.deepEqual(
-        remembered({
-            font: "Menlo",
-            weight: "bold",
-            size: 72,
-            position: "top-left"
-        }),
+        remembered({ font: "Menlo Bold", size: 72, position: "top-left" }),
         {
             ...defaultAnswers(FONTS),
-            font: "Menlo",
-            weight: "Bold",
+            font: "Menlo Bold",
             size: "72",
             position: "Top left"
         }
     );
 });
 
-test("what 1.0.0 stored is read as what this version means", () => {
-    // The typeface used to carry the weight in its name, because the list
-    // offered the two weights as separate entries. Read now as a family name,
-    // "Menlo Bold" is a family nothing has -- so a record this program wrote
-    // itself would be refused by the program that wrote it.
-    // A 1.0.0 record, which named no weight at all.
+test("what 1.0.0 stored is what this version stores", () => {
+    // 1.0.0 kept the typeface as one name with the weight in it, because the
+    // list offered the two weights as separate entries. This version keeps a
+    // face name, which is the same thing -- so there is nothing to migrate,
+    // and a record written two versions ago opens the form it was written
+    // from. The reader that used to pull the weight back out is gone.
     const kept = JSON.stringify({
         ...defaultSettings(FONTS),
         font: "Menlo Bold",
-        weight: undefined,
         size: 72
     });
 
     assert.deepEqual(
         rememberedAnswers(kept, FONTS),
-        { ...defaultAnswers(FONTS), font: "Menlo", weight: "Bold", size: "72" }
+        { ...defaultAnswers(FONTS), font: "Menlo Bold", size: "72" }
     );
+});
+
+test("a setting this version has not is dropped rather than carried", () => {
+    // 1.1.0 was briefly written with a weight of its own before the typeface
+    // took the whole name back. A record holding one is still a record.
+    const kept = JSON.stringify({
+        ...defaultSettings(FONTS),
+        font: "Menlo",
+        weight: "bold"
+    });
+
+    assert.equal(rememberedAnswers(kept, FONTS).font, "Menlo");
+    assert.equal(rememberedAnswers(kept, FONTS).weight, undefined);
 });

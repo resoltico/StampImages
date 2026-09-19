@@ -83,7 +83,7 @@ function contentsDrawn(state, argv, written) {
 
     // The description is "Family, Weight Size" -- the comma is what keeps a
     // family whose name ends in a style word from being read as a style.
-    return drawingToken(state, String(argv[at + 1]).replace(/,? [^,]*\d+$/u, ""));
+    return drawingToken(String(argv[at + 1]).replace(/,? [^,]*\d+$/u, ""));
 }
 
 /*

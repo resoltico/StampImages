@@ -3,7 +3,7 @@
 const { formSpec } = require("../core/form.js");
 const { readAnswers } = require("../core/answers.js");
 const { isUserCancelled, UserCancelled } = require("../core/errors.js");
-const { undrawable } = require("./font-probe.js");
+const { resolved } = require("../core/typeface-refusal.js");
 const { presentForm } = require("./appkit.js");
 const { appkitBridge } = require("./appkit-bridge.js");
 const { collectDialogSettings } = require("./dialogs.js");
@@ -22,18 +22,26 @@ const { defaultAnswers } = require("../core/form-defaults.js");
  * The one answer this layer cannot read for itself.
  *
  * Every other setting is decided by what it says -- a number is in range or it
- * is not -- and a typeface is decided by the renderer, by drawing with it. So
- * it is asked here rather than in the reader, and a name that draws nothing
- * comes back as the same kind of problem a number out of range does: the field
- * marked, the sentence at the top, and everything else still typed.
+ * is not -- and a typeface is decided by what this Mac has. So it is asked
+ * here rather than in the reader, and a name that names nothing comes back as
+ * the same kind of problem a number out of range does: the field marked, the
+ * sentence at the top, and everything else still typed.
+ *
+ * What the name turned out to mean is not taken from here. This is the loop
+ * that decides whether to ask again, and it asks only that; the run resolves
+ * the name it accepts, once, in settings-run.js. Carrying the answer out of
+ * here instead would put it on a settings object that has not been validated
+ * yet, and validation builds a fresh one.
  */
 function withDrawableFont(state, outcome, settings) {
-    return state.context.draws(settings.font)
-        ? { settings }
-        : {
+    const answer = resolved(state.context.known, settings.font);
+
+    return answer.problem
+        ? {
             answers: outcome.answers,
-            problems: [{ key: "font", message: undrawable(settings.font) }]
-        };
+            problems: [{ key: "font", message: answer.problem }]
+        }
+        : { settings };
 }
 
 /*

@@ -1,5 +1,7 @@
 "use strict";
 
+const { catalogueFor } = require("./fake-typefaces.cjs");
+
 /*
  * What a run has gathered by the time it can be assembled: a host to ask, the
  * tools in fixed places, and somewhere to report to.
@@ -14,8 +16,7 @@ const { WORKSPACE } = require("./fake-host.cjs");
 const TOOLS = Object.freeze({
     vips: "/opt/homebrew/bin/vips",
     vipsheader: "/opt/homebrew/bin/vipsheader",
-    exiftool: "/opt/homebrew/bin/exiftool",
-    "fc-match": "/opt/homebrew/bin/fc-match"
+    exiftool: "/opt/homebrew/bin/exiftool"
 });
 
 // Records what it was told rather than showing it, and is never stopped: where
@@ -50,12 +51,12 @@ function place(progress, unpublished = new Set()) {
 
 /*
  * What the front ends need in order to ask a person anything: how many
- * photographs were found, which faces to suggest, and how to find out whether
- * a face draws. The probe here answers for the faces it was given and for
- * nothing else, which is a Mac with exactly those and no others.
+ * photographs were found, which faces to suggest, and what this Mac has. The
+ * catalogue here holds the faces it was given and nothing else, which is a Mac
+ * with exactly those and no others.
  */
-function askingContext(fonts, count = 1) {
-    return { count, fonts, draws: (family) => fonts.includes(family) };
+function askingContext(fonts, count = 1, known = catalogueFor(fonts)) {
+    return { count, fonts, known };
 }
 
 module.exports = { TOOLS, recorder, prepared, place, askingContext };

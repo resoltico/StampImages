@@ -8,10 +8,11 @@ const { createFakeApp, failing } = require("./fake-app.cjs");
 const HOMEBREW = "/opt/homebrew/bin/vips";
 
 test("every tool the pipeline needs is named", () => {
-    assert.deepEqual(
-        TOOL_NAMES,
-        ["vips", "vipsheader", "exiftool", "fc-match"]
-    );
+    // Three, and fc-match is not among them: it was asked which family a name
+    // resolves to, which is a question about fontconfig's catalogue while the
+    // renderer draws from the system's own. The font system is asked directly
+    // now, and nothing has to be installed for it.
+    assert.deepEqual(TOOL_NAMES, ["vips", "vipsheader", "exiftool"]);
 });
 
 test("an environment override wins when it is executable", () => {
@@ -83,8 +84,7 @@ test("each tool has its own environment override, under its own name", () => {
     const expected = {
         vips: "STAMP_IMAGES_VIPS",
         vipsheader: "STAMP_IMAGES_VIPSHEADER",
-        exiftool: "STAMP_IMAGES_EXIFTOOL",
-        "fc-match": "STAMP_IMAGES_FC_MATCH"
+        exiftool: "STAMP_IMAGES_EXIFTOOL"
     };
 
     for (const name of TOOL_NAMES) {

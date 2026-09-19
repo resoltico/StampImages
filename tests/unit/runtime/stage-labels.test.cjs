@@ -13,7 +13,6 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const { stampOne } = require("../../../src/runtime/stamping.js");
-const { availableFonts } = require("../../../src/runtime/fonts.js");
 const { createFakeHost, WORKSPACE } = require("./fake-host.cjs");
 const { makeJob, imageOf } = require("./fake-job.cjs");
 
@@ -92,21 +91,6 @@ test("saving the copy is named, whichever way it is saved", () => {
     assert.throws(
         stamping(failing("'copy'", { bands: 4 })),
         /Command failed while saving the stamped copy\./u
-    );
-});
-
-test("checking the fonts is named, which happens before anything else", () => {
-    const host = createFakeHost({
-        failures: [["'text'", new Error("vips: it would not")]]
-    });
-
-    assert.throws(
-        () => availableFonts({
-            app: host,
-            tools: { vips: "/opt/homebrew/bin/vips" },
-            workspace: WORKSPACE
-        }),
-        /Command failed while checking which fonts are installed\./u
     );
 });
 

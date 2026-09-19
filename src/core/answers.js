@@ -65,10 +65,10 @@ function readText(answer, control) {
 }
 
 /*
- * A typeface is a name, and which names draw is not a question this layer can
- * answer: pango decides, by drawing. So what is read here is that a name was
- * given at all, and whether it draws is asked of the renderer afterwards --
- * in the form's own loop, where it comes back as this same kind of problem.
+ * A typeface is a name, and whether this Mac has it is not a question this
+ * layer can answer: it needs the machine's catalogue. So what is read here is
+ * that a name was given at all, and what it names is resolved afterwards -- in
+ * the form's own loop, where it comes back as this same kind of problem.
  */
 function readFont(answer, control) {
     const name = String(answer).trim();

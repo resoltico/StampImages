@@ -1,9 +1,6 @@
 "use strict";
 
 const {
-    noteFontDrawn,
-    resolvedFamily,
-    refusesComparison,
     readsFile,
     headerField
 } = require("./fake-drawing.cjs");
@@ -79,17 +76,12 @@ function cannedAnswer(app, command) {
 }
 
 function refuses(app, command) {
-    return refusesDirectory(app, command) ||
-        refusesExecutable(app, command) ||
-        refusesComparison(app, command);
+    return refusesDirectory(app, command) || refusesExecutable(app, command);
 }
 
 function answersFor(app, command) {
-    noteFontDrawn(app, command);
-
     for (const answer of [
         searchesPath(app, command),
-        resolvedFamily(app, command),
         readsFile(app, command),
         headerField(app, command),
         cannedAnswer(app, command)

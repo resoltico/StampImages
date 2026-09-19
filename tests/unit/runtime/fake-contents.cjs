@@ -9,12 +9,10 @@
  * answer yes -- and what makes a copy that was damaged, which a test arranges
  * by writing something else to the destination, answer no.
  *
- * Drawing is where tokens come from. A font probe draws twice and compares
- * the two files, so a drawing's token is the face it resolved to: a name this
- * machine does not have draws the same picture as the impossible name.
+ * Drawing is where tokens come from, and a drawing's token is the face it was
+ * made with -- so two photographs that say the same thing in the same face
+ * hold the same picture, which is what the stamp cache is about.
  */
-
-const FALLBACK = "font:fallback";
 
 function tokenFor(state, path) {
     return state.contents.get(path) ?? `file:${path}`;
@@ -33,18 +31,13 @@ function sameContents(state, one, other) {
 }
 
 /*
- * The face a drawing came out in: the family asked for when this machine
- * draws with it, and the fallback when it does not. Left unsaid, every
- * candidate draws, which is a Mac with all of them installed.
+ * The face a drawing came out in.
  */
-function drawingToken(state, font) {
-    const known = state.fonts === undefined || state.fonts.includes(font);
-
-    return known ? `font:${font}` : FALLBACK;
+function drawingToken(font) {
+    return `font:${font}`;
 }
 
 module.exports = {
-    FALLBACK,
     tokenFor,
     setContents,
     carryContents,

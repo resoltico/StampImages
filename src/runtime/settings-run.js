@@ -2,7 +2,7 @@
 
 const { normalizeSettings } = require("../core/settings.js");
 const { encode, rememberedAnswers } = require("../core/preferences.js");
-const { undrawable } = require("./font-probe.js");
+const { resolved } = require("../core/typeface-refusal.js");
 const { createMemory } = require("./preferences.js");
 const { collectSettings } = require("./settings-form.js");
 
@@ -35,13 +35,20 @@ function defaultMemory() {
  *
  * Refused rather than repaired: choosing the substitute here rather than
  * letting pango choose it is the same silence with better manners.
+ *
+ * It is the same call the form makes, on settings that arrived the same way,
+ * so a name a headless run may use is exactly a name somebody may type. That
+ * was not true before: the form resolved a typed name and a configuration file
+ * went through a different door.
  */
 function drawableSettings(settings, context) {
-    if (!context.draws(settings.font)) {
-        throw new Error(undrawable(settings.font));
+    const answer = resolved(context.known, settings.font);
+
+    if (answer.problem) {
+        throw new Error(answer.problem);
     }
 
-    return settings;
+    return { ...settings, typeface: answer.typeface };
 }
 
 function settingsFor(app, invocation, context, injected = {}) {
@@ -55,7 +62,10 @@ function settingsFor(app, invocation, context, injected = {}) {
         context,
         answers: rememberedAnswers(memory.recall(), context.fonts)
     };
-    const settings = normalizeSettings(collectSettings(app, opening, injected));
+    const settings = drawableSettings(
+        normalizeSettings(collectSettings(app, opening, injected)),
+        context
+    );
 
     /*
      * Confirmed and valid, and before a photograph is touched: a preference
