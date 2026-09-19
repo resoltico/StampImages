@@ -40,44 +40,98 @@ are one list and a bug waiting to be written.
 
 ## What a generated case covers
 
-`npm run test:coverage` and the mutation campaign both answer questions about
-the tests. Neither answers the one that matters for arithmetic on a boundary:
-whether anybody thought of the input. Two modules are given generated cases
-instead of chosen ones, through fast-check.
+Coverage and mutation both answer questions about the tests. Neither answers
+whether anybody thought of the input — and the faults this project's
+arithmetic has had were all inputs nobody thought of. Three modules are given
+generated cases through fast-check.
 
-`src/core/place.js` — that every coordinate comes out as degrees, minutes,
-seconds and a letter; that no minute is the sixtieth of a degree and no second
-the sixtieth of a minute; that the three displayed units add back exactly to
-the tenth of a second the value rounded to, in integer arithmetic rather than
-within a tolerance; that the letter is the hemisphere the value is in and no
-coordinate carries a sign; and that decimal degrees keep four places, never
-print a signed nothing, and stay within half of the place they stop at.
+`src/core/place.js` — whatever a photograph says, the place is refused or
+written whole: any value exiftool could hand over, a number of any size, text
+or nothing, goes through the same bounding a run does. Across every value that
+bounding lets through, no minute is the sixtieth of a degree and no second the
+sixtieth of a minute. A coordinate built from its parts is written as exactly
+those parts, rounded into its nearest tenth of a second, with the hemisphere
+its sign says, and a value just short of a whole minute is written as that
+minute. Decimal degrees keep four places, never write a signed nothing, and
+stay within half of the place they stop at.
 
-`src/core/moment.js` — that a moment which exists reads back as the fields it
-was written in; that a day the month does not have is not a date; that the
-seconds, a fraction of one and an offset are accepted without being shown;
-that anything else after the minute is refused; and that a leap year is one
-the calendar agrees is a leap year.
+`src/core/moment.js`, reading — a moment that exists is read back as the
+fields it was written in; a day past the end of its month is not a date; a
+field outside its range is not a moment; the seconds, a fraction of one and an
+offset are read and not shown; an offset past fourteen hours is refused; and
+anything else after the minute is refused.
 
-**The seed is fixed and the case count is 25.** A property that generates a
-different set of inputs on every machine is not a gate, it is a lottery: a
-failure nobody can reproduce, and a pass that means nothing. Pinned, this is
-the same run every time, and what the generator buys is inputs nobody thought
-of rather than randomness.
+`src/core/moment.js`, the calendar — a leap year is one the calendar agrees is
+a leap year, and every month ends on the day the calendar says it does.
 
-**What it costs, measured.** The suite's net running time goes from 1949.77ms
-to 2438.30ms — about 25%, and about half a second. Taken from Stryker's own
-dry run rather than from the wall clock, which on a loaded machine varies by
-more than the thing being measured.
+### How they are written
 
-**What it does not buy.** Coverage was already 100% and stays there, and the
-mutation score is 96.48 either way: no mutant died that was not dying already.
-Run at 5000 cases per property, nothing fails. These properties found nothing
-in this code — what they are is the assertion that the two faults this
-arithmetic has already had cannot come back. Reverted to the arithmetic that
-shipped, the sixtieth-second property fails on its first generated value,
-89.99998611111111, and the signed-zero property on its second. Neither is a
-number anybody writes into a test by hand, which is the whole argument.
+Three rules from fast-check's own guidance, each of which is visible here.
+
+**Build the input and know the answer**, rather than generate one and work the
+answer out the way the code does — a result computed by the same arithmetic
+agrees with the code about the same mistake. The coordinate property builds a
+value from whole degrees, minutes and tenths, placed anywhere inside its tenth
+short of halfway, and expects exactly those parts back. The date properties
+build
+every moment from the platform's own Date, through `tests/unit/core/
+fake-calendar.cjs`, rather than asking moment.js which days exist. Measured:
+with June and July's lengths swapped in moment.js, properties that took their
+calendar from moment.js report nothing wrong, and these fail from both the
+calendar side and the reading side.
+
+**Take the whole domain unless the algorithm needs less.** Every four-digit
+year, because that is what the field holds — `fc.date` reaches year nought,
+and the calendar is asked through `setUTCFullYear`, since `Date.UTC` reads a
+year below 100 as 1900 plus it. Coordinates to ±180, because the same code
+writes a longitude, and a longitude is bounded there rather than at the ±90 of
+a latitude.
+
+**Build valid inputs rather than discard invalid ones.** A day past a month's
+end is generated past it; an impossible offset is generated impossible. One
+filter remains — for text after the minute that does not begin a reading —
+and it drops about one string in twenty.
+
+### Seeds
+
+Ordinary runs — `npm test`, the coverage gate, continuous integration — use
+fast-check's defaults: a fresh seed and a hundred cases each time, so the
+inputs keep changing from run to run. A failure is reproducible without a
+fixed seed, because fast-check reports the seed it used and the smallest
+counterexample it could shrink to.
+
+A mutation campaign is the exception. It runs the suite once per mutant, and a
+mutant that one seed kills and another does not would make the score a matter
+of luck, so under it the seed is pinned and each property runs 25 cases.
+`tests/unit/fast-check-mutation.cjs` does that, loaded by Stryker's tap runner
+with `-r`. Measured: with that file made to throw, Stryker's dry run stops on
+its message, so the runner does load it.
+
+A property that runs unpinned has to hold for every input, not only for those
+one seed happened to reach, so each of these was run at 20,000 cases on
+several seeds before it was allowed to.
+
+### What it costs, and what it does not buy
+
+Stryker's dry run, which excludes the machine's load from the figure: the
+suite's net running time is 1949.77ms with no properties and 2038.69ms with
+these at the campaign's 25 cases. The mutation score is 96.52, against 96.48
+without them, which is within what a timed-out mutant counting as killed does
+from one run to the next.
+
+Coverage is 100% with or without them. Nothing in this code fails any of them.
+What they are is the assertion that the faults this arithmetic has had cannot
+come back. With `place.js` reverted to the rounding that shipped, under the
+campaign's seed, three fail: a value just short of a whole minute, shrunk to a
+thousandth of a tenth of a second below one degree; no sixtieth, on
+179.99998611111113; and no signed nothing, on -5e-324.
+
+**A generator has to have the shape of the risk.** The carry that shipped needs
+a value just below a minute, and a value drawn from anywhere lands there too
+rarely: the built-from-parts property reached it in three runs of five at a
+hundred cases, and not at all in the campaign's twenty-five. So the carry has
+a construction of its own, just below the boundary, and it fails in every run
+against the shipped rounding.
 
 ## What the tools are asked, and why differently
 

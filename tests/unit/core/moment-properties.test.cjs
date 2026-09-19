@@ -5,106 +5,109 @@
  *
  * Generated rather than chosen, because the fault this module exists to
  * prevent is a date that passes each field's own bounds and is not a date:
- * "2026:02:31 99:99" was stamped onto a photograph. Every month has its own
- * last day, February has two, and the century rule for leap years is the one
- * nobody reaches with an example.
+ * "2026:02:31 99:99" was stamped onto a photograph.
  *
- * The seed is fixed, so this is the same run every time.
+ * Every moment here is built from the platform's own Date rather than checked
+ * against this module's calendar. A property that asked moment.js which days
+ * exist would agree with moment.js about a February of thirty days.
  */
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const fc = require("fast-check");
-const { readMoment, isLeapYear, daysInMonth } = require("../../../src/core/moment.js");
-
-const RUNS = { seed: 20260916, numRuns: 25 };
-
-const YEAR = fc.integer({ min: 1800, max: 2400 });
-const MONTH = fc.integer({ min: 1, max: 12 });
-const DAY = fc.integer({ min: 1, max: 31 });
-const HOUR = fc.integer({ min: 0, max: 23 });
-const MINUTE = fc.integer({ min: 0, max: 59 });
-
-const YEAR_WIDTH = 4;
-const FIELD_WIDTH = 2;
-const FEBRUARY = 2;
-const LEAP_DAY = 29;
-
-function pad(value, width = FIELD_WIDTH) {
-    return String(value).padStart(width, "0");
-}
-
-// The five fields travel as one tuple, which is what the generator produces
-// and what every property here takes apart.
-function exif([year, month, day, hour, minute]) {
-    return `${pad(year, YEAR_WIDTH)}:${pad(month)}:${pad(day)} ` +
-        `${pad(hour)}:${pad(minute)}`;
-}
-
-const DATE = fc.tuple(YEAR, MONTH, DAY, HOUR, MINUTE);
+const { readMoment } = require("../../../src/core/moment.js");
+const { WHEN, pad, fieldsOf, exif, lastDay } = require("./fake-calendar.cjs");
 
 test("a moment that exists is read back as the fields it was written in", () => {
     // Kept as text, because what is stamped is the camera's own "09".
-    fc.assert(fc.property(DATE, (written) => {
-        const [year, month, day, hour, minute] = written;
+    fc.assert(fc.property(WHEN, (date) => {
+        const fields = fieldsOf(date);
 
-        fc.pre(day <= daysInMonth(year, month));
-
-        assert.deepEqual(readMoment(exif(written)), {
-            year: pad(year, YEAR_WIDTH),
-            month: pad(month),
-            day: pad(day),
-            hour: pad(hour),
-            minute: pad(minute)
-        });
-    }), RUNS);
+        assert.deepEqual(readMoment(exif(fields)), fields);
+    }));
 });
 
-test("a day the month does not have is not a date", () => {
-    fc.assert(fc.property(DATE, (written) => {
-        const [year, month, day] = written;
+test("a day past the end of its month is not a date", () => {
+    // Built past the end the calendar gives, up to the most two digits hold.
+    const PAST_THE_END = WHEN.chain((date) => {
+        const fields = fieldsOf(date);
 
-        fc.pre(day > daysInMonth(year, month));
+        return fc.integer({ min: lastDay(fields) + 1, max: 99 })
+            .map((day) => ({ ...fields, day: pad(day) }));
+    });
 
-        assert.equal(readMoment(exif(written)), null);
-    }), RUNS);
+    fc.assert(fc.property(PAST_THE_END, (fields) => {
+        assert.equal(readMoment(exif(fields)), null, exif(fields));
+    }));
 });
 
-test("the seconds, a fraction and an offset are accepted and not shown", () => {
-    // None of them change which minute it was.
-    const SUFFIX = fc.constantFrom("", ":05", ":05.25", ":05Z", ":05+03:00", ":05-0330");
+test("a field outside its range is not a moment", () => {
+    const BROKEN = fc.oneof(
+        fc.record({
+            field: fc.constant("month"),
+            value: fc.oneof(fc.constant(0), fc.integer({ min: 13, max: 99 }))
+        }),
+        fc.record({ field: fc.constant("day"), value: fc.constant(0) }),
+        fc.record({ field: fc.constant("hour"), value: fc.integer({ min: 24, max: 99 }) }),
+        fc.record({ field: fc.constant("minute"), value: fc.integer({ min: 60, max: 99 }) })
+    );
 
-    fc.assert(fc.property(DATE, SUFFIX, (written, tail) => {
-        const [year, month, day, , minute] = written;
+    fc.assert(fc.property(WHEN, BROKEN, (date, { field, value }) => {
+        const fields = { ...fieldsOf(date), [field]: pad(value) };
 
-        fc.pre(day <= daysInMonth(year, month));
+        assert.equal(readMoment(exif(fields)), null, exif(fields));
+    }));
+});
 
-        assert.equal(readMoment(`${exif(written)}${tail}`)?.minute, pad(minute), tail);
-    }), RUNS);
+// A signed hour and minute, with or without the colon between them.
+function signedOffset(bounds) {
+    return fc.record({
+        sign: fc.constantFrom("+", "-"),
+        hour: fc.integer(bounds.hour),
+        minute: fc.integer(bounds.minute),
+        colon: fc.boolean()
+    }).map((part) => `${part.sign}${pad(part.hour)}${part.colon ? ":" : ""}${pad(part.minute)}`);
+}
+
+test("the seconds, a fraction of one and an offset are read and not shown", () => {
+    // None of them change which minute it was. Sixty is a leap second.
+    const TAIL = fc.record({
+        second: fc.option(fc.integer({ min: 0, max: 60 })),
+        fraction: fc.option(fc.stringMatching(/^\d+$/u)),
+        zone: fc.option(fc.oneof(
+            fc.constant("Z"),
+            signedOffset({ hour: { min: 0, max: 14 }, minute: { min: 0, max: 59 } })
+        ))
+    }).map(({ second, fraction, zone }) =>
+        `${second === null ? "" : `:${pad(second)}`}` +
+        `${fraction === null ? "" : `.${fraction}`}${zone ?? ""}`);
+
+    fc.assert(fc.property(WHEN, TAIL, (date, tail) => {
+        const fields = fieldsOf(date);
+
+        assert.deepEqual(readMoment(`${exif(fields)}${tail}`), fields, tail);
+    }));
+});
+
+test("an offset past any clock on Earth means the field is not a moment", () => {
+    // Fourteen hours east is the furthest any place keeps time.
+    const IMPOSSIBLE = fc.oneof(
+        signedOffset({ hour: { min: 15, max: 99 }, minute: { min: 0, max: 59 } }),
+        signedOffset({ hour: { min: 0, max: 14 }, minute: { min: 60, max: 99 } })
+    );
+
+    fc.assert(fc.property(WHEN, IMPOSSIBLE, (date, zone) => {
+        assert.equal(readMoment(`${exif(fieldsOf(date))}:00${zone}`), null, zone);
+    }));
 });
 
 test("anything else after the minute means the field is not a moment", () => {
-    // Filtered against the grammar the reader actually accepts, so what is
-    // generated is only what it must refuse.
-    const ACCEPTED = /^(?::\d{2})?(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?$/u;
-    const JUNK = fc.string({ minLength: 1 }).filter((text) => !ACCEPTED.test(text));
+    // Nothing a reading may continue with -- a colon, a point, Z, a sign --
+    // so the whole of it is left over, and a pattern that ends where the
+    // value must refuses it.
+    const JUNK = fc.string({ minLength: 1 }).filter((text) => !":.Z+-".includes(text[0]));
 
-    fc.assert(fc.property(DATE, JUNK, (written, tail) => {
-        const [year, month, day] = written;
-
-        fc.pre(day <= daysInMonth(year, month));
-
-        assert.equal(readMoment(`${exif(written)}${tail}`), null, JSON.stringify(tail));
-    }), RUNS);
-});
-
-test("a leap year is one the calendar agrees is a leap year", () => {
-    // The century rule is the half nobody reaches with an example: 1900 is not
-    // a leap year and 2000 is.
-    fc.assert(fc.property(YEAR, (year) => {
-        const february = new Date(Date.UTC(year, FEBRUARY - 1, LEAP_DAY));
-
-        assert.equal(isLeapYear(year), february.getUTCDate() === LEAP_DAY);
-        assert.equal(daysInMonth(year, FEBRUARY), isLeapYear(year) ? 29 : 28);
-    }), RUNS);
+    fc.assert(fc.property(WHEN, JUNK, (date, tail) => {
+        assert.equal(readMoment(`${exif(fieldsOf(date))}${tail}`), null, JSON.stringify(tail));
+    }));
 });
