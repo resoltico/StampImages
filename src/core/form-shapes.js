@@ -1,5 +1,7 @@
 "use strict";
 
+const { labelOfValue } = require("./choices.js");
+
 /*
  * What a row of the form looks like, by kind.
  *
@@ -24,6 +26,12 @@ function listRow({ kind, key, control }, answers, invalid) {
         suggests: control.suggests,
         value: String(answers[key]),
         invalid: invalid.has(key),
+        ...(control.optional ? {
+            optional: {
+                ...control.optional,
+                offLabel: labelOfValue(control, control.optional.offValue)
+            }
+        } : {}),
         options: (control.choices ?? control.presets).map(
             (option) => ({ label: option.label ?? option })
         )

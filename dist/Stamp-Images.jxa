@@ -564,9 +564,9 @@ const DATE_FORMATS = [
 ];
 
 const COORDINATE_FORMATS = [
+    { label: "Do not stamp the coordinates", value: "none" },
     { label: "56.9496, 24.1052", value: "decimal" },
-    { label: "56°56'58.6\"N 24°6'18.7\"E", value: "sexagesimal" },
-    { label: "Do not stamp the coordinates", value: "none" }
+    { label: "56°56'58.6\"N 24°6'18.7\"E", value: "sexagesimal" }
 ];
 
 const POSITION = {
@@ -576,14 +576,20 @@ const POSITION = {
 };
 
 const DATE_FORMAT = {
-    prompt: "How the date the photograph was taken is written:",
-    label: "Date format:",
+    prompt: "Date/time format (these are examples, not dates to stamp):",
+    label: "Date/time format:",
     choices: DATE_FORMATS
 };
 
 const COORDINATE_FORMAT = {
-    prompt: "How the place the photograph was taken is written:",
+    prompt: "Coordinate format (latitude, then longitude):",
     label: "Coordinate format:",
+    optional: {
+        label: "Include GPS coordinates",
+        offValue: "none",
+        help: "Adds the place to the stamp. Leaving it off does not remove " +
+            "location data already in the image."
+    },
     choices: COORDINATE_FORMATS
 };
 
@@ -668,6 +674,12 @@ function listRow({ kind, key, control }, answers, invalid) {
         suggests: control.suggests,
         value: String(answers[key]),
         invalid: invalid.has(key),
+        ...(control.optional ? {
+            optional: {
+                ...control.optional,
+                offLabel: labelOfValue(control, control.optional.offValue)
+            }
+        } : {}),
         options: (control.choices ?? control.presets).map(
             (option) => ({ label: option.label ?? option })
         )
@@ -787,10 +799,29 @@ function normalizeSettings(settings) {
     };
 }
 
+/* ===== src/core/stamp-content.js ===== */
+
 function stampsNothing(settings) {
     return settings.dateFormat === "none" &&
         settings.coordinateFormat === "none" &&
         settings.customText.trim() === "";
+}
+
+const EMPTY_STAMP_MESSAGE = "Choose a date/time format, include GPS coordinates, " +
+    "or enter custom text. Otherwise there is nothing to stamp.";
+
+function contentProblem(settings) {
+    return stampsNothing(settings)
+        ? { key: "customText", message: EMPTY_STAMP_MESSAGE }
+        : null;
+}
+
+function requireStampContent(settings) {
+    if (stampsNothing(settings)) {
+        throw new Error(EMPTY_STAMP_MESSAGE);
+    }
+
+    return settings;
 }
 
 /* ===== src/core/moment.js ===== */
@@ -939,6 +970,7 @@ function captureMoment(facts) {
 
 const LATITUDE_LIMIT = 90;
 const LONGITUDE_LIMIT = 180;
+const DECIMAL_DEGREES = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/u;
 
 function boundedDegrees(value, limit) {
     const text = typeof value === "number" || typeof value === "string"
@@ -946,7 +978,8 @@ function boundedDegrees(value, limit) {
         : "";
     const numeric = Number(text);
 
-    return text !== "" && isFinite(numeric) && Math.abs(numeric) <= limit
+    return (typeof value === "number" || DECIMAL_DEGREES.test(text)) &&
+        isFinite(numeric) && Math.abs(numeric) <= limit
         ? numeric
         : null;
 }
@@ -1010,14 +1043,16 @@ function wantsMetadata(settings) {
 }
 
 function inscriptionFor(facts, settings) {
-    const known = [
-        wrote(facts, settings.dateFormat, captureMoment, MOMENT_WRITERS),
-        wrote(facts, settings.coordinateFormat, coordinates, PLACE_WRITERS)
-    ].filter((line) => line.length > 0);
-    const lines = [...known, ...customLines(settings.customText)];
+    const date = wrote(facts, settings.dateFormat, captureMoment, MOMENT_WRITERS);
+    const place = wrote(facts, settings.coordinateFormat, coordinates, PLACE_WRITERS);
+    const missing = [
+        settings.dateFormat !== "none" && !date ? "date/time" : "",
+        settings.coordinateFormat !== "none" && !place ? "GPS coordinates" : ""
+    ].filter(Boolean);
+    const lines = [...[date, place].filter(Boolean), ...customLines(settings.customText)];
 
     return lines.length > 0
-        ? { lines, text: lines.join("\n") }
+        ? { lines, text: lines.join("\n"), ...missing.length > 0 ? { missing } : {} }
         : { nothing: describeAbsence(settings) };
 }
 
@@ -1099,8 +1134,8 @@ const FONT = {
 };
 
 const TEXT = {
-    prompt: "Text of your own to stamp:",
-    label: "Your own text:",
+    prompt: "Custom text (optional; the same text is added to every copy):",
+    label: "Custom text (optional):",
     defaultAnswer: ""
 };
 
@@ -1205,29 +1240,54 @@ function defaultSettings(fonts) {
     );
 }
 
+/* ===== src/core/stamp-description.js ===== */
+
+
+function selectionSummary({ count = 0, selectedFolders = 0 } = {}) {
+    if (count === 0) {
+        return "Choose what to stamp and how it should look.";
+    }
+
+    return selectedFolders > 0
+        ? `Found ${plural(count, "image")} in your selection, including subfolders.`
+        : `You have selected ${plural(count, "image")}.`;
+}
+
+const COPY_NOTE = "Each image gets a stamped copy, saved in each folder you " +
+    "selected or beside each image you selected. The original files are not " +
+    "changed.";
+
+const SOURCE_NOTE = "The date and place come from each image's own " +
+    "metadata; the formats below are examples. Custom text is the same on " +
+    "every copy.";
+
+const LOCATION_NOTE = "Leaving GPS coordinates off does not remove location " +
+    "data already in the image.";
+
 /* ===== src/core/form.js ===== */
 
 
-const CREATE_BUTTON = "Stamp";
+const CREATE_BUTTON = "Create";
 const CANCEL_BUTTON = "Cancel";
 
-const SOURCE = "The date and place are each photograph's own. " +
-    "Your own text is the same on all of them.";
-
-function invitation(count) {
-    const ask = `Choose what to stamp and how it should look. ${SOURCE}`;
-
-    return count > 0 ? `${plural(count, "photograph")}. ${ask}` : ask;
+function invitation(count, selectedFolders = 0) {
+    return [
+        selectionSummary({ count, selectedFolders }),
+        COPY_NOTE,
+        SOURCE_NOTE,
+        LOCATION_NOTE
+    ].join("\n");
 }
 
 function formSpec(answers, problems, context) {
-    const { count, fonts } = context;
+    const { count, fonts, selectedFolders } = context;
 
     return {
         title: APP_NAME,
-        detail: problems.length > 0
-            ? problems.map((problem) => problem.message).join("\n")
-            : invitation(count),
+        detail: [
+            ...problems.map((problem) => problem.message),
+            invitation(count, selectedFolders)
+        ].join("\n"),
         rows: formRows(
             answers ?? defaultAnswers(fonts),
             new Set(problems.map((problem) => problem.key)),
@@ -1298,16 +1358,17 @@ const READERS = {
     text: readText
 };
 
+function readAnswer(row, answer, fonts) {
+    return READERS[row.kind](answer, controlFor(row, fonts));
+}
+
 function readAnswers(answers, fonts) {
     const settings = {};
     const problems = [];
 
     for (const row of ORDER) {
         try {
-            settings[row.key] = READERS[row.kind](
-                answers[row.key],
-                controlFor(row, fonts)
-            );
+            settings[row.key] = readAnswer(row, answers[row.key], fonts);
         } catch (error) {
             problems.push({ key: row.key, message: errorMessage(error) });
         }
@@ -1373,20 +1434,31 @@ function rememberedAnswers(text, fonts) {
 
 /* ===== src/core/queries.js ===== */
 
-
 const NUMERIC = "-n";
 const JSON_OUT = "-json";
+const COORDINATE_TAGS = ["-GPSLatitude", "-GPSLongitude"];
 
-const WANTED_TAGS = [
-    "-DateTimeOriginal",
-    "-CreateDate",
-    "-ModifyDate",
-    "-GPSLatitude",
-    "-GPSLongitude"
-];
+function selectedTags({
+    dateFormat = defaultValueOf(DATE_FORMAT),
+    coordinateFormat = defaultValueOf(COORDINATE_FORMAT)
+} = {}) {
+    labelOfValue(DATE_FORMAT, dateFormat);
+    labelOfValue(COORDINATE_FORMAT, coordinateFormat);
 
-function buildMetadataArgv(exiftoolPath, imagePath) {
-    return [exiftoolPath, JSON_OUT, NUMERIC, ...WANTED_TAGS, imagePath];
+    return [
+        ...dateFormat === "none" ? [] : MOMENT_TAGS.map((tag) => `-${tag}`),
+        ...coordinateFormat === "none" ? [] : COORDINATE_TAGS
+    ];
+}
+
+function buildMetadataArgv(exiftoolPath, imagePath, settings) {
+    const tags = selectedTags(settings);
+
+    if (tags.length === 0) {
+        throw new Error("No stamp metadata was requested.");
+    }
+
+    return [exiftoolPath, JSON_OUT, NUMERIC, ...tags, imagePath];
 }
 
 function buildSizeArgv(vipsheaderPath, imagePath, field) {
@@ -2342,6 +2414,8 @@ function rejection(path, reason) {
 }
 
 function admitFolder(tree, path, outcome) {
+    outcome.selectedFolders += 1;
+
     const found = imagesInFolder(tree, path, outcome.taken);
 
     for (const problem of found.problems) {
@@ -2395,6 +2469,7 @@ function collectImageFiles(app, inputItems, tree = null) {
     const items = inputItems.length > 0 ? inputItems : finderSelection();
     const outcome = {
         images: [],
+        selectedFolders: 0,
         rejected: [],
         excluded: [],
         taken: new Set()
@@ -2406,6 +2481,7 @@ function collectImageFiles(app, inputItems, tree = null) {
 
     return {
         images: sortImageRecords(outcome.images),
+        selectedFolders: outcome.selectedFolders,
         rejected: outcome.rejected,
         excluded: outcome.excluded
     };
@@ -3197,7 +3273,8 @@ function saveCopy(job, stamped, target, source) {
 function recordFor(answer) {
     const read = JSON.parse(String(answer));
 
-    if (!Array.isArray(read) || read.length === 0 || !read[0]) {
+    if (!Array.isArray(read) || read.length !== 1 || !read[0] ||
+        typeof read[0] !== "object" || Array.isArray(read[0])) {
         throw new Error("it answered with nothing about this photograph");
     }
 
@@ -3211,7 +3288,7 @@ function recordFor(answer) {
 function factsFor(job, imagePath) {
     const answer = runArgv(
         job.app,
-        buildMetadataArgv(job.tools.exiftool, imagePath),
+        buildMetadataArgv(job.tools.exiftool, imagePath, job.settings),
         "reading the photograph's metadata"
     );
 
@@ -3397,7 +3474,8 @@ function produce(job, image, token, intermediates) {
         staged: target,
         crowded: drawn.crowded,
         unconverted: drawn.unconverted,
-        expanded: met.expanded
+        expanded: met.expanded,
+        missing: image.inscription.missing ?? []
     };
 }
 
@@ -3469,7 +3547,13 @@ function stampToFile(job, image, index) {
             stopped: saved.stopped,
             crowded: made.crowded,
             unconverted: made.unconverted,
-            expanded: made.expanded
+            expanded: made.expanded,
+            missingMetadata: made.missing.length > 0 ? {
+                name: image.originalName,
+                path: image.path,
+                output: saved.path,
+                fields: made.missing
+            } : null
         };
     } catch (error) {
         return isUserCancelled(error)
@@ -3491,6 +3575,11 @@ function counted(job, results, outcome) {
     results.crowded += outcome.crowded ? 1 : 0;
     results.unconverted += outcome.unconverted ? 1 : 0;
     results.expanded += outcome.expanded ? 1 : 0;
+
+    if (outcome.missingMetadata) {
+        results.missingMetadata.push(outcome.missingMetadata);
+    }
+
     job.progress.finished("Saved");
 }
 
@@ -3523,6 +3612,7 @@ function runJob(job, images) {
         outputs: [],
         failures: [],
         nothing: [],
+        missingMetadata: [],
         crowded: 0,
         unconverted: 0,
         expanded: 0
@@ -3582,7 +3672,8 @@ function ledgerOf(result) {
 }
 
 function isCompleteSuccess(result) {
-    return result.outputs.length === result.requested;
+    return result.outputs.length === result.requested &&
+        (result.missingMetadata ?? []).length === 0;
 }
 
 const COLUMNS = [
@@ -3597,6 +3688,12 @@ function describeIncomplete(result) {
     const counts = COLUMNS
         .filter(([column]) => ledger[column] > 0)
         .map(([column, said]) => `${ledger[column]} ${said}`);
+
+    const omissions = (result.missingMetadata ?? []).length;
+
+    if (omissions > 0) {
+        counts.push(`${plural(omissions, "copy", "copies")} missing requested metadata`);
+    }
 
     return "The request was not completely honoured: " +
         `${ledger.stamped} of ${result.requested} stamped, ${counts.join(", ")}.`;
@@ -3847,15 +3944,15 @@ function makeCaption(ns, text, rect) {
 /* ===== src/runtime/appkit-geometry.js ===== */
 
 const ROW_HEIGHT = 32;
-const LABEL_WIDTH = 150;
-const CONTROL_WIDTH = 260;
+const LABEL_WIDTH = 190;
+const CONTROL_WIDTH = 300;
 const NUMBER_WIDTH = 70;
 
 const COLOUR_WIDTH = 100;
 
 const FONT_WIDTH = 165;
 
-const TEXT_WIDTH = 260;
+const TEXT_WIDTH = CONTROL_WIDTH;
 const CAPTION_LINES = 3;
 const CAPTION_HEIGHT = 52;
 const CONTROL_HEIGHT = 24;
@@ -3914,16 +4011,16 @@ function controlRect(at) {
 /* ===== src/runtime/appkit-rows.js ===== */
 
 
-function addChoice(context, row, rect) {
-    const { ns, widgets, view } = context;
+function makeChoice(context, row, rect) {
+    const { ns, widgets } = context;
     const popup = widgets.makePopup(ns, rect);
 
     for (const option of row.options) {
         widgets.addPopupItem(popup, option);
     }
 
+    popup.setAccessibilityLabel(row.label);
     popup.selectItemWithTitle(row.value);
-    view.addSubview(popup);
 
     if (row.invalid) {
         widgets.markInvalid(ns, popup);
@@ -3950,6 +4047,9 @@ function addTyped(context, row, rect, control) {
     const field = make({ ...rect, width });
     const hint = widgets.makeHint(ns, row.hint, hintRect(rect, width));
 
+    field.setAccessibilityLabel(row.label);
+    field.setAccessibilityHelp(row.hint);
+
     view.addSubview(field);
     view.addSubview(hint);
 
@@ -3973,6 +4073,7 @@ function addText(context, row, rect) {
         height: CAPTION_HEIGHT
     });
 
+    caption.text.setAccessibilityLabel(row.label);
     view.addSubview(caption.control);
 
     if (row.invalid) {
@@ -3980,6 +4081,14 @@ function addText(context, row, rect) {
     }
 
     return caption;
+}
+
+function addChoice(context, row, rect) {
+    const popup = makeChoice(context, row, rect);
+
+    context.view.addSubview(popup);
+
+    return popup;
 }
 
 function addNumber(context, row, rect) {
@@ -3997,6 +4106,67 @@ const ADD_ROW = {
     number: addNumber
 };
 
+/* ===== src/runtime/appkit-choice.js ===== */
+
+const SWITCH_BUTTON = 3;
+function makeSwitch(ns, rect, label) {
+    const toggle = ns.NSButton.alloc.initWithFrame(rectOf(ns, rect));
+
+    toggle.setButtonType(SWITCH_BUTTON);
+    toggle.title = label;
+    toggle.allowsMixedState = false;
+
+    return toggle;
+}
+
+function makeToggle(ns, row, rect, popup) {
+    const toggle = makeSwitch(ns, rect, row.optional.label);
+    const enabled = row.value !== row.optional.offLabel;
+
+    toggle.state = enabled ? 1 : 0;
+    toggle.setAccessibilityLabel(row.optional.label);
+    toggle.setAccessibilityHelp(row.optional.help);
+    popup.enabled = enabled;
+    toggle.bindToObjectWithKeyPathOptions(
+        "value", popup, "enabled", ns.NSDictionary.dictionary
+    );
+
+    return toggle;
+}
+
+function addOptionalChoice(context, row, rects) {
+    const options = row.options.filter((option) => option.label !== row.optional.offLabel);
+    const enabled = row.value !== row.optional.offLabel;
+    const popup = makeChoice(context, {
+        ...row,
+        options,
+        value: enabled ? row.value : options[0].label
+    }, rects.control);
+    const toggle = makeToggle(context.ns, row, rects.label, popup);
+
+    context.view.addSubview(toggle);
+    context.view.addSubview(popup);
+
+    return { control: popup, popup, toggle };
+}
+
+function optionalAnswer(bridge, row, control) {
+    return Number(bridge.objc.unwrap(control.toggle.state)) === 1
+        ? control.popup.titleOfSelectedItem
+        : row.optional.offLabel;
+}
+
+function unbindChoices(spec, controls) {
+    for (const row of spec.rows) {
+        if (row.optional) {
+            try {
+                controls[row.key].toggle.unbind("value");
+            } catch {
+            }
+        }
+    }
+}
+
 /* ===== src/runtime/appkit-form.js ===== */
 
 
@@ -4011,8 +4181,14 @@ function buildForm(bridge, spec, widgets) {
     spec.rows.forEach((row, index) => {
         const at = { index, rowCount, caption };
 
-        view.addSubview(widgets.makeLabel(bridge.ns, row.label, labelRect(at)));
-        controls[row.key] = ADD_ROW[row.kind](context, row, controlRect(at));
+        if (row.optional) {
+            controls[row.key] = addOptionalChoice(context, row, {
+                label: labelRect(at), control: controlRect(at)
+            });
+        } else {
+            view.addSubview(widgets.makeLabel(bridge.ns, row.label, labelRect(at)));
+            controls[row.key] = ADD_ROW[row.kind](context, row, controlRect(at));
+        }
     });
 
     return { view, controls };
@@ -4039,6 +4215,10 @@ const RESPONSE_ABORT = -1001;
 const FIRST_BUTTON = 1000;
 
 function heldBy(bridge, row, control) {
+    if (row.optional) {
+        return optionalAnswer(bridge, row, control);
+    }
+
     if (row.kind === "choice") {
         return control.titleOfSelectedItem;
     }
@@ -4068,19 +4248,24 @@ function readControls(bridge, spec, controls) {
 
 function presentForm(bridge, spec, widgets = WIDGETS) {
     const { view, controls } = buildForm(bridge, spec, widgets);
-    const alert = widgets.makeAlert(bridge.ns, spec);
 
-    alert.accessoryView = view;
+    try {
+        const alert = widgets.makeAlert(bridge.ns, spec);
 
-    const response = Number(alert.runModal);
+        alert.accessoryView = view;
 
-    if (response === RESPONSE_ABORT) {
-        return null;
+        const response = Number(alert.runModal);
+
+        if (response === RESPONSE_ABORT) {
+            return null;
+        }
+
+        return response === FIRST_BUTTON
+            ? { answers: readControls(bridge, spec, controls) }
+            : { cancelled: true };
+    } finally {
+        unbindChoices(spec, controls);
     }
-
-    return response === FIRST_BUTTON
-        ? { answers: readControls(bridge, spec, controls) }
-        : { cancelled: true };
 }
 
 /* ===== src/runtime/prompts.js ===== */
@@ -4118,6 +4303,10 @@ function askUntil(app, question, read) {
             }
         );
 
+        if (response.buttonReturned === "Cancel") {
+            throw new UserCancelled();
+        }
+
         answer = String(response.textReturned);
 
         try {
@@ -4128,55 +4317,149 @@ function askUntil(app, question, read) {
     }
 }
 
+/* ===== src/runtime/settings-review.js ===== */
+
+
+const MAXIMUM_SHOWN = 12;
+
+function approve(app, message, button) {
+    const result = app.displayDialog(message, {
+        withTitle: APP_NAME,
+        buttons: [CANCEL_BUTTON, button],
+        defaultButton: button,
+        cancelButton: CANCEL_BUTTON
+    });
+
+    if (result.buttonReturned !== button) {
+        throw new UserCancelled();
+    }
+}
+
+function confirmSelection(app, context) {
+    const rejected = context.rejected ?? [];
+
+    if (rejected.length === 0) {
+        return;
+    }
+
+    const shown = rejected.slice(0, MAXIMUM_SHOWN).map(
+        (entry) => `${entry.name}: ${entry.reason}`
+    );
+
+    if (rejected.length > shown.length) {
+        shown.push(`...and ${rejected.length - shown.length} more.`);
+    }
+
+    approve(app, [
+        `${plural(rejected.length, "item")} in your selection cannot be ` +
+            `included:\n${shown.join("\n")}`,
+        `Continue with ${plural(context.count, "image")}?`
+    ].join("\n\n"), "Continue");
+}
+
+function reviewSettings(app, settings, context) {
+    const spec = formSpec(answersFromSettings(settings, context.fonts), [], context);
+    const lines = spec.rows.map((row) =>
+        `${row.label} ${row.kind === "text" ? JSON.stringify(row.value) : row.value}`
+    );
+    const question = context.count > 0
+        ? `Create ${plural(context.count, "stamped copy", "stamped copies")}?`
+        : "Create the stamped copies?";
+
+    approve(app, [question, COPY_NOTE, "", ...lines].join("\n"), CREATE_BUTTON);
+}
+
 /* ===== src/runtime/dialogs.js ===== */
 
 
-function refusal(context, row, typed) {
-    const read = readAnswers({ ...typed.answers, [row.key]: typed.text }, context.fonts);
-    const mine = (read.problems ?? []).find((problem) => problem.key === row.key);
+function refusal(context, row, text) {
+    try {
+        const value = readAnswer(row, text, context.fonts);
 
-    if (mine) {
-        return mine.message;
+        return row.kind === "font"
+            ? resolved(context.known, value).problem ?? ""
+            : "";
+    } catch (error) {
+        return errorMessage(error);
+    }
+}
+
+function askOptional(app, control, answer) {
+    const off = labelOfValue(control, control.optional.offValue);
+    const enabled = chooseRequired(app, {
+        prompt: `${control.optional.label}? ${control.optional.help}`,
+        choices: [{ label: "Off", value: false }, { label: "On", value: true }]
+    }, answer === off ? "Off" : "On");
+
+    if (enabled === "Off") {
+        return off;
     }
 
-    return row.kind === "font"
-        ? resolved(context.known, read.settings[row.key]).problem ?? ""
-        : "";
+    const choices = control.choices.filter((choice) => choice.value !== control.optional.offValue);
+
+    return chooseRequired(app, { ...control, choices },
+        answer === off ? choices[0].label : answer);
 }
 
 function askRow(app, row, answers, context) {
     const control = controlFor(row, context.fonts);
 
+    if (control.optional) {
+        return askOptional(app, control, answers[row.key]);
+    }
+
     if (row.kind === "choice") {
         return chooseRequired(app, control, answers[row.key]);
     }
 
-    return askUntil(
-        app,
-        {
-            prompt: control.prompt,
-            defaultAnswer: String(answers[row.key])
-        },
-        (text) => {
-            const said = refusal(context, row, { answers, text });
+    return askUntil(app, {
+        prompt: control.prompt,
+        defaultAnswer: String(answers[row.key])
+    }, (text) => {
+        const said = refusal(context, row, text);
 
-            if (said) {
-                throw new Error(said);
-            }
-
-            return text;
+        if (said) {
+            throw new Error(said);
         }
-    );
+
+        return text;
+    });
+}
+
+function withInvitation(row, context) {
+    return {
+        ...row,
+        control: {
+            ...row.control,
+            prompt: `${invitation(context.count, context.selectedFolders)}` +
+                `\n\n${row.control.prompt}`
+        }
+    };
 }
 
 function collectDialogSettings(app, answers, context) {
     const given = { ...answers };
 
-    for (const row of ORDER) {
-        given[row.key] = askRow(app, row, given, context);
-    }
+    for (;;) {
+        ORDER.forEach((row, index) => {
+            given[row.key] = askRow(
+                app, index === 0 ? withInvitation(row, context) : row, given, context
+            );
+        });
 
-    return readAnswers(given, context.fonts).settings;
+        const read = readAnswers(given, context.fonts);
+        const problem = contentProblem(read.settings);
+
+        if (problem) {
+            app.displayDialog(problem.message, {
+                withTitle: APP_NAME, buttons: ["OK"], defaultButton: "OK"
+            });
+        } else {
+            reviewSettings(app, read.settings, context);
+
+            return read.settings;
+        }
+    }
 }
 
 /* ===== src/runtime/preferences.js ===== */
@@ -4239,22 +4522,20 @@ function createMemory(objc, ns) {
 /* ===== src/runtime/settings-form.js ===== */
 
 
-function withDrawableFont(state, outcome, settings) {
+function confirmedSettings(state, outcome, settings) {
+    const empty = contentProblem(settings);
     const answer = resolved(state.context.known, settings.font);
+    const problem = empty ?? (answer.problem
+        ? { key: "font", message: answer.problem }
+        : null);
 
-    return answer.problem
-        ? {
-            answers: outcome.answers,
-            problems: [{ key: "font", message: answer.problem }]
-        }
+    return problem
+        ? { answers: outcome.answers, problems: [problem] }
         : { settings };
 }
 
 function formRound(bridge, present, state) {
-    const outcome = present(
-        bridge,
-        formSpec(state.answers, state.problems, state.context)
-    );
+    const outcome = present(bridge, formSpec(state.answers, state.problems, state.context));
 
     if (!outcome) {
         return { unavailable: true };
@@ -4267,37 +4548,41 @@ function formRound(bridge, present, state) {
     const read = readAnswers(outcome.answers, state.context.fonts);
 
     return read.settings
-        ? withDrawableFont(state, outcome, read.settings)
+        ? confirmedSettings(state, outcome, read.settings)
         : { answers: outcome.answers, problems: read.problems };
 }
 
-function collectViaForm(bridge, present, opening) {
-    let state = { ...opening, problems: [] };
-
-    for (;;) {
-        const round = formRound(bridge, present, state);
-
-        if (round.unavailable) {
-            return null;
-        }
-
-        if (round.settings) {
-            return round.settings;
-        }
-
-        state = { ...round, context: opening.context };
-    }
-}
-
-function attemptForm(bridge, present, opening) {
+function availableRound(bridge, present, state) {
     try {
-        return collectViaForm(bridge, present, opening);
+        return formRound(bridge, present, state);
     } catch (error) {
         if (isUserCancelled(error)) {
             throw error;
         }
 
-        return null;
+        return { unavailable: true };
+    }
+}
+
+function collectViaForm(bridge, present, opening) {
+    let state = {
+        ...opening,
+        answers: opening.answers ?? defaultAnswers(opening.context.fonts),
+        problems: []
+    };
+
+    for (;;) {
+        const round = availableRound(bridge, present, state);
+
+        if (round.unavailable) {
+            return { answers: state.answers };
+        }
+
+        if (round.settings) {
+            return round;
+        }
+
+        state = { ...round, context: opening.context };
     }
 }
 
@@ -4306,21 +4591,12 @@ function collectSettings(app, opening, injected) {
         bridge = appkitBridge(globalThis.ObjC, globalThis.$),
         present = presentForm
     } = injected;
+    const result = bridge ? collectViaForm(bridge, present, opening) : opening;
 
-    if (bridge) {
-        const settings = attemptForm(bridge, present, opening);
-
-        if (settings) {
-            return settings;
-        }
-    }
-
-    const { context } = opening;
-
-    return collectDialogSettings(
+    return result.settings ?? collectDialogSettings(
         app,
-        opening.answers ?? defaultAnswers(context.fonts),
-        context
+        result.answers ?? defaultAnswers(opening.context.fonts),
+        opening.context
     );
 }
 
@@ -4332,6 +4608,8 @@ function defaultMemory() {
 }
 
 function drawableSettings(settings, context) {
+    requireStampContent(settings);
+
     const answer = resolved(context.known, settings.font);
 
     if (answer.problem) {
@@ -4345,6 +4623,8 @@ function settingsFor(app, invocation, context, injected = {}) {
     if (invocation.headless) {
         return drawableSettings(normalizeSettings(invocation.settings), context);
     }
+
+    confirmSelection(app, context);
 
     const { openMemory = defaultMemory } = injected;
     const memory = openMemory();
@@ -4830,16 +5110,7 @@ function fontsFor(known, headless) {
 }
 
 function settingsFrom(app, invocation, context) {
-    const settings = settingsFor(app, invocation, context);
-
-    if (stampsNothing(settings)) {
-        throw new Error(
-            "This would stamp nothing.\n\nChoose a date or coordinate " +
-                "format, or write some text of your own."
-        );
-    }
-
-    return settings;
+    return settingsFor(app, invocation, context);
 }
 
 function jobFor(prepared, settings, place) {
@@ -4860,6 +5131,8 @@ function jobFor(prepared, settings, place) {
 function assemble(prepared, place, known = catalogue()) {
     const context = {
         count: prepared.selection.images.length,
+        selectedFolders: prepared.selection.selectedFolders ?? 0,
+        rejected: prepared.selection.rejected,
         fonts: fontsFor(known, prepared.invocation.headless),
         known
     };
@@ -4869,6 +5142,75 @@ function assemble(prepared, place, known = catalogue()) {
     const settings = settingsFrom(prepared.app, prepared.invocation, context);
 
     return jobFor(prepared, settings, place);
+}
+
+/* ===== src/runtime/completion.js ===== */
+
+
+function describeDestinations(outputs) {
+    const folders = [...new Set(outputs.map((output) => dirname(output)))];
+
+    return folders.length === 1
+        ? folders[0]
+        : `${folders.length} folders:\n${folders.join("\n")}`;
+}
+
+function stoppedLine(result, ledger) {
+    return result.stopped
+        ? `Stopped. ${plural(
+            result.requested - ledger.stamped - ledger.rejected, "image"
+        )} not stamped.`
+        : "";
+}
+
+function describe(result) {
+    const ledger = ledgerOf(result);
+
+    return [
+        result.failures.length > 0 ? "Finished with errors." : "",
+        [
+            ledger.stamped > 0
+                ? `Created ${plural(ledger.stamped, "stamped copy", "stamped copies")}.`
+                : "No stamped copy was created.",
+            stoppedLine(result, ledger),
+            result.outputs.length > 0
+                ? `Saved to: ${describeDestinations(result.outputs)}`
+                : ""
+        ].filter(Boolean).join("\n")
+    ].filter(Boolean).join("\n\n");
+}
+
+function named(entries, say) {
+    return entries.map((entry) => `${entry.name}: ${say(entry)}`);
+}
+
+function section(heading, entries, say) {
+    return entries.length > 0
+        ? `${heading}\n${named(entries, say).join("\n")}`
+        : "";
+}
+
+function detailOf(result) {
+    const notes = [
+        ...result.excluded.length > 0 ? [describeExcluded(result.excluded)] : [],
+        ...result.crowded > 0 ? [describeCrowding(result.crowded)] : [],
+        ...result.expanded > 0 ? [describeExpanded(result.expanded)] : [],
+        ...result.unconverted > 0 ? [describeUnconverted(result.unconverted)] : []
+    ];
+    const sections = [
+        section(`Could not stamp ${plural(result.failures.length, "image")}:`,
+            result.failures, (failure) => failure.message),
+        section("No copy, because there was nothing to stamp:",
+            result.nothing, (entry) => entry.reason),
+        section("Stamped without everything asked for:",
+            result.missingMetadata ?? [],
+            (entry) => `no ${entry.fields.join(" or ")} in its metadata`),
+        section("Not included from your selection:",
+            result.rejected, (entry) => entry.reason),
+        notes.join("\n")
+    ].filter(Boolean);
+
+    return sections.length > 0 ? `\n\n${sections.join("\n\n")}` : "";
 }
 
 /* ===== src/runtime/reporting.js ===== */
@@ -4900,35 +5242,6 @@ function reportNothing(app, headless, rejected) {
     }
 
     notice(app, describeNothing(rejected));
-}
-
-function describe(result) {
-    const ledger = ledgerOf(result);
-    const stamped = `${plural(ledger.stamped, "photograph")} stamped`;
-    const trouble = result.requested - ledger.stamped;
-    const sentence = trouble === 0
-        ? `${stamped}.`
-        : `${stamped}, and ${trouble} not.`;
-
-    return result.stopped ? `Stopped.\n\n${sentence}` : sentence;
-}
-
-function named(entries, say) {
-    return entries.map((entry) => `${entry.name}: ${say(entry)}`);
-}
-
-function detailOf(result) {
-    const lines = [
-        ...named(result.failures, (failure) => failure.message),
-        ...named(result.nothing, (entry) => entry.reason),
-        ...named(result.rejected, (entry) => entry.reason),
-        ...result.excluded.length > 0 ? [describeExcluded(result.excluded)] : [],
-        ...result.crowded > 0 ? [describeCrowding(result.crowded)] : [],
-        ...result.expanded > 0 ? [describeExpanded(result.expanded)] : [],
-        ...result.unconverted > 0 ? [describeUnconverted(result.unconverted)] : []
-    ];
-
-    return lines.length > 0 ? `\n\n${lines.join("\n")}` : "";
 }
 
 function reportHeadless(result, write = writeReceipt) {

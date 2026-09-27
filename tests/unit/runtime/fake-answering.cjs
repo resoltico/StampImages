@@ -1,5 +1,7 @@
 "use strict";
 
+const { consumePrompt } = require("./fake-dialog-budget.cjs");
+
 /*
  * What a test has arranged the fake host to say: an answer instead of running
  * a command, and what comes back from a dialog.
@@ -23,16 +25,22 @@ function injectedAnswer(failures, command) {
 function dialogSurface(host) {
     return {
         displayDialog(message, options) {
+            consumePrompt(host);
             host.dialogs.push({ message, options });
 
-            return { textReturned: host.nextAnswer ?? options.defaultAnswer ?? "" };
+            return {
+                textReturned: host.nextAnswer ?? options.defaultAnswer ?? "",
+                buttonReturned: host.nextButton ?? options.defaultButton
+            };
         },
 
-        chooseFromList(choices) {
+        chooseFromList(choices, options) {
+            consumePrompt(host);
             host.listPrompts.push(choices);
+            host.listQuestions.push(options.withPrompt);
 
             return host.nextChoice === undefined
-                ? [choices[0]]
+                ? options.defaultItems ?? [choices[0]]
                 : host.nextChoice;
         }
     };

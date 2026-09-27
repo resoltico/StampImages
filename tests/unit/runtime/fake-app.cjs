@@ -8,6 +8,7 @@
  */
 
 const { answersFor, refuses } = require("./fake-shell.cjs");
+const { consumePrompt } = require("./fake-dialog-budget.cjs");
 
 /*
  * `responses` maps a substring of the command to either a string to return or
@@ -47,6 +48,7 @@ function answerFor(app, options) {
 function dialogSurface(app) {
     return {
         displayDialog(message, options) {
+            consumePrompt(app);
             app.dialogs.push({ message, options });
 
             const answer = answerFor(app, options);
@@ -55,14 +57,15 @@ function dialogSurface(app) {
                 throw answer;
             }
 
-            return { textReturned: answer ?? "" };
+            return { textReturned: answer ?? "", buttonReturned: app.nextButton ?? options?.defaultButton };
         },
 
         chooseFromList(options, settings) {
+            consumePrompt(app);
             app.listPrompts.push({ options, settings });
 
             return app.nextChoice === undefined
-                ? [options[0]]
+                ? settings.defaultItems ?? [options[0]]
                 : app.nextChoice;
         }
     };

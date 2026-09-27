@@ -46,7 +46,7 @@ function opening(answers = defaultAnswers(FONTS)) {
 
 test("the form's answers become the settings", () => {
     const present = scripted([{ answers: defaultAnswers(FONTS) }]);
-    const settings = collectViaForm(BRIDGE, present, opening());
+    const { settings } = collectViaForm(BRIDGE, present, opening());
 
     assert.equal(settings.dateFormat, "iso-minutes");
     assert.equal(settings.size, 36);
@@ -60,7 +60,7 @@ test("a form with something wrong comes back with everything filled in", () => {
         { answers: typed },
         { answers: { ...typed, size: "48" } }
     ]);
-    const settings = collectViaForm(BRIDGE, present, opening());
+    const { settings } = collectViaForm(BRIDGE, present, opening());
 
     assert.equal(settings.size, 48);
     assert.equal(settings.customText, "Riga");
@@ -96,11 +96,13 @@ test("the count travels with the form, so Cancel is a decision", () => {
         context: askingContext(FONTS, 20)
     });
 
-    assert.match(present.seen[0].detail, /^20 photographs\./u);
+    assert.match(present.seen[0].detail, /^You have selected 20 images\./u);
 });
 
 test("a form that cannot be presented is not an answer", () => {
-    assert.equal(collectViaForm(BRIDGE, scripted([null]), opening()), null);
+    assert.deepEqual(collectViaForm(BRIDGE, scripted([null]), opening()), {
+        answers: defaultAnswers(FONTS)
+    });
 });
 
 test("cancelling the form ends the run rather than falling back", () => {

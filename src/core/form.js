@@ -1,38 +1,34 @@
 "use strict";
 
 const { APP_NAME } = require("./version.js");
-const { plural } = require("./numbers.js");
 const { formRows } = require("./form-rows.js");
 const { defaultAnswers } = require("./form-defaults.js");
+const {
+    selectionSummary, COPY_NOTE, SOURCE_NOTE, LOCATION_NOTE
+} = require("./stamp-description.js");
 
 /*
  * What the form says around its questions: the title above it, the buttons
- * under it, and the line between the two -- which is either an invitation or
- * the list of what needs correcting, because a form that has come back has
- * something to say first.
- */
-
-const CREATE_BUTTON = "Stamp";
-const CANCEL_BUTTON = "Cancel";
-
-/*
+ * under it, and the text between the two -- what was selected, what will be
+ * made of it, and where the stamp's words come from. A form that has come
+ * back puts what needs correcting first and keeps the rest, because a
+ * correction is made against the same selection.
+ *
  * Selecting a folder can mean a great many photographs, and this is the only
  * place between the selection and the work where the run can be called off.
  * Saying how many were found makes Cancel a decision rather than a guess.
- *
- * And it is the one place to say where the stamp's words come from. Two of
- * the ten rows choose how something is written rather than what it says, and
- * a form whose first two controls offer "2026-09-09 14:30" reads as though it
- * were asking which date to stamp. The photograph answers that; this only
- * asks how to write the answer.
  */
-const SOURCE = "The date and place are each photograph's own. " +
-    "Your own text is the same on all of them.";
 
-function invitation(count) {
-    const ask = `Choose what to stamp and how it should look. ${SOURCE}`;
+const CREATE_BUTTON = "Create";
+const CANCEL_BUTTON = "Cancel";
 
-    return count > 0 ? `${plural(count, "photograph")}. ${ask}` : ask;
+function invitation(count, selectedFolders = 0) {
+    return [
+        selectionSummary({ count, selectedFolders }),
+        COPY_NOTE,
+        SOURCE_NOTE,
+        LOCATION_NOTE
+    ].join("\n");
 }
 
 /*
@@ -42,13 +38,14 @@ function invitation(count) {
  * face, so the answers are defaulted here, where the fonts are known.
  */
 function formSpec(answers, problems, context) {
-    const { count, fonts } = context;
+    const { count, fonts, selectedFolders } = context;
 
     return {
         title: APP_NAME,
-        detail: problems.length > 0
-            ? problems.map((problem) => problem.message).join("\n")
-            : invitation(count),
+        detail: [
+            ...problems.map((problem) => problem.message),
+            invitation(count, selectedFolders)
+        ].join("\n"),
         rows: formRows(
             answers ?? defaultAnswers(fonts),
             new Set(problems.map((problem) => problem.key)),

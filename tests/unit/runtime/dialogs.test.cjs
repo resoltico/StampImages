@@ -32,7 +32,7 @@ test("every row is asked, and the choices are chosen from a list", () => {
 
     assert.deepEqual(asked(app), {
         lists: chosen,
-        boxes: ORDER.length - chosen
+        boxes: ORDER.length - chosen + 1
     });
     assert.equal(settings.position, "bottom-right");
     assert.equal(settings.font, "Menlo");
@@ -43,8 +43,8 @@ test("the questions are asked in the order the form lays them out", () => {
 
     collectDialogSettings(app, defaultAnswers(FONTS), askingContext(FONTS));
 
-    assert.match(app.listPrompts[0].settings.withPrompt, /the date the photograph was taken/u);
-    assert.match(app.dialogs[0].message, /Text of your own to stamp/u);
+    assert.match(app.listPrompts[0].settings.withPrompt, /Date\/time format/u);
+    assert.match(app.dialogs[0].message, /Custom text \(optional/u);
 });
 
 test("each question opens on the answer it was given", () => {

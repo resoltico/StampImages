@@ -5,7 +5,7 @@ const { APP_NAME } = require("../core/version.js");
 const { labelsOf, valueOfLabel } = require("../core/choices.js");
 
 /*
- * Asking one question at a time, where there is no form to ask six at once.
+ * Asking one question at a time, when the native form is unavailable.
  *
  * Each takes what it should open on, so a run that remembers the last one
  * offers those answers back rather than the compiled defaults -- and a run
@@ -70,6 +70,10 @@ function askUntil(app, question, read) {
                 cancelButton: "Cancel"
             }
         );
+
+        if (response.buttonReturned === "Cancel") {
+            throw new UserCancelled();
+        }
 
         answer = String(response.textReturned);
 

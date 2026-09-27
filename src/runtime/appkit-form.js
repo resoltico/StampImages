@@ -6,6 +6,7 @@ const {
     controlRect
 } = require("./appkit-geometry.js");
 const { ADD_ROW } = require("./appkit-rows.js");
+const { addOptionalChoice } = require("./appkit-choice.js");
 
 /*
  * Turning the form description from src/core/form.js into a view: where each
@@ -30,8 +31,14 @@ function buildForm(bridge, spec, widgets) {
     spec.rows.forEach((row, index) => {
         const at = { index, rowCount, caption };
 
-        view.addSubview(widgets.makeLabel(bridge.ns, row.label, labelRect(at)));
-        controls[row.key] = ADD_ROW[row.kind](context, row, controlRect(at));
+        if (row.optional) {
+            controls[row.key] = addOptionalChoice(context, row, {
+                label: labelRect(at), control: controlRect(at)
+            });
+        } else {
+            view.addSubview(widgets.makeLabel(bridge.ns, row.label, labelRect(at)));
+            controls[row.key] = ADD_ROW[row.kind](context, row, controlRect(at));
+        }
     });
 
     return { view, controls };

@@ -46,7 +46,7 @@ stamp() {
 solid "$WORK/holiday.jpg" 900 600 "$GREY"
 taken_at "$WORK/holiday.jpg" "2024:07:14 18:32:05" 56.9496 24.1052
 BEFORE=$(shasum -a 256 < "$WORK/holiday.jpg")
-settings_file "$WORK/settings.json" "Riga"
+settings_file "$WORK/settings.json" "Riga" "bottom-right" "iso-minutes" "decimal"
 
 RECEIPT=$(stamp "$WORK/settings.json" "$WORK/holiday.jpg")
 
@@ -70,7 +70,7 @@ test "$EMPTY" -eq 0 || fail "something was drawn in the top left: $EMPTY"
 
 solid "$WORK/corner.jpg" 900 600 "$GREY"
 taken_at "$WORK/corner.jpg" "2024:07:14 18:32:05" 56.9496 24.1052
-settings_file "$WORK/top-left.json" "Riga" "top-left"
+settings_file "$WORK/top-left.json" "Riga" "top-left" "iso-minutes" "decimal"
 
 stamp "$WORK/top-left.json" "$WORK/corner.jpg" > /dev/null
 

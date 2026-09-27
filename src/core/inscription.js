@@ -97,14 +97,16 @@ function wantsMetadata(settings) {
  * it was taken, and then whatever was added by hand.
  */
 function inscriptionFor(facts, settings) {
-    const known = [
-        wrote(facts, settings.dateFormat, captureMoment, MOMENT_WRITERS),
-        wrote(facts, settings.coordinateFormat, coordinates, PLACE_WRITERS)
-    ].filter((line) => line.length > 0);
-    const lines = [...known, ...customLines(settings.customText)];
+    const date = wrote(facts, settings.dateFormat, captureMoment, MOMENT_WRITERS);
+    const place = wrote(facts, settings.coordinateFormat, coordinates, PLACE_WRITERS);
+    const missing = [
+        settings.dateFormat !== "none" && !date ? "date/time" : "",
+        settings.coordinateFormat !== "none" && !place ? "GPS coordinates" : ""
+    ].filter(Boolean);
+    const lines = [...[date, place].filter(Boolean), ...customLines(settings.customText)];
 
     return lines.length > 0
-        ? { lines, text: lines.join("\n") }
+        ? { lines, text: lines.join("\n"), ...missing.length > 0 ? { missing } : {} }
         : { nothing: describeAbsence(settings) };
 }
 

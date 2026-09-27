@@ -1,7 +1,7 @@
 "use strict";
 
 /*
- * A selected folder means the images inside it, and the PDF lands where the
+ * A selected folder means the images inside it, and the stamped copy lands where the
  * person pointed rather than in whichever subfolder happened to sort first.
  */
 
@@ -40,7 +40,7 @@ test("a selected folder becomes the images inside it, in folder order", () => {
     assert.deepEqual(rejected, []);
 });
 
-test("the PDF goes in the folder that was selected", () => {
+test("the stamped copies go in the folder that was selected", () => {
     // Not in the subfolder whose name happened to sort first, which is where
     // "beside the first image" would have put it.
     const tree = treeOf({
@@ -127,4 +127,15 @@ test("without a tree a folder is refused, not walked", () => {
     assert.deepEqual(rejected.map((entry) => entry.reason), [
         "a folder; select the images inside it"
     ]);
+});
+
+
+test("folder discovery counts selected folders, not images or descendant folders", () => {
+    const tree = treeOf({ "/Trip": ["Nested"], "/Trip/Nested": ["one.jpg", "two.jpg"],
+        "/Other": ["three.jpg"] });
+    const app = appWith(["/Trip", "/Other"]);
+
+    assert.equal(collectImageFiles(app, ["/direct.jpg"], tree).selectedFolders, 0);
+    assert.equal(collectImageFiles(app, ["/Trip"], tree).selectedFolders, 1);
+    assert.equal(collectImageFiles(app, ["/Trip", "/Other", "/direct.jpg"], tree).selectedFolders, 2);
 });

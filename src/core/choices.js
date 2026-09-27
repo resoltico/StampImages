@@ -24,10 +24,12 @@ const DATE_FORMATS = [
     { label: "Do not stamp the date", value: "none" }
 ];
 
+// First, so it is the default: a place is added only when somebody asks for
+// it, and once asked for it is remembered like every other appearance choice.
 const COORDINATE_FORMATS = [
+    { label: "Do not stamp the coordinates", value: "none" },
     { label: "56.9496, 24.1052", value: "decimal" },
-    { label: "56°56'58.6\"N 24°6'18.7\"E", value: "sexagesimal" },
-    { label: "Do not stamp the coordinates", value: "none" }
+    { label: "56°56'58.6\"N 24°6'18.7\"E", value: "sexagesimal" }
 ];
 
 const POSITION = {
@@ -40,14 +42,20 @@ const POSITION = {
 // "2026-09-09 14:30" reads as though it were asking which date to stamp, and
 // it is neither. Where the values come from is the form's opening line.
 const DATE_FORMAT = {
-    prompt: "How the date the photograph was taken is written:",
-    label: "Date format:",
+    prompt: "Date/time format (these are examples, not dates to stamp):",
+    label: "Date/time format:",
     choices: DATE_FORMATS
 };
 
 const COORDINATE_FORMAT = {
-    prompt: "How the place the photograph was taken is written:",
+    prompt: "Coordinate format (latitude, then longitude):",
     label: "Coordinate format:",
+    optional: {
+        label: "Include GPS coordinates",
+        offValue: "none",
+        help: "Adds the place to the stamp. Leaving it off does not remove " +
+            "location data already in the image."
+    },
     choices: COORDINATE_FORMATS
 };
 

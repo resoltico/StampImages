@@ -92,16 +92,17 @@ const READERS = {
  * Every problem at once. A form that reports the first bad field, and only
  * then the second, is a sequence of dialogs with extra steps.
  */
+function readAnswer(row, answer, fonts) {
+    return READERS[row.kind](answer, controlFor(row, fonts));
+}
+
 function readAnswers(answers, fonts) {
     const settings = {};
     const problems = [];
 
     for (const row of ORDER) {
         try {
-            settings[row.key] = READERS[row.kind](
-                answers[row.key],
-                controlFor(row, fonts)
-            );
+            settings[row.key] = readAnswer(row, answers[row.key], fonts);
         } catch (error) {
             problems.push({ key: row.key, message: errorMessage(error) });
         }
@@ -137,6 +138,7 @@ function answersFromSettings(settings, fonts) {
 }
 
 module.exports = {
+    readAnswer,
     readAnswers,
     answersFromSettings,
     readNumber,

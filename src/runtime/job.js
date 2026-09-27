@@ -33,6 +33,11 @@ function counted(job, results, outcome) {
     results.crowded += outcome.crowded ? 1 : 0;
     results.unconverted += outcome.unconverted ? 1 : 0;
     results.expanded += outcome.expanded ? 1 : 0;
+
+    if (outcome.missingMetadata) {
+        results.missingMetadata.push(outcome.missingMetadata);
+    }
+
     job.progress.finished("Saved");
 }
 
@@ -87,6 +92,7 @@ function runJob(job, images) {
         outputs: [],
         failures: [],
         nothing: [],
+        missingMetadata: [],
         crowded: 0,
         unconverted: 0,
         expanded: 0

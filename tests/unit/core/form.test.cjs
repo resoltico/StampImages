@@ -29,20 +29,20 @@ test("the form is titled for the action that put it there", () => {
 
 test("the buttons say what will happen, and what will not", () => {
     assert.deepEqual(spec().buttons, [CREATE_BUTTON, CANCEL_BUTTON]);
-    assert.deepEqual(spec().buttons, ["Stamp", "Cancel"]);
+    assert.deepEqual(spec().buttons, ["Create", "Cancel"]);
 });
 
 test("the invitation says how many photographs Cancel would call off", () => {
     // Selecting a folder can mean a great many, and this is the only place
     // between the selection and the work where a run can be stopped.
-    assert.match(invitation(20), /^20 photographs\./u);
-    assert.match(invitation(1), /^1 photograph\./u);
-    assert.match(invitation(0), /^Choose what to stamp/u);
+    assert.match(invitation(20), /^You have selected 20 images\./u);
+    assert.match(invitation(1), /^You have selected 1 image\./u);
+    assert.match(invitation(0), /^Choose what to stamp and how it should look\./u);
 });
 
 test("every invitation says what is being asked for", () => {
     for (const count of [0, 1, 20]) {
-        assert.match(invitation(count), /Choose what to stamp and how it should look\./u);
+        assert.match(invitation(count), /Each image gets a stamped copy, saved in each folder you selected or beside each image you selected\. The original files are not changed\./u);
     }
 });
 
@@ -54,16 +54,16 @@ test("every invitation says where the words on the stamp come from", () => {
     for (const count of [0, 1, 20]) {
         assert.match(
             invitation(count),
-            /The date and place are each photograph's own\./u
+            /The date and place come from each image's own metadata; the formats below are examples\./u
         );
         assert.match(
             invitation(count),
-            /Your own text is the same on all of them\./u
+            /Leaving GPS coordinates off does not remove location data already in the image\./u
         );
     }
 });
 
-test("a form that has come back says what needs correcting instead", () => {
+test("a form with corrections retains its selection and output contract", () => {
     const shown = spec(
         defaultAnswers(FONTS),
         [
@@ -75,7 +75,9 @@ test("a form that has come back says what needs correcting instead", () => {
 
     assert.match(shown.detail, /Text size: enter a whole number/u);
     assert.match(shown.detail, /Text colour must be six/u);
-    assert.doesNotMatch(shown.detail, /photographs/u);
+    assert.match(shown.detail, /You have selected 3 images/u);
+    assert.match(shown.detail, /The original files are not changed/u);
+    assert.match(shown.detail, /does not remove location data/u);
 });
 
 test("the rows carry the answers and the marks for the problems", () => {

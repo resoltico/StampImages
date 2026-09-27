@@ -70,8 +70,8 @@ test("a request that would stamp nothing is refused before any work", () => {
         (error) => {
             assert.equal(
                 error.message,
-                "This would stamp nothing.\n\nChoose a date or coordinate " +
-                    "format, or write some text of your own."
+                "Choose a date/time format, include GPS coordinates, or enter custom text. " +
+                    "Otherwise there is nothing to stamp."
             );
 
             return true;
@@ -96,4 +96,16 @@ test("a workspace still holding a copy nobody could publish outlives the run", (
     }), /could not publish/u);
 
     assert.deepEqual(host.commands.filter((command) => command.includes("'-rf'")), []);
+});
+
+
+test("folder selection context reaches the settings rather than claiming individual selection", () => {
+    const host = createFakeHost();
+    const input = prepared(host);
+
+    input.selection.selectedFolders = 1;
+    assemble(input, place(recorder()), KNOWN);
+    assert.match(host.listQuestions[0],
+        /^Found 2 images in your selection, including subfolders\.\n/u);
+    assert.ok(!host.listQuestions.some((question) => question.includes("You have selected")));
 });

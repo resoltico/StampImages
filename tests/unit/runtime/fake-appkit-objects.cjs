@@ -1,5 +1,7 @@
 "use strict";
 
+const { accessible } = require("./fake-controls.cjs");
+
 /*
  * The AppKit objects the widget layer builds, as plain recorders.
  *
@@ -28,7 +30,7 @@ function commitCounter(control) {
         }
     });
 
-    return control;
+    return accessible(control);
 }
 
 function makeField(rect) {
@@ -46,7 +48,7 @@ function makeField(rect) {
  * `stringValue`, which is the distinction the form has to get right.
  */
 function makeTextView(rect) {
-    return { kind: "textview", rect, string: "" };
+    return accessible({ kind: "textview", rect, string: "" });
 }
 
 function makeScrollView(rect) {

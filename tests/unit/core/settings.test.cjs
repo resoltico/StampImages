@@ -12,9 +12,9 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const {
     normalizeSettings,
-    stampsNothing,
     CUSTOM_TEXT_LIMIT
 } = require("../../../src/core/settings.js");
+const { stampsNothing } = require("../../../src/core/stamp-content.js");
 
 const GOOD = {
     font: "Helvetica Neue",

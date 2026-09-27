@@ -358,9 +358,21 @@ Hemisphere signs are applied once. With `-n`, exiftool returns composite
 coordinates already signed: a photograph tagged 33.8688 S comes back as
 -33.8688.
 
-The photograph is asked nothing it was not asked about. A request wanting
-neither the date nor the place does not run exiftool at all, so a reader that
-will not run cannot fail a job that needs nothing from it.
+The photograph is asked nothing it was not asked about. The query names the
+two moment tags only when a date is stamped and the two GPS tags only when a
+place is, so with coordinates off the place is never read. A request wanting
+neither does not run exiftool at all, so a reader that will not run cannot
+fail a job that needs nothing from it — and the builder refuses an empty tag
+list outright, because exiftool reads no tags named as every tag there is.
+
+What comes back is read as one record: an array of exactly one object, or the
+read failed. A coordinate is a JSON number or text that is a plain decimal —
+`1e2`, `0x10` and ` 12 ` are not places — inside ±90 or ±180; zero is a
+place.
+
+A copy that could be made but lacks part of what was asked for — a caption
+drawn, the date absent — is recorded against the copy with the fields it
+lacks. A field that was not asked for is never missing.
 
 ## What a value from outside may be
 
@@ -549,7 +561,10 @@ beside the copies that succeeded, rather than as a failure of the run.
 
 ## What a run remembers
 
-Nine settings, kept as one record under one key in a named defaults suite.
+Nine settings, kept as one record under one key in a named defaults suite:
+everything but your own text, the GPS choice included. Coordinates are off in
+the compiled defaults, so a first run stamps the date and nothing about the
+place; after that the record decides, like every other setting.
 One record rather than one key each, because two keys can be written by two
 runs at once and leave one run's typeface beside another's colour.
 
@@ -604,20 +619,44 @@ have not, in the loudest place on the row. A control says which kind its hint
 is. What makes a typeface acceptable cannot go in 87 points of hint column
 anyway; it is the sentence at the top.
 
-**A label names the setting, not the subject.** `Date format:` and
+**A label names the setting, not the subject.** `Date/time format:` and
 `Coordinate format:` over menus of `2026-09-09 14:30` and `56.9496, 24.1052`,
 because a noun over a menu of plausible values reads as a choice of *which*
 date, or as data already read out of the photograph and offered back. The
-names match what a settings file has always called them, so the window and a
-configuration use one vocabulary. The window opens with the line that can say
-it once: "The date and place are each photograph's own. Your own text is the
-same on all of them."
+window says it once above the rows: "The date and place come from each image's
+own metadata; the formats below are examples." The items stay samples rather
+than names — "ISO 8601 to the minute" is a name somebody has to know already.
 
-Splitting each of those rows into a checkbox and a format menu was rejected:
-it doubles the controls for two of ten rows, and a format has to be chosen
-either way, so the "off" state is one item in a list rather than a second
-widget. The items stay samples rather than names — "ISO 8601 to the minute" is
-a name somebody has to know already.
+**Whether to stamp the place is a checkbox; how is the menu beside it.**
+Publishing where a photograph was taken is a different decision from how a
+date is written, and it deserves a control that reads as one. The two still
+submit one setting — `coordinateFormat` is `none` or a format — so they cannot
+contradict each other. The checkbox's `value` is bound to the menu's `enabled`,
+with no target or delegate; the binding is removed when the form closes,
+whichever way. Turning it off and on again in an open form keeps the format.
+The date row keeps "Do not stamp the date" as a menu item: the date is the
+default content, not an opt-in.
+
+**What the window says before anything is created**, from
+`src/core/stamp-description.js`, in the words Image Files to PDF uses for the
+same things: what was selected ("You have selected 12 images.", or "Found 231
+images in your selection, including subfolders." when a folder was selected —
+admission counts selected folders, including refused ones); that each image
+gets a stamped copy, saved in each folder you selected or beside each image
+you selected, and the originals are not changed; where the stamp's words come
+from; and that leaving GPS off does not remove location data already in the
+image. A form sent back puts the problems first and keeps all of that.
+
+**Consent.** Selected items that will not be stamped are listed in a
+Continue/Cancel dialog before the settings. A request that would stamp nothing
+is a problem on the custom-text row, sent back like any other, rather than a
+failure after Create. The stepwise dialogs put the window's text above their
+first question, read each answer on its own, and end with a Create/Cancel
+review of every setting, since the last answer to a question is not consent to
+write files. Settings are remembered only after that consent. Anything but the
+button that goes on is a cancellation, and a cancellation never falls back to
+another interface. When the window stops working part way, the dialogs open on
+the answers last submitted.
 
 ## What a Quick Action does with the result
 
@@ -644,9 +683,24 @@ litter in their photographs is not a default worth keeping to hold it open.
 **Not established:** that returning nothing stops Shortcuts writing anything.
 What is established is where the files came from and what was in them.
 
+## What counts as a complete run
+
+A headless run is complete when every photograph asked for came back as a
+copy and no copy lacks anything it was asked to show. Copies missing a
+requested date or place overlap the stamped column of the ledger rather than
+forming a sixth one, which would count one photograph twice; they make the run
+incomplete, so the receipt is written and the run exits non-zero, and the
+copies stay where they were published.
+
+A person is told the same things in paragraphs, in the order and the words
+Image Files to PDF uses where the two say the same thing: what was created and
+where it was saved, with a stopped run's count of images not stamped; the
+images that could not be stamped; those there was nothing to stamp on; those
+stamped without everything asked for; and the selected items not included.
+
 ## macOS integration gate
 
-`npm run test:integration:macos` runs nine suites against the built artifact
+`npm run test:integration:macos` runs eleven suites against the built artifact
 through `osascript`, on real files.
 
 - **macos** — a headless run stamps real photographs: the pixels that are not
@@ -667,6 +721,25 @@ through `osascript`, on real files.
 - **damaged** — a truncated JPEG and a truncated PNG are refused by name while
   whole files alongside them are stamped, and the refusal carries what vips
   said.
+- **content** — a configuration without `coordinateFormat` is refused and
+  writes nothing; the date alone is drawn with coordinates off; decimal and
+  degrees/minutes/seconds each change the pixels and differ from each other;
+  the original is byte-identical afterwards; a copy with coordinates off still
+  carries the source's GPS metadata; and a copy lacking a requested place, or a
+  requested date beside a caption, is kept, reported in `missingMetadata`, and
+  exits non-zero.
+- **form** — the settings window built from the shipped artifact with real
+  AppKit, not run modally, for several selections and a form sent back with
+  invalid answers, in the light and dark appearance: every menu item fits its
+  control by the cell's own measured size, no label or hint is clipped, every
+  control carries its label and help for accessibility, the checkbox enables
+  and disables the format menu through the binding, and the alert is no taller
+  than 744 points — the 11-inch MacBook Air of early 2015, the smallest display
+  macOS 12 supports, less its menu bar. Measured: 694 points, 726 with two
+  corrections shown. The runner's own screen is not the measure, because a CI
+  runner's virtual display is smaller than any Mac's. It writes a PNG of each form to `$STAMP_FORM_PREVIEWS`, which CI keeps
+  as `native-form-previews`. This is layout measured in AppKit, not use: nobody
+  has operated the form with VoiceOver.
 - **selection**, **publication**, **volumes**, **cards** — publication against
   a real filesystem, below.
 

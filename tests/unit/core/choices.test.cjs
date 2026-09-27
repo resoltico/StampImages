@@ -43,7 +43,7 @@ test("the first choice is the default, both ways round", () => {
 test("the defaults are the ones somebody stamping a photograph wants", () => {
     assert.equal(defaultValueOf(POSITION), "bottom-right");
     assert.equal(defaultValueOf(DATE_FORMAT), "iso-minutes");
-    assert.equal(defaultValueOf(COORDINATE_FORMAT), "decimal");
+    assert.equal(defaultValueOf(COORDINATE_FORMAT), "none");
 });
 
 test("a word no control offers is refused rather than guessed at", () => {
@@ -95,9 +95,9 @@ test("the choices a date offers are shown as dates, not described", () => {
 
 test("the coordinates are shown the two ways they can be written", () => {
     assert.deepEqual(labelsOf(COORDINATE_FORMAT), [
+        "Do not stamp the coordinates",
         "56.9496, 24.1052",
-        "56\u00b056'58.6\"N 24\u00b06'18.7\"E",
-        "Do not stamp the coordinates"
+        "56\u00b056'58.6\"N 24\u00b06'18.7\"E"
     ]);
 });
 

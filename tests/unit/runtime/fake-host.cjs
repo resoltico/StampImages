@@ -104,6 +104,7 @@ function createFakeHost(settings = {}) {
         commands: [],
         dialogs: [],
         listPrompts: [],
+        listQuestions: [],
         ...measurements(settings),
         includeStandardAdditions: false,
 

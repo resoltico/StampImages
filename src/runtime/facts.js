@@ -23,7 +23,8 @@ const { runArgv } = require("./shell.js");
 function recordFor(answer) {
     const read = JSON.parse(String(answer));
 
-    if (!Array.isArray(read) || read.length === 0 || !read[0]) {
+    if (!Array.isArray(read) || read.length !== 1 || !read[0] ||
+        typeof read[0] !== "object" || Array.isArray(read[0])) {
         throw new Error("it answered with nothing about this photograph");
     }
 
@@ -37,7 +38,7 @@ function recordFor(answer) {
 function factsFor(job, imagePath) {
     const answer = runArgv(
         job.app,
-        buildMetadataArgv(job.tools.exiftool, imagePath),
+        buildMetadataArgv(job.tools.exiftool, imagePath, job.settings),
         "reading the photograph's metadata"
     );
 

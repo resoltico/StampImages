@@ -1,13 +1,14 @@
 # Stamp Images
 
-A macOS Finder Quick Action that writes the capture date, the coordinates and
-your own text into copies of your photographs. The originals are never
-touched.
+A macOS Finder Quick Action that writes the capture date, the place it was
+taken if you ask for it, and your own text into copies of your photographs.
+The originals are never touched.
 
 Select photographs in Finder, choose what to stamp and how it should look, and
-get stamped copies beside them — `holiday.jpg` becomes `holiday_stamped.jpg`,
-in the same folder and the same format. No preview, no photo viewer, no
-editing of the originals: one styled block of text, composited into new files.
+get a stamped copy of each — `holiday.jpg` becomes `holiday_stamped.jpg`, in
+the same format. A copy is saved in each folder you selected, or beside each
+image you selected. No preview, no photo viewer, no editing of the originals:
+one styled block of text, composited into new files.
 
 A photograph that stores only greys cannot hold a caption that is not grey.
 Where you ask for one, the copy is written in colour so the caption keeps the
@@ -17,14 +18,18 @@ is unchanged.
 The metadata it reads is a record of what the camera wrote. A visible date or
 coordinate is a representation of that record, not proof that a clock or a
 location was right. A photograph that says nothing about itself still gets the
-text you typed, and nothing standing in for what is missing.
+text you typed, and nothing standing in for what is missing — and the run
+says which copies lack a date or a place you asked for. The date is the
+photograph's own `DateTimeOriginal` or `CreateDate`, never the file's
+modification time or today's.
 
 ## What you can choose
 
 Ten settings, asked once for the whole selection:
 
 - how the date is written, or that it is not stamped
-- how the coordinates are written, or that they are not
+- whether to include the GPS coordinates, and if so how they are written.
+  They are off until you turn them on
 - text of your own, which may run to several lines
 - the typeface, by name: one of the suggestions, or any other face your Mac
   has, typed into the same control
@@ -40,11 +45,22 @@ named styles of a variable font. A name your Mac has not is refused with the
 reason before anything is stamped, and asking a family for a style it does not
 come in says which styles it does.
 
-The settings are remembered from one run to the next. Your own text is not: it
-is about one job, and it is the field most likely to say something private.
-They are kept in one preferences entry named `com.resoltico.StampImages`,
-which is the only thing this leaves on your Mac; `INSTALL.txt` says how to
-remove it.
+The settings are remembered from one run to the next, the GPS choice included.
+Your own text is not: it is about one job, and it is the field most likely to
+say something private. The settings are kept in one preferences entry named
+`com.resoltico.StampImages`, which is the only thing this leaves on your Mac;
+`INSTALL.txt` says how to remove it.
+
+**Leaving GPS coordinates off does not remove location data already in the
+image.** It decides what the stamp says. The copy keeps the metadata the
+photograph had, the place included; this is not a tool for anonymising
+photographs.
+
+Before the settings, the window says what was selected, what will be made of
+it and where; selected items that cannot be stamped are listed first, and you
+can cancel there. If the window cannot be shown, the same questions are asked
+one at a time and end with a Create confirmation. A run that would stamp
+nothing at all — no date, no place, no text — is sent back for correction.
 
 A long run can be stopped: hold the Option key, and it stops at the next thing
 it is about to do. Nothing half-made is left in your folder. The panel says
@@ -83,9 +99,9 @@ is not a failure, and it is not silence either.
 
 A copy is the same kind of file the photograph was, at a quality chosen so you
 would not notice the difference, and it keeps what the photograph said about
-itself — including, if it was there, where it was taken. The colour you chose
-for the text is the colour that appears, whatever colour space the photograph
-is in.
+itself — including, if it was there, where it was taken, whether or not the
+stamp shows it. The colour you chose for the text is the colour that appears,
+whatever colour space the photograph is in.
 
 Selecting a folder again leaves the copies an earlier run put there alone.
 
@@ -98,10 +114,13 @@ handful of system tools, all named in `src/core/executables.js`.
 osascript -l JavaScript Stamp-Images.jxa -- --headless settings.json photo.jpg
 ```
 
-The settings file is a JSON object with all ten settings in it. The receipt is
-printed as JSON — what was stamped, what failed, what could not be used — and
+The settings file is a JSON object with all ten settings in it;
+`"coordinateFormat": "none"` leaves the place off. The receipt is printed as
+JSON — what was stamped, what failed, what could not be used, and in
+`missingMetadata` each copy that lacks a date or a place it was asked for — and
 a run that could not honour everything writes that receipt and then exits
-non-zero, because a caller needs both.
+non-zero, because a caller needs both. A copy missing part of what was asked
+for is kept, and still makes the run incomplete.
 
 ## Development
 

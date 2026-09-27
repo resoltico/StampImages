@@ -110,8 +110,10 @@ test("the alert carries the form's own title, detail and buttons", () => {
     const [alert] = bridge.state.alerts;
 
     assert.equal(alert.messageText, spec.title);
-    assert.equal(alert.informativeText, "something was wrong");
-    assert.deepEqual(alert.buttons, ["Stamp", "Cancel"]);
+    assert.equal(alert.informativeText, spec.detail);
+    assert.match(alert.informativeText, /^something was wrong/u);
+    assert.match(alert.informativeText, /You have selected 1 image\./u);
+    assert.deepEqual(alert.buttons, ["Create", "Cancel"]);
     assert.ok(alert.accessoryView, "the form must be attached to the alert");
     assert.equal(alert.accessoryView.kind, "view");
 });

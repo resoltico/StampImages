@@ -115,20 +115,8 @@ function normalizeSettings(settings) {
     };
 }
 
-/*
- * A run that would stamp nothing at all is a run that copies photographs for
- * no reason. It is refused where the settings are read rather than once per
- * photograph, because it is a fact about the request and not about any file.
- */
-function stampsNothing(settings) {
-    return settings.dateFormat === "none" &&
-        settings.coordinateFormat === "none" &&
-        settings.customText.trim() === "";
-}
-
 module.exports = {
     isSettingsRecord,
     normalizeSettings,
-    stampsNothing,
     CUSTOM_TEXT_LIMIT
 };

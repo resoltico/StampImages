@@ -53,7 +53,7 @@ test("a face that is not on the list is taken, once this Mac has it", () => {
     // handful worth having at hand and the field takes the name of anything
     // else the machine has.
     const present = scripted([{ answers: typing("Zapfino") }]);
-    const settings = collectViaForm(BRIDGE, present, opening());
+    const { settings } = collectViaForm(BRIDGE, present, opening());
 
     assert.equal(settings.font, "Zapfino");
     assert.equal(present.seen.length, 1, "so the form was shown once");
@@ -64,7 +64,7 @@ test("a style of a family is a name the field takes", () => {
     // Regular and Bold can name two of them.
     const present = scripted([{ answers: typing("Menlo Italic") }]);
 
-    assert.equal(collectViaForm(BRIDGE, present, opening()).font, "Menlo Italic");
+    assert.equal(collectViaForm(BRIDGE, present, opening()).settings.font, "Menlo Italic");
 });
 
 test("a face this Mac has not is marked, with everything else still typed", () => {
@@ -75,7 +75,7 @@ test("a face this Mac has not is marked, with everything else still typed", () =
         { answers: typing("Comic Sans MS") },
         { answers: typing("Menlo") }
     ]);
-    const settings = collectViaForm(BRIDGE, present, opening());
+    const { settings } = collectViaForm(BRIDGE, present, opening());
 
     assert.equal(settings.font, "Menlo");
 
@@ -120,7 +120,7 @@ test("a host with no catalogue takes the name it is given", () => {
     const present = scripted([{ answers: typing("Whatever It Is") }]);
 
     assert.equal(
-        collectViaForm(BRIDGE, present, opening(null)).font,
+        collectViaForm(BRIDGE, present, opening(null)).settings.font,
         "Whatever It Is"
     );
 });

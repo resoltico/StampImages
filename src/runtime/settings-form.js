@@ -2,6 +2,7 @@
 
 const { formSpec } = require("../core/form.js");
 const { readAnswers } = require("../core/answers.js");
+const { contentProblem } = require("../core/stamp-content.js");
 const { isUserCancelled, UserCancelled } = require("../core/errors.js");
 const { resolved } = require("../core/typeface-refusal.js");
 const { presentForm } = require("./appkit.js");
@@ -19,28 +20,25 @@ const { defaultAnswers } = require("../core/form-defaults.js");
  */
 
 /*
- * The one answer this layer cannot read for itself.
- *
- * Every other setting is decided by what it says -- a number is in range or it
- * is not -- and a typeface is decided by what this Mac has. So it is asked
- * here rather than in the reader, and a name that names nothing comes back as
- * the same kind of problem a number out of range does: the field marked, the
- * sentence at the top, and everything else still typed.
+ * The answers this layer cannot read for itself, because each depends on more
+ * than one row or on the machine: that the stamp says something at all, and
+ * that the typeface names a face this Mac has. Each comes back as the same kind
+ * of problem a number out of range does: the field marked, the sentence at the
+ * top, and everything else still typed.
  *
  * What the name turned out to mean is not taken from here. This is the loop
  * that decides whether to ask again, and it asks only that; the run resolves
- * the name it accepts, once, in settings-run.js. Carrying the answer out of
- * here instead would put it on a settings object that has not been validated
- * yet, and validation builds a fresh one.
+ * the name it accepts, once, in settings-run.js.
  */
-function withDrawableFont(state, outcome, settings) {
+function confirmedSettings(state, outcome, settings) {
+    const empty = contentProblem(settings);
     const answer = resolved(state.context.known, settings.font);
+    const problem = empty ?? (answer.problem
+        ? { key: "font", message: answer.problem }
+        : null);
 
-    return answer.problem
-        ? {
-            answers: outcome.answers,
-            problems: [{ key: "font", message: answer.problem }]
-        }
+    return problem
+        ? { answers: outcome.answers, problems: [problem] }
         : { settings };
 }
 
@@ -49,10 +47,7 @@ function withDrawableFont(state, outcome, settings) {
  * settings, or the answers to try again with.
  */
 function formRound(bridge, present, state) {
-    const outcome = present(
-        bridge,
-        formSpec(state.answers, state.problems, state.context)
-    );
+    const outcome = present(bridge, formSpec(state.answers, state.problems, state.context));
 
     if (!outcome) {
         return { unavailable: true };
@@ -65,33 +60,8 @@ function formRound(bridge, present, state) {
     const read = readAnswers(outcome.answers, state.context.fonts);
 
     return read.settings
-        ? withDrawableFont(state, outcome, read.settings)
+        ? confirmedSettings(state, outcome, read.settings)
         : { answers: outcome.answers, problems: read.problems };
-}
-
-/*
- * Redisplayed with the previous answers and every problem at once, so
- * correcting a mistyped size does not mean answering the other nine again.
- */
-function collectViaForm(bridge, present, opening) {
-    // Nothing wrong yet, and answers only if the last run left any. What an
-    // absent set of answers shows is formSpec's to say: stating the defaults
-    // again here would be a second copy of them, free to drift from the first.
-    let state = { ...opening, problems: [] };
-
-    for (;;) {
-        const round = formRound(bridge, present, state);
-
-        if (round.unavailable) {
-            return null;
-        }
-
-        if (round.settings) {
-            return round.settings;
-        }
-
-        state = { ...round, context: opening.context };
-    }
 }
 
 /*
@@ -99,43 +69,63 @@ function collectViaForm(bridge, present, opening) {
  * throws is treated as the form being unusable, because falling back to
  * dialogs that work is better than failing the run over a widget.
  */
-function attemptForm(bridge, present, opening) {
+function availableRound(bridge, present, state) {
     try {
-        return collectViaForm(bridge, present, opening);
+        return formRound(bridge, present, state);
     } catch (error) {
         if (isUserCancelled(error)) {
             throw error;
         }
 
-        return null;
+        return { unavailable: true };
     }
 }
 
 /*
- * The opening state of both front ends: how many images were found, and the
- * answers to start from when the last run left some. They are the same
- * answers either way -- a form that cannot be shown must not also forget.
+ * Redisplayed with the previous answers and every problem at once, so
+ * correcting a mistyped size does not mean answering the other nine again.
+ * A form that stops working part way hands the dialogs the answers last
+ * submitted, not the ones it opened with: corrections already made are not
+ * asked for twice. Edits never submitted are lost with the widget.
+ */
+function collectViaForm(bridge, present, opening) {
+    let state = {
+        ...opening,
+        answers: opening.answers ?? defaultAnswers(opening.context.fonts),
+        problems: []
+    };
+
+    for (;;) {
+        const round = availableRound(bridge, present, state);
+
+        if (round.unavailable) {
+            return { answers: state.answers };
+        }
+
+        if (round.settings) {
+            return round;
+        }
+
+        state = { ...round, context: opening.context };
+    }
+}
+
+/*
+ * The opening state of both front ends: what was selected, and the answers
+ * to start from when the last run left some. They are the same answers either
+ * way -- a form that cannot be shown must not also forget.
  */
 function collectSettings(app, opening, injected) {
     const {
         bridge = appkitBridge(globalThis.ObjC, globalThis.$),
         present = presentForm
     } = injected;
+    const result = bridge ? collectViaForm(bridge, present, opening) : opening;
 
-    if (bridge) {
-        const settings = attemptForm(bridge, present, opening);
-
-        if (settings) {
-            return settings;
-        }
-    }
-
-    const { context } = opening;
-
-    return collectDialogSettings(
+    return result.settings ?? collectDialogSettings(
         app,
-        opening.answers ?? defaultAnswers(context.fonts),
-        context
+        result.answers ?? defaultAnswers(opening.context.fonts),
+        opening.context
     );
 }
 

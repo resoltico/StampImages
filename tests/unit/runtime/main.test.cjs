@@ -123,7 +123,7 @@ test("a request that would stamp nothing is refused before any work", () => {
 
     assert.throws(
         () => execute(host, headlessArguments(photographs), true),
-        /would stamp nothing/u
+        /nothing to stamp/u
     );
     assert.equal(host.files.has("/a/one_stamped.jpg"), false);
 });

@@ -4,6 +4,46 @@ Notable changes to this project are documented in this file. The format is based
 
 ## [Unreleased]
 
+### Added
+
+- An **Include GPS coordinates** checkbox, with the coordinate format beside
+  it. The format can be chosen only while the checkbox is on.
+- The settings window says how many images you selected, or how many were
+  found in the folders you selected. It also says where the copies will be
+  saved, that the date and place come from each photograph, and that leaving
+  GPS off does not remove location data already in the image.
+- Items in your selection that cannot be stamped are listed before the
+  settings, and you can cancel there instead of finding out afterwards.
+- Every setting in the settings window has an accessible name and description.
+
+### Changed
+
+- GPS coordinates are off by default. The checkbox is remembered from one run
+  to the next like the other settings, so if you had coordinates on, they stay
+  on.
+- The settings window's button is now **Create**. When the stepwise dialogs
+  stand in for the window, they end by asking you to confirm the settings, and
+  they keep the answers you had already corrected in the window. Settings are
+  remembered only once you confirm them.
+- The completion message says where the copies were saved and lists each kind
+  of shortfall under its own heading, including copies that lack a date or a
+  place you asked for. A stopped run says how many images it did not stamp.
+- For headless runs, a copy that lacks a requested date or place is now listed
+  in the receipt under `missingMetadata`, and makes the run exit non-zero. The
+  copy itself is kept.
+
+### Fixed
+
+- A run with no date, no coordinates and no text of your own is sent back for
+  correction in the settings window. Previously it failed only after you had
+  confirmed it.
+- In the stepwise dialogs, an invalid answer to a later question no longer
+  stops a valid typeface from being accepted.
+- Only the metadata the stamp needs is read from each photograph. With
+  coordinates off, the GPS fields are not read at all.
+- Malformed metadata, such as coordinates written as text that only looks
+  like a number, is refused instead of being stamped as a plausible place.
+
 ## [1.1.0] - 2026-09-19
 
 ### Added

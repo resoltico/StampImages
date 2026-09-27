@@ -42,8 +42,10 @@ taken_at() {
 # settings_file <path> [customText] [position] [dateFormat] [coordinateFormat]
 #
 # A complete configuration, which is the whole of what a headless run is told.
-# Every field is named rather than left out: a run that fell back to a default
-# would be a test of the default.
+# This factory requests a caption only unless metadata formats are explicit.
+# Most rendering/publication fixtures have no capture metadata. The date/GPS
+# scenarios request their fields explicitly; content.sh tests runtime defaults.
+# Every JSON field is named, so this is not a test of fallback defaults.
 settings_file() {
     cat > "$1" <<JSON
 {
@@ -54,8 +56,8 @@ settings_file() {
   "outlineWidth": 2,
   "position": "${3:-bottom-right}",
   "margin": 24,
-  "dateFormat": "${4:-iso-minutes}",
-  "coordinateFormat": "${5:-decimal}",
+  "dateFormat": "${4:-none}",
+  "coordinateFormat": "${5:-none}",
   "customText": "${2:-}"
 }
 JSON

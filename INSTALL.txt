@@ -49,6 +49,23 @@ Install the Quick Action
 
 10. Save the shortcut as "Stamp Images".
 
+Use it
+======
+
+Select image files or folders in Finder and run the Quick Action. Selected
+folders are searched recursively. Each image gets a stamped copy, saved in
+each folder you selected or beside each image you selected; the original
+files are not changed.
+
+The date is on by default and GPS coordinates are off. Turning GPS on adds the
+place the photograph was taken to the stamp, and the choice is remembered for
+the next run. Leaving it off does not remove location data already in the
+image.
+
+Review any selection problems, choose the settings, and click Create. With
+stepwise dialogs, the last dialog confirms the settings before files are
+created. Completion reports the copies saved and anything not stamped.
+
 Remove it
 =========
 
@@ -58,7 +75,7 @@ Remove it
        defaults delete com.resoltico.StampImages
 
 That is everything it leaves on your Mac. It keeps one preferences entry,
-under that name, holding the appearance of your last run -- never the text you
+under that name, holding the settings of your last run -- never the text you
 typed, and nothing about your photographs. Its working files go in the system
 temporary folder and are cleared away as each run ends; a run that could not
 save a finished copy leaves them in place on purpose, and the message says

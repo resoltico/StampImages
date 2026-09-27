@@ -18,16 +18,16 @@ const {
  * goes is appkit-form.js; this is what each of them is.
  */
 
-function addChoice(context, row, rect) {
-    const { ns, widgets, view } = context;
+function makeChoice(context, row, rect) {
+    const { ns, widgets } = context;
     const popup = widgets.makePopup(ns, rect);
 
     for (const option of row.options) {
         widgets.addPopupItem(popup, option);
     }
 
+    popup.setAccessibilityLabel(row.label);
     popup.selectItemWithTitle(row.value);
-    view.addSubview(popup);
 
     if (row.invalid) {
         widgets.markInvalid(ns, popup);
@@ -69,6 +69,9 @@ function addTyped(context, row, rect, control) {
     const field = make({ ...rect, width });
     const hint = widgets.makeHint(ns, row.hint, hintRect(rect, width));
 
+    field.setAccessibilityLabel(row.label);
+    field.setAccessibilityHelp(row.hint);
+
     view.addSubview(field);
     view.addSubview(hint);
 
@@ -104,6 +107,7 @@ function addText(context, row, rect) {
         height: CAPTION_HEIGHT
     });
 
+    caption.text.setAccessibilityLabel(row.label);
     view.addSubview(caption.control);
 
     if (row.invalid) {
@@ -111,6 +115,14 @@ function addText(context, row, rect) {
     }
 
     return caption;
+}
+
+function addChoice(context, row, rect) {
+    const popup = makeChoice(context, row, rect);
+
+    context.view.addSubview(popup);
+
+    return popup;
 }
 
 function addNumber(context, row, rect) {
@@ -128,4 +140,4 @@ const ADD_ROW = {
     number: addNumber
 };
 
-module.exports = { ADD_ROW };
+module.exports = { ADD_ROW, makeChoice };

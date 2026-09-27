@@ -10,6 +10,7 @@ const {
     makeAlert
 } = require("./fake-appkit-objects.cjs");
 const { makeWindow, makeBox } = require("./fake-panel-objects.cjs");
+const { makeCheckbox } = require("./fake-controls.cjs");
 
 /*
  * A stand-in for the JXA ObjC bridge.
@@ -52,6 +53,8 @@ function installClasses(ns, state, application) {
         NSSelectorFromString: (name) => `sel:${name}`,
         NSModalPanelRunLoopMode: "NSModalPanelRunLoopMode",
         NSView: { alloc: { initWithFrame: makeView } },
+        NSButton: { alloc: { initWithFrame: makeCheckbox } },
+        NSDictionary: { dictionary: { kind: "empty dictionary" } },
         NSTextField: { alloc: { initWithFrame: makeField } },
         NSPopUpButton: { alloc: { initWithFramePullsDown: makePopup } },
         NSComboBox: { alloc: { initWithFrame: makeCombo } },

@@ -77,7 +77,8 @@ function produce(job, image, token, intermediates) {
         staged: target,
         crowded: drawn.crowded,
         unconverted: drawn.unconverted,
-        expanded: met.expanded
+        expanded: met.expanded,
+        missing: image.inscription.missing ?? []
     };
 }
 

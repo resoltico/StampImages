@@ -18,11 +18,8 @@ const { rejectionReason } = require("./reasons.js");
  */
 
 function record(path, folder) {
-    // Where the stamped copy goes: the folder that was selected when this
-    // found inside one, and the image's own folder when it was selected
-    // image was found, or the image's own folder when it was chosen
-    // itself. The copy lands where the person pointed, not in whichever
-    // subfolder happened to sort first.
+    // Copies from a folder selection go into that selected folder, including
+    // images discovered below it; directly selected images use their own folder.
     return { path, originalName: basename(path), folder };
 }
 
@@ -31,6 +28,8 @@ function rejection(path, reason) {
 }
 
 function admitFolder(tree, path, outcome) {
+    outcome.selectedFolders += 1;
+
     const found = imagesInFolder(tree, path, outcome.taken);
 
     // Reported as themselves: naming the folder or the file the walk could
@@ -122,6 +121,7 @@ function collectImageFiles(app, inputItems, tree = null) {
     const items = inputItems.length > 0 ? inputItems : finderSelection();
     const outcome = {
         images: [],
+        selectedFolders: 0,
         rejected: [],
         // Found by a walk and left alone, which is not the same as asked for
         // and refused: only the second is part of what was requested.
@@ -135,6 +135,7 @@ function collectImageFiles(app, inputItems, tree = null) {
 
     return {
         images: sortImageRecords(outcome.images),
+        selectedFolders: outcome.selectedFolders,
         rejected: outcome.rejected,
         excluded: outcome.excluded
     };

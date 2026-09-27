@@ -1,37 +1,39 @@
 "use strict";
 
-/*
- * What is asked of the tools, rather than told to them.
- *
- * A question has an answer to interpret, so these live apart from the
- * commands that draw: what comes back from them is somebody else's data and
- * is read strictly, in metadata.js.
- */
+const { MOMENT_TAGS } = require("./metadata.js");
+const { DATE_FORMAT, COORDINATE_FORMAT, defaultValueOf, labelOfValue } = require("./choices.js");
 
 const NUMERIC = "-n";
 const JSON_OUT = "-json";
+const COORDINATE_TAGS = ["-GPSLatitude", "-GPSLongitude"];
 
-/*
- * The tags that are read, named individually rather than taking everything.
- * A photograph's metadata can be large and is none of this program's business
- * beyond these five: asking for all of it would pull serial numbers, owner
- * names and thumbnails into the run for no reason.
- */
-const WANTED_TAGS = [
-    "-DateTimeOriginal",
-    "-CreateDate",
-    "-ModifyDate",
-    "-GPSLatitude",
-    "-GPSLongitude"
-];
+/* Only metadata requested for the stamp, not every tag the file carries. */
+function selectedTags({
+    dateFormat = defaultValueOf(DATE_FORMAT),
+    coordinateFormat = defaultValueOf(COORDINATE_FORMAT)
+} = {}) {
+    labelOfValue(DATE_FORMAT, dateFormat);
+    labelOfValue(COORDINATE_FORMAT, coordinateFormat);
 
-function buildMetadataArgv(exiftoolPath, imagePath) {
-    return [exiftoolPath, JSON_OUT, NUMERIC, ...WANTED_TAGS, imagePath];
+    return [
+        ...dateFormat === "none" ? [] : MOMENT_TAGS.map((tag) => `-${tag}`),
+        ...coordinateFormat === "none" ? [] : COORDINATE_TAGS
+    ];
+}
+
+function buildMetadataArgv(exiftoolPath, imagePath, settings) {
+    const tags = selectedTags(settings);
+
+    // ExifTool interprets no requested tags as ALL tags, not no metadata.
+    if (tags.length === 0) {
+        throw new Error("No stamp metadata was requested.");
+    }
+
+    return [exiftoolPath, JSON_OUT, NUMERIC, ...tags, imagePath];
 }
 
 function buildSizeArgv(vipsheaderPath, imagePath, field) {
     return [vipsheaderPath, "-f", field, imagePath];
 }
 
-
-module.exports = { buildMetadataArgv, buildSizeArgv, WANTED_TAGS };
+module.exports = { buildMetadataArgv, buildSizeArgv, selectedTags };

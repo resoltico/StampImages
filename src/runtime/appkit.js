@@ -12,6 +12,7 @@ const {
 } = require("./appkit-widgets.js");
 const { makeField, makeCombo, makeCaption } = require("./appkit-fields.js");
 const { buildForm } = require("./appkit-form.js");
+const { optionalAnswer, unbindChoices } = require("./appkit-choice.js");
 
 // Gathered into one object so a test can substitute the whole widget layer.
 const WIDGETS = {
@@ -43,7 +44,6 @@ const WIDGETS = {
  */
 
 /*
-/*
  * A modal that ends any other way than by one of its buttons is one this code
  * did not ask for, and the form is treated as unavailable so the stepwise
  * dialogs can ask instead.
@@ -65,6 +65,10 @@ const FIRST_BUTTON = 1000;
  * cell last committed -- which is why the editor is asked to commit first.
  */
 function heldBy(bridge, row, control) {
+    if (row.optional) {
+        return optionalAnswer(bridge, row, control);
+    }
+
     if (row.kind === "choice") {
         return control.titleOfSelectedItem;
     }
@@ -107,19 +111,24 @@ function readControls(bridge, spec, controls) {
 
 function presentForm(bridge, spec, widgets = WIDGETS) {
     const { view, controls } = buildForm(bridge, spec, widgets);
-    const alert = widgets.makeAlert(bridge.ns, spec);
 
-    alert.accessoryView = view;
+    try {
+        const alert = widgets.makeAlert(bridge.ns, spec);
 
-    const response = Number(alert.runModal);
+        alert.accessoryView = view;
 
-    if (response === RESPONSE_ABORT) {
-        return null;
+        const response = Number(alert.runModal);
+
+        if (response === RESPONSE_ABORT) {
+            return null;
+        }
+
+        return response === FIRST_BUTTON
+            ? { answers: readControls(bridge, spec, controls) }
+            : { cancelled: true };
+    } finally {
+        unbindChoices(spec, controls);
     }
-
-    return response === FIRST_BUTTON
-        ? { answers: readControls(bridge, spec, controls) }
-        : { cancelled: true };
 }
 
-module.exports = { presentForm, WIDGETS };
+module.exports = { presentForm, readControls, WIDGETS };

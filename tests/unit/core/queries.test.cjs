@@ -1,50 +1,47 @@
 "use strict";
 
-/*
- * What is asked of the tools, rather than told to them.
- */
-
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const {
-    buildMetadataArgv,
-    buildSizeArgv,
-    WANTED_TAGS
-} = require("../../../src/core/queries.js");
+const { buildMetadataArgv, buildSizeArgv, selectedTags } = require("../../../src/core/queries.js");
 
-test("exiftool is asked for five tags, by name, as numbers, in JSON", () => {
-    assert.deepEqual(
-        buildMetadataArgv("/v/exiftool", "/a/photo.jpg"),
-        [
-            "/v/exiftool",
-            "-json",
-            "-n",
-            "-DateTimeOriginal",
-            "-CreateDate",
-            "-ModifyDate",
-            "-GPSLatitude",
-            "-GPSLongitude",
-            "/a/photo.jpg"
-        ]
-    );
+test("the default query requests only capture and creation dates, never GPS or modification time", () => {
+    assert.deepEqual(buildMetadataArgv("/v/exiftool", "/a/photo.jpg"), [
+        "/v/exiftool", "-json", "-n", "-DateTimeOriginal", "-CreateDate", "/a/photo.jpg"
+    ]);
+    assert.deepEqual(selectedTags({}), ["-DateTimeOriginal", "-CreateDate"]);
 });
 
-test("everything the photograph knows is not asked for", () => {
-    // A photograph's metadata carries serial numbers, owner names and
-    // thumbnails, and none of it is this program's business.
-    assert.equal(WANTED_TAGS.length, 5);
-    assert.ok(WANTED_TAGS.every((tag) => tag.startsWith("-")));
+test("GPS fields are queried only with explicit enabled coordinate formats", () => {
+    for (const coordinateFormat of ["decimal", "sexagesimal"]) {
+        assert.deepEqual(selectedTags({ dateFormat: "none", coordinateFormat }), [
+            "-GPSLatitude", "-GPSLongitude"
+        ]);
+        assert.deepEqual(selectedTags({ coordinateFormat }), [
+            "-DateTimeOriginal", "-CreateDate", "-GPSLatitude", "-GPSLongitude"
+        ]);
+    }
+    assert.deepEqual(selectedTags({ coordinateFormat: "none" }), selectedTags());
 });
 
-test("-n is what makes a coordinate a number rather than a sentence", () => {
-    // Without it a latitude arrives as "56 deg 56' 58.63\" N", which would
-    // have to be parsed back into the number it already was.
-    assert.ok(buildMetadataArgv("/v/exiftool", "/a/p.jpg").includes("-n"));
+test("no metadata requested cannot accidentally become an all-metadata ExifTool request", () => {
+    const none = { dateFormat: "none", coordinateFormat: "none" };
+
+    assert.deepEqual(selectedTags(none), []);
+    assert.throws(() => buildMetadataArgv("/v/exiftool", "/a/photo.jpg", none), /No stamp metadata/u);
+    assert.throws(() => buildMetadataArgv("/v/exiftool", "/a/photo.jpg", {
+        dateFormat: "none"
+    }), /No stamp metadata/u);
+});
+
+test("invalid explicit query formats are not interpreted as opt-in", () => {
+    for (const value of [null, true, false, "", "all", {}, []]) {
+        assert.throws(() => selectedTags({ coordinateFormat: value }), /Unrecognised value/u);
+        assert.throws(() => selectedTags({ dateFormat: value }), /Unrecognised value/u);
+    }
 });
 
 test("a header field is asked for one at a time, by name", () => {
-    assert.deepEqual(
-        buildSizeArgv("/v/vipsheader", "/w/mask.png", "width"),
-        ["/v/vipsheader", "-f", "width", "/w/mask.png"]
-    );
+    assert.deepEqual(buildSizeArgv("/v/vipsheader", "/w/mask.png", "width"), [
+        "/v/vipsheader", "-f", "width", "/w/mask.png"
+    ]);
 });

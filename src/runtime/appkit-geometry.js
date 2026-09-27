@@ -1,17 +1,12 @@
 "use strict";
 
 /*
- * Three columns: the name of the setting, the control, and — for the two that
- * take a number — the bounds it accepts.
- *
- * Widths were measured rather than guessed. At the 13 point system font the
- * longest label renders 110 points wide and the longest menu item 187, so a
- * number field needs only enough room for four digits and the rest of its
- * column can carry the hint.
+ * Room for the explicit inclusion checkbox and full format labels. The native
+ * form integration test measures actual cells, not guessed character counts.
  */
 const ROW_HEIGHT = 32;
-const LABEL_WIDTH = 150;
-const CONTROL_WIDTH = 260;
+const LABEL_WIDTH = 190;
+const CONTROL_WIDTH = 300;
 const NUMBER_WIDTH = 70;
 
 // Room for a colour and the button that opens the list beside it. Wider than
@@ -28,7 +23,7 @@ const FONT_WIDTH = 165;
 
 // A caption is longer than a number, so it takes the whole column -- and it
 // is the one setting that can hold more than a line, so it is deeper too.
-const TEXT_WIDTH = 260;
+const TEXT_WIDTH = CONTROL_WIDTH;
 const CAPTION_LINES = 3;
 const CAPTION_HEIGHT = 52;
 const CONTROL_HEIGHT = 24;

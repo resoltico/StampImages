@@ -81,7 +81,7 @@ test("the report is closed before the completion message is displayed", () => {
         progress.dialogsAtClose + 1,
         "the completion message is the one dialog the report did not precede"
     );
-    assert.match(host.dialogs.at(-1).message, /1 photograph stamped\./u);
+    assert.match(host.dialogs.at(-1).message, /Created 1 stamped copy\./u);
 });
 
 test("a run with nothing to stamp closes the report before saying so", () => {

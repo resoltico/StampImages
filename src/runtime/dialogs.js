@@ -1,9 +1,15 @@
 "use strict";
 
 const { ORDER, controlFor } = require("../core/form-rows.js");
-const { readAnswers } = require("../core/answers.js");
+const { readAnswer, readAnswers } = require("../core/answers.js");
+const { labelOfValue } = require("../core/choices.js");
+const { errorMessage } = require("../core/errors.js");
+const { contentProblem } = require("../core/stamp-content.js");
+const { APP_NAME } = require("../core/version.js");
 const { resolved } = require("../core/typeface-refusal.js");
 const { chooseRequired, askUntil } = require("./prompts.js");
+const { reviewSettings } = require("./settings-review.js");
+const { invitation } = require("../core/form.js");
 
 /*
  * The same questions, one at a time, when the form cannot be shown.
@@ -20,68 +26,114 @@ const { chooseRequired, askUntil } = require("./prompts.js");
 /*
  * A choice is a list; everything else is typed, and what may be typed is
  * decided by the same reader the form uses -- so a colour refused in one is
- * refused in the other, in the same words.
+ * refused in the other, in the same words. Each answer is read on its own:
+ * reading it alongside the rest let a bad later answer, still at its old
+ * value, refuse a good typeface.
  *
- * The typeface is typed here as well. It used to be a list, because a dialog
- * cannot offer a list and a field at once and the list was the answer always
- * known to work -- but that left this the one path where a family the person
- * already uses could not be named, and the one path where nothing checked the
- * answer at all. Asked as text and resolved by the same function the form
- * uses, it re-asks like a number out of range instead.
+ * The typeface is typed here as well, and resolved by the same function the
+ * form uses, so a family the person already uses can be named and a name
+ * that names nothing is asked again like a number out of range.
  */
-function refusal(context, row, typed) {
-    const read = readAnswers({ ...typed.answers, [row.key]: typed.text }, context.fonts);
-    const mine = (read.problems ?? []).find((problem) => problem.key === row.key);
+function refusal(context, row, text) {
+    try {
+        const value = readAnswer(row, text, context.fonts);
 
-    if (mine) {
-        return mine.message;
+        return row.kind === "font"
+            ? resolved(context.known, value).problem ?? ""
+            : "";
+    } catch (error) {
+        return errorMessage(error);
+    }
+}
+
+/*
+ * The checkbox and its menu, asked as two questions: whether, then how. A
+ * format is asked for only when the answer is On, and On opens on the format
+ * last used rather than on whatever the list happens to begin with.
+ */
+function askOptional(app, control, answer) {
+    const off = labelOfValue(control, control.optional.offValue);
+    const enabled = chooseRequired(app, {
+        prompt: `${control.optional.label}? ${control.optional.help}`,
+        choices: [{ label: "Off", value: false }, { label: "On", value: true }]
+    }, answer === off ? "Off" : "On");
+
+    if (enabled === "Off") {
+        return off;
     }
 
-    return row.kind === "font"
-        ? resolved(context.known, read.settings[row.key]).problem ?? ""
-        : "";
+    const choices = control.choices.filter((choice) => choice.value !== control.optional.offValue);
+
+    return chooseRequired(app, { ...control, choices },
+        answer === off ? choices[0].label : answer);
 }
 
 function askRow(app, row, answers, context) {
     const control = controlFor(row, context.fonts);
 
+    if (control.optional) {
+        return askOptional(app, control, answers[row.key]);
+    }
+
     if (row.kind === "choice") {
         return chooseRequired(app, control, answers[row.key]);
     }
 
-    return askUntil(
-        app,
-        {
-            prompt: control.prompt,
-            defaultAnswer: String(answers[row.key])
-        },
-        (text) => {
-            const said = refusal(context, row, { answers, text });
+    return askUntil(app, {
+        prompt: control.prompt,
+        defaultAnswer: String(answers[row.key])
+    }, (text) => {
+        const said = refusal(context, row, text);
 
-            if (said) {
-                throw new Error(said);
-            }
-
-            return text;
+        if (said) {
+            throw new Error(said);
         }
-    );
+
+        return text;
+    });
+}
+
+/*
+ * The first question carries what the form says above its rows -- what was
+ * selected and what will be made of it -- because a person answering ten
+ * dialogs is owed the same account as one answering one form.
+ */
+function withInvitation(row, context) {
+    return {
+        ...row,
+        control: {
+            ...row.control,
+            prompt: `${invitation(context.count, context.selectedFolders)}` +
+                `\n\n${row.control.prompt}`
+        }
+    };
 }
 
 function collectDialogSettings(app, answers, context) {
     const given = { ...answers };
 
-    for (const row of ORDER) {
-        given[row.key] = askRow(app, row, given, context);
-    }
+    for (;;) {
+        ORDER.forEach((row, index) => {
+            given[row.key] = askRow(
+                app, index === 0 ? withInvitation(row, context) : row, given, context
+            );
+        });
 
-    /*
-     * Read once more, as a set. Every answer was read as it was given -- by
-     * this same reader, one row at a time -- so this cannot come back with a
-     * problem, and the branch that handled one was a branch nothing could
-     * reach. What this call is for is the conversion: labels to values, text
-     * to numbers.
-     */
-    return readAnswers(given, context.fonts).settings;
+        const read = readAnswers(given, context.fonts);
+        // Every field has already passed the same reader in askRow.
+        // Only the relationship between the content fields remains to check.
+        const problem = contentProblem(read.settings);
+
+        if (problem) {
+            app.displayDialog(problem.message, {
+                withTitle: APP_NAME, buttons: ["OK"], defaultButton: "OK"
+            });
+        } else {
+            reviewSettings(app, read.settings, context);
+
+            return read.settings;
+        }
+    }
 }
 
 module.exports = { collectDialogSettings, askRow };

@@ -64,7 +64,7 @@ test("the stamp starts out saying something", () => {
     const settings = defaultSettings(FONTS);
 
     assert.notEqual(settings.dateFormat, "none");
-    assert.notEqual(settings.coordinateFormat, "none");
+    assert.equal(settings.coordinateFormat, "none", "the place is off until someone turns it on");
 });
 
 test("the text starts white with a dark outline, because photographs vary", () => {

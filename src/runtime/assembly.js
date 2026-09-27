@@ -1,6 +1,5 @@
 "use strict";
 
-const { stampsNothing } = require("../core/settings.js");
 const { createWorkspace, removeWorkspace } = require("./workspace.js");
 const { createRenamer } = require("./exclusive-rename.js");
 const { availableFonts } = require("./fonts.js");
@@ -48,16 +47,7 @@ function fontsFor(known, headless) {
 }
 
 function settingsFrom(app, invocation, context) {
-    const settings = settingsFor(app, invocation, context);
-
-    if (stampsNothing(settings)) {
-        throw new Error(
-            "This would stamp nothing.\n\nChoose a date or coordinate " +
-                "format, or write some text of your own."
-        );
-    }
-
-    return settings;
+    return settingsFor(app, invocation, context);
 }
 
 function jobFor(prepared, settings, place) {
@@ -92,6 +82,8 @@ function assemble(prepared, place, known = catalogue()) {
     // to -- a headless run has no suggestions and still names a typeface.
     const context = {
         count: prepared.selection.images.length,
+        selectedFolders: prepared.selection.selectedFolders ?? 0,
+        rejected: prepared.selection.rejected,
         fonts: fontsFor(known, prepared.invocation.headless),
         known
     };

@@ -1,5 +1,7 @@
 "use strict";
 
+const { plural } = require("../core/numbers.js");
+
 /*
  * The machine-readable outcome of a headless run.
  *
@@ -69,12 +71,15 @@ function ledgerOf(result) {
 
 /*
  * A run is completely successful only when every photograph that was asked
- * for came back as a stamped copy. Stated as one count against another rather
- * than as a list of the ways it can go wrong, so a way of falling short that
- * nobody thought of here cannot be reported as a success.
+ * for came back as a stamped copy, and no copy lacks a date or a place it was
+ * asked to show. Stated as counts rather than as a list of the ways it can go
+ * wrong, so a way of falling short that nobody thought of here cannot be
+ * reported as a success. A copy lacking something overlaps the stamped
+ * column rather than forming a sixth, which would count one photograph twice.
  */
 function isCompleteSuccess(result) {
-    return result.outputs.length === result.requested;
+    return result.outputs.length === result.requested &&
+        (result.missingMetadata ?? []).length === 0;
 }
 
 const COLUMNS = [
@@ -89,6 +94,12 @@ function describeIncomplete(result) {
     const counts = COLUMNS
         .filter(([column]) => ledger[column] > 0)
         .map(([column, said]) => `${ledger[column]} ${said}`);
+
+    const omissions = (result.missingMetadata ?? []).length;
+
+    if (omissions > 0) {
+        counts.push(`${plural(omissions, "copy", "copies")} missing requested metadata`);
+    }
 
     return "The request was not completely honoured: " +
         `${ledger.stamped} of ${result.requested} stamped, ${counts.join(", ")}.`;

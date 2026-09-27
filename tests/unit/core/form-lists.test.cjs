@@ -81,7 +81,7 @@ test("the two rows that choose a format say so", () => {
         ORDER.map((row) => [row.key, row.control.label])
     );
 
-    assert.equal(labels.dateFormat, "Date format:");
+    assert.equal(labels.dateFormat, "Date/time format:");
     assert.equal(labels.coordinateFormat, "Coordinate format:");
 });
 
@@ -91,7 +91,7 @@ test("choosing a format includes choosing not to stamp it", () => {
     // run that stamps nothing possible to ask for.
     for (const key of ["dateFormat", "coordinateFormat"]) {
         const row = ORDER.find((each) => each.key === key);
-        const off = row.control.choices.at(-1);
+        const off = row.control.choices.find((choice) => choice.value === "none");
 
         assert.equal(off.value, "none");
         assert.match(off.label, /^Do not stamp /u, key);

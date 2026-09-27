@@ -55,6 +55,7 @@ function captureMoment(facts) {
 
 const LATITUDE_LIMIT = 90;
 const LONGITUDE_LIMIT = 180;
+const DECIMAL_DEGREES = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/u;
 
 /*
  * A number, or text that is one, inside the bounds of the globe. Stated as
@@ -69,7 +70,8 @@ function boundedDegrees(value, limit) {
         : "";
     const numeric = Number(text);
 
-    return text !== "" && isFinite(numeric) && Math.abs(numeric) <= limit
+    return (typeof value === "number" || DECIMAL_DEGREES.test(text)) &&
+        isFinite(numeric) && Math.abs(numeric) <= limit
         ? numeric
         : null;
 }

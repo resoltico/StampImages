@@ -1,11 +1,8 @@
 "use strict";
 
 const { APP_NAME } = require("../core/version.js");
-const { plural } = require("../core/numbers.js");
 const { supportedFormatList } = require("../core/paths.js");
-const { describeCrowding } = require("../core/geometry.js");
-const { describeExcluded } = require("../core/naming.js");
-const { describeExpanded, describeUnconverted } = require("../core/colour.js");
+const { describe, detailOf } = require("./completion.js");
 const {
     writeReceipt,
     ledgerOf,
@@ -68,39 +65,6 @@ function reportNothing(app, headless, rejected) {
     }
 
     notice(app, describeNothing(rejected));
-}
-
-/*
- * The sentence a person reads first. What went well, then how much did not,
- * counted rather than listed -- the list is underneath.
- */
-function describe(result) {
-    const ledger = ledgerOf(result);
-    const stamped = `${plural(ledger.stamped, "photograph")} stamped`;
-    const trouble = result.requested - ledger.stamped;
-    const sentence = trouble === 0
-        ? `${stamped}.`
-        : `${stamped}, and ${trouble} not.`;
-
-    return result.stopped ? `Stopped.\n\n${sentence}` : sentence;
-}
-
-function named(entries, say) {
-    return entries.map((entry) => `${entry.name}: ${say(entry)}`);
-}
-
-function detailOf(result) {
-    const lines = [
-        ...named(result.failures, (failure) => failure.message),
-        ...named(result.nothing, (entry) => entry.reason),
-        ...named(result.rejected, (entry) => entry.reason),
-        ...result.excluded.length > 0 ? [describeExcluded(result.excluded)] : [],
-        ...result.crowded > 0 ? [describeCrowding(result.crowded)] : [],
-        ...result.expanded > 0 ? [describeExpanded(result.expanded)] : [],
-        ...result.unconverted > 0 ? [describeUnconverted(result.unconverted)] : []
-    ];
-
-    return lines.length > 0 ? `\n\n${lines.join("\n")}` : "";
 }
 
 /*

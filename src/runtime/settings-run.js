@@ -1,6 +1,8 @@
 "use strict";
 
 const { normalizeSettings } = require("../core/settings.js");
+const { requireStampContent } = require("../core/stamp-content.js");
+const { confirmSelection } = require("./settings-review.js");
 const { encode, rememberedAnswers } = require("../core/preferences.js");
 const { resolved } = require("../core/typeface-refusal.js");
 const { createMemory } = require("./preferences.js");
@@ -42,6 +44,8 @@ function defaultMemory() {
  * went through a different door.
  */
 function drawableSettings(settings, context) {
+    requireStampContent(settings);
+
     const answer = resolved(context.known, settings.font);
 
     if (answer.problem) {
@@ -55,6 +59,8 @@ function settingsFor(app, invocation, context, injected = {}) {
     if (invocation.headless) {
         return drawableSettings(normalizeSettings(invocation.settings), context);
     }
+
+    confirmSelection(app, context);
 
     const { openMemory = defaultMemory } = injected;
     const memory = openMemory();

@@ -41,7 +41,7 @@ test("labels end before the controls begin", () => {
     const { spec, view } = build();
     const { labels, first } = columnsOf(view);
 
-    assert.equal(labels.length, spec.rows.length);
+    assert.equal(labels.length, spec.rows.filter((row) => !row.optional).length);
 
     for (const label of labels) {
         assert.ok(
@@ -93,7 +93,7 @@ test("a hint is centred against the field it describes", () => {
     // below the value it qualifies.
     const { view, controls } = buildForm(createFakeObjC(), specFor(), WIDGETS);
     const hints = view.subviews.filter((child) => child.editable === false
-        && String(child.stringValue).includes("pt"));
+        && child.stringValue === "8-400 pt");
     const [hint] = hints;
     const field = controls.size;
 

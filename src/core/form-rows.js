@@ -46,8 +46,8 @@ const FONT = {
  * heading in a dialog and left a branch nothing chose deliberately.
  */
 const TEXT = {
-    prompt: "Text of your own to stamp:",
-    label: "Your own text:",
+    prompt: "Custom text (optional; the same text is added to every copy):",
+    label: "Custom text (optional):",
     defaultAnswer: ""
 };
 

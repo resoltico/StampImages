@@ -90,7 +90,7 @@ if stamp "$WORK/blank.json" "$WORK/first.png" \
     fail "a request that stamps nothing should not succeed"
 fi
 
-grep -q "would stamp nothing" "$WORK/err.txt" ||
+grep -q "nothing to stamp" "$WORK/err.txt" ||
     fail "the refusal does not say what is wrong: $(cat "$WORK/err.txt")"
 
 # ---------------------------------------------------------------------------

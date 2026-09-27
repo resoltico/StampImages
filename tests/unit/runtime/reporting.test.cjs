@@ -36,43 +36,16 @@ const FAILED = { name: "two.jpg", message: "vips would not read it", command: ""
 const REJECTED = { name: "notes.txt", reason: "not a supported format" };
 const NOTHING = { name: "scan.png", reason: "it does not say when it was taken" };
 
-test("a run that did everything says so in one sentence", () => {
-    assert.equal(describe(result()), "1 photograph stamped.");
+test("a run that did everything says what it made and where", () => {
+    assert.equal(describe(result()), "Created 1 stamped copy.\nSaved to: /a/");
     assert.equal(
         describe(result({ outputs: ["/a/1.jpg", "/a/2.jpg"], requested: 2 })),
-        "2 photographs stamped."
+        "Created 2 stamped copies.\nSaved to: /a/"
     );
 });
 
 test("one photograph is one photograph, not 1 photographs", () => {
-    assert.match(describe(result()), /^1 photograph /u);
-});
-
-test("what did not work is counted in the same sentence", () => {
-    assert.equal(
-        describe(result({ failures: [FAILED], rejected: [REJECTED], requested: 3 })),
-        "1 photograph stamped, and 2 not."
-    );
-});
-
-test("a photograph nobody could have stamped is counted with the rest", () => {
-    assert.equal(
-        describe(result({ nothing: [NOTHING], requested: 2 })),
-        "1 photograph stamped, and 1 not."
-    );
-});
-
-test("a run somebody stopped counts what it never reached", () => {
-    // It used to say how many it had saved and nothing about the rest, so a
-    // batch of two hundred stopped after one read as a batch of one.
-    assert.equal(
-        describe(result({ stopped: true, requested: 200 })),
-        "Stopped.\n\n1 photograph stamped, and 199 not."
-    );
-});
-
-test("a run somebody stopped says so before it says what it did", () => {
-    assert.match(describe(result({ stopped: true })), /^Stopped\.\n\n1 photograph/u);
+    assert.match(describe(result()), /^Created 1 stamped copy\./u);
 });
 
 test("each photograph that did not work is named, with the reason", () => {
@@ -82,9 +55,12 @@ test("each photograph that did not work is named, with the reason", () => {
         rejected: [REJECTED]
     }));
 
-    assert.match(detail, /two\.jpg: vips would not read it/u);
-    assert.match(detail, /scan\.png: it does not say when it was taken/u);
-    assert.match(detail, /notes\.txt: not a supported format/u);
+    assert.equal(detail, [
+        "",
+        "Could not stamp 1 image:\ntwo.jpg: vips would not read it",
+        "No copy, because there was nothing to stamp:\nscan.png: it does not say when it was taken",
+        "Not included from your selection:\nnotes.txt: not a supported format"
+    ].join("\n\n"));
 });
 
 test("a margin that could not be honoured is said once, for the run", () => {
@@ -112,7 +88,7 @@ test("a person gets a dialog and nothing back", () => {
         undefined
     );
     assert.equal(app.dialogs.length, 1);
-    assert.match(app.dialogs[0].message, /1 photograph stamped, and 1 not\./u);
+    assert.match(app.dialogs[0].message, /^Finished with errors\.\n\nCreated 1 stamped copy\.\nSaved to: \/a\/\n\n/u);
     assert.match(app.dialogs[0].message, /two\.jpg: /u);
 });
 

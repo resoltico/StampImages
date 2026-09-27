@@ -86,7 +86,13 @@ function stampToFile(job, image, index) {
             stopped: saved.stopped,
             crowded: made.crowded,
             unconverted: made.unconverted,
-            expanded: made.expanded
+            expanded: made.expanded,
+            missingMetadata: made.missing.length > 0 ? {
+                name: image.originalName,
+                path: image.path,
+                output: saved.path,
+                fields: made.missing
+            } : null
         };
     } catch (error) {
         /*
