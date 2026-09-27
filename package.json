@@ -1,6 +1,6 @@
 {
   "name": "stamp-images-macos",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "Source, build, QA, and release scaffolding for an exiftool + vips macOS Finder Quick Action",
   "license": "MIT",

@@ -1,5 +1,5 @@
 /*
- * Stamp Images 1.1.0
+ * Stamp Images 1.2.0
  * https://github.com/resoltico/StampImages
  *
  * Copyright (c) 2026 Ervins Strauhmanis
@@ -18,7 +18,7 @@
 /* ===== src/core/version.js ===== */
 
 const APP_NAME = "Stamp Images";
-const VERSION = "1.1.0";
+const VERSION = "1.2.0";
 
 /* ===== src/core/executables.js ===== */
 
