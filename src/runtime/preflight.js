@@ -1,6 +1,6 @@
 "use strict";
 
-const { shellJoin } = require("../core/shell.js");
+const { shellJoin, shellQuote } = require("../core/shell.js");
 const {
     buildVipsProbeArgv,
     buildExiftoolProbeArgv,
@@ -8,7 +8,7 @@ const {
     isExiftoolUsable,
     describeSetupProblems
 } = require("../core/preflight.js");
-const { findTool, TOOL_NAMES } = require("./tools.js");
+const { findTool, TOOL_NAMES, TOOL_SEARCH_PATH } = require("./tools.js");
 
 /*
  * Everything that can be checked before the user is asked anything.
@@ -33,7 +33,7 @@ function probe(app, argv) {
 
 function hasHomebrew(app) {
     try {
-        return Boolean(app.doShellScript("command -v brew 2>/dev/null || true"));
+        return Boolean(app.doShellScript(`PATH=${shellQuote(TOOL_SEARCH_PATH)}; command -v brew 2>/dev/null || true`));
     } catch {
         return false;
     }

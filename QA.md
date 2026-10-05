@@ -830,3 +830,23 @@ Four prescriptions are declined deliberately, each for one reason.
 
 Free-form variable-font axis values — `Cantarell @wght=550` — are not
 supported. Named instances are, because the font system lists them as faces.
+
+## Image measurement integrity
+
+Dimensions, band counts and page counts must be complete positive decimal
+integers within JavaScript's safe integer range. A page-count command failure
+means one image only when its complete diagnostic names the absent `n-pages`
+field. Other failures, invalid values and cancellations propagate.
+
+`tests/integration/measurements.sh` checks the shipped JXA with real TIFF and
+transparent PNG files and a controlled reader fault. The former action published
+one page from a two-page TIFF when the reader returned malformed page metadata;
+the regression rejects that copy and preserves the original images. Decoded
+intermediates are removed when reading or measuring a photograph fails.
+
+## Distribution licensing
+
+First-party metadata declares MPL 2.0 and copyright in `package.json`. The
+standalone JXA preserves the MPL notice and a link to its version's source.
+`LICENSE` contains the unmodified MPL terms and is uploaded, attested and
+verified as a release asset. Dependency licenses are unchanged.

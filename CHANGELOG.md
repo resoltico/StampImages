@@ -4,6 +4,25 @@ Notable changes to this project are documented in this file. The format is based
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-10-05
+
+### Changed
+
+- First-party project files are now licensed under Mozilla Public License 2.0
+  (`MPL-2.0`). Earlier published versions remain under MIT; dependencies retain
+  their own licenses. The standalone JXA preserves the MPL notice and links to
+  its source, and the complete `LICENSE` is an attested release asset.
+
+### Fixed
+
+- Failed or malformed image page-count readings no longer bypass multi-image
+  protection and publish a copy containing only the first image. Only an
+  explicitly absent `n-pages` field is treated as a single-image file.
+- Invalid image dimensions and band counts are refused before they can affect
+  stamp placement or cause a copy to lose transparency. Decoded intermediates
+  from failed reads or measurements are removed immediately.
+- Setup finds Homebrew in its standard locations under Shortcuts' minimal PATH.
+
 ## [1.2.0] - 2026-09-27
 
 ### Added

@@ -1,4 +1,4 @@
-STAMP IMAGES 1.2.0 - SHORTCUTS INSTALLATION
+STAMP IMAGES 1.2.1 - SHORTCUTS INSTALLATION
 
 Source, releases and build attestation:
 
@@ -21,6 +21,13 @@ macOS 12.3 or later.
 
 The Shortcuts app is macOS 12 and later; 12.3 is the point at which its
 JavaScript engine supports everything this action uses.
+
+License terms
+=============
+
+This project uses Mozilla Public License 2.0 (MPL-2.0). LICENSE supplies the
+full terms, also available at https://mozilla.org/MPL/2.0/. Keep the JXA's
+license and source notices when sharing it. Dependencies keep their licenses.
 
 Runtime tools
 =============

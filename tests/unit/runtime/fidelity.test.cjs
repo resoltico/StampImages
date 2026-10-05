@@ -79,7 +79,7 @@ test("an even band count is the alpha, once ink is out of the question", () => {
     }
 });
 
-test("one image is one image, and none is one too", () => {
+test("one image is accepted and two are refused", () => {
     // Written as "more than one", so an off-by-one here refuses every
     // photograph on the machine.
     assert.doesNotThrow(checking({ pages: 1 }));

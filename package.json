@@ -1,9 +1,9 @@
 {
   "name": "stamp-images-macos",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "description": "Source, build, QA, and release scaffolding for an exiftool + vips macOS Finder Quick Action",
-  "license": "MIT",
+  "license": "MPL-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/resoltico/StampImages.git"
@@ -22,7 +22,7 @@
     "check-dist": "node tools/check-dist.mjs",
     "quality": "npm run lint && npm run lint:js && npm run test:coverage && npm run test:mutation && npm run check-dist",
     "release": "npm run build && npm run quality",
-    "test:integration:macos": "bash tests/integration/macos.sh && bash tests/integration/copies.sh && bash tests/integration/selection.sh && bash tests/integration/publication.sh && bash tests/integration/volumes.sh && bash tests/integration/cards.sh && bash tests/integration/damaged.sh && bash tests/integration/typeface.sh && bash tests/integration/colour.sh && bash tests/integration/content.sh && bash tests/integration/form.sh",
+    "test:integration:macos": "bash tests/integration/macos.sh && bash tests/integration/copies.sh && bash tests/integration/selection.sh && bash tests/integration/publication.sh && bash tests/integration/volumes.sh && bash tests/integration/cards.sh && bash tests/integration/damaged.sh && bash tests/integration/typeface.sh && bash tests/integration/colour.sh && bash tests/integration/content.sh && bash tests/integration/measurements.sh && bash tests/integration/form.sh",
     "test:mutation": "stryker run",
     "test:unit": "node --test \"tests/unit/**/*.test.cjs\""
   },
@@ -36,5 +36,6 @@
   },
   "overrides": {
     "qs": "6.16.0"
-  }
+  },
+  "copyright": "2026 Ervins Strauhmanis"
 }

@@ -97,11 +97,16 @@ The second of those is for photographs the request did not apply to — a scan
 that does not say when it was taken, when the date is all you asked for. That
 is not a failure, and it is not silence either.
 
-A copy is the same kind of file the photograph was, at a quality chosen so you
-would not notice the difference, and it keeps what the photograph said about
+JPEG, PNG, HEIC/HEIF, TIFF, WebP and AVIF copies keep the source format; other
+readable image formats are saved as JPEG. Encoding quality is chosen so you
+would not notice the difference, and the copy keeps what the photograph said about
 itself — including, if it was there, where it was taken, whether or not the
 stamp shows it. The colour you chose for the text is the colour that appears,
 whatever colour space the photograph is in.
+
+Unreadable or malformed image measurements fail the photograph. A missing
+`n-pages` field denotes a single-image format; other page-count failures do
+not permit a copy of just the first page.
 
 Selecting a folder again leaves the copies an earlier run put there alone.
 
@@ -121,6 +126,14 @@ JSON — what was stamped, what failed, what could not be used, and in
 a run that could not honour everything writes that receipt and then exits
 non-zero, because a caller needs both. A copy missing part of what was asked
 for is kept, and still makes the run incomplete.
+
+## License
+
+First-party project files use the [Mozilla Public License 2.0](https://mozilla.org/MPL/2.0/)
+(`MPL-2.0`); see `LICENSE` for the full terms. Dependencies retain their own
+licenses. Preserve notices and provide covered source and modifications under
+MPL 2.0 when distributing them as required by the license. The standalone JXA
+header links to its corresponding source.
 
 ## Development
 

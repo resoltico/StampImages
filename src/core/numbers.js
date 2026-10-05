@@ -24,6 +24,16 @@ function parseInteger(value, minimum, maximum, label) {
     return numeric;
 }
 
+/* A complete decimal count from a tool, never a coerced or partial value. */
+function positiveIntegerFrom(value) {
+    const text = String(value).trim();
+    const numeric = Number(text);
+
+    return /^\d+$/u.test(text) && Number.isSafeInteger(numeric)
+        ? numeric
+        : 0;
+}
+
 function zeroPad(value, width) {
     let text = String(value);
 
@@ -109,6 +119,7 @@ module.exports = {
     utf8Length,
     truncateToBytes,
     parseInteger,
+    positiveIntegerFrom,
     zeroPad,
     plural,
     formatDuration

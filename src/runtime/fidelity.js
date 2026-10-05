@@ -1,7 +1,9 @@
 "use strict";
 
 const { buildSizeArgv } = require("../core/queries.js");
-const { runArgv, tryArgv } = require("./shell.js");
+const { positiveIntegerFrom } = require("../core/numbers.js");
+const { errorMessage, isUserCancelled } = require("../core/errors.js");
+const { runArgv } = require("./shell.js");
 
 /*
  * What this program will and will not copy, asked of the file rather than
@@ -39,11 +41,21 @@ function headerField(job, path, field, label) {
         job.app,
         buildSizeArgv(job.tools.vipsheader, path, field),
         label
-    )).trim();
+    ));
+}
+
+function positiveHeaderField(job, path, field, label) {
+    const value = positiveIntegerFrom(headerField(job, path, field, label));
+
+    if (value === 0) {
+        throw new Error(`The image's ${field} is not a readable positive whole number.`);
+    }
+
+    return value;
 }
 
 function bandsOf(job, path) {
-    return Number(headerField(job, path, "bands", "measuring the photograph"));
+    return positiveHeaderField(job, path, "bands", "measuring the photograph");
 }
 
 function kindOf(job, path) {
@@ -52,23 +64,19 @@ function kindOf(job, path) {
     )?.groups.kind ?? "";
 }
 
-/*
- * How many images are in the file.
- *
- * vipsheader has no answer at all for a single-page one -- the field is
- * absent and the question fails -- so the failure is the answer. Which means
- * a file it could not read at all answers the same way, and would be taken
- * for one image: the interpretation is asked first, and that one has to
- * succeed for any readable file, so a missing page count after it is a
- * missing field rather than a missing answer.
- */
+/* Only the explicit missing-field diagnostic means a single-image file. */
 function pagesIn(job, path) {
-    const answer = Number(tryArgv(
-        job.app,
-        buildSizeArgv(job.tools.vipsheader, path, "n-pages")
-    ));
+    try {
+        return positiveHeaderField(job, path, "n-pages", "counting the images");
+    } catch (error) {
+        if (!isUserCancelled(error) &&
+            /^(?:vipsheader: )?vips_image_get: field "n-pages" not found$/u.test(
+                errorMessage(error.cause ?? error).trim())) {
+            return 1;
+        }
 
-    return answer > 1 ? answer : 1;
+        throw error;
+    }
 }
 
 /*
@@ -104,4 +112,4 @@ function hasAlpha(job, path) {
     return ALPHA_BANDS.includes(bandsOf(job, path));
 }
 
-module.exports = { refuseUnfaithful, hasAlpha, bandsOf, kindOf, pagesIn };
+module.exports = { refuseUnfaithful, hasAlpha, bandsOf, kindOf, pagesIn, positiveHeaderField };

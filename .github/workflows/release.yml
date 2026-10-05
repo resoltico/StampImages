@@ -31,6 +31,7 @@ jobs:
         with:
           node-version-file: .node-version
           cache: npm
+      - run: brew update
       - run: brew install exiftool vips shellcheck actionlint
       - run: npm ci --ignore-scripts
       # The tag is a claim about which version is shipping, and it is the one
@@ -108,7 +109,7 @@ jobs:
       # Every file this release offers, each one a subject in its own right.
       # Attesting the manifest alone would cover what the manifest lists --
       # the artifact -- and leave the manifest and the instructions uncovered,
-      # while all three are things a person downloads and acts on.
+      # while each is a file a person downloads and relies on.
       - name: Attest the artifact
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
@@ -116,12 +117,13 @@ jobs:
             dist/Stamp-Images.jxa
             dist/SHA256SUMS
             INSTALL.txt
+            LICENSE
       # Verified here rather than trusted: an attestation that does not verify
       # is worth less than none, because it is the thing a user is told to
       # check. Before the release exists, so a failure publishes nothing.
       - name: Verify the attestation before publishing
         run: |
-          for subject in "dist/Stamp-Images.jxa" dist/SHA256SUMS INSTALL.txt; do
+          for subject in "dist/Stamp-Images.jxa" dist/SHA256SUMS INSTALL.txt LICENSE; do
             gh attestation verify "$subject" --repo "$GITHUB_REPOSITORY"
           done
       # A tag can be moved after it is pushed. This proves the tag still
@@ -156,6 +158,7 @@ jobs:
             "dist/Stamp-Images.jxa" \
             dist/SHA256SUMS \
             INSTALL.txt \
+            LICENSE \
             --repo "$GITHUB_REPOSITORY" \
             --verify-tag \
             --title "Stamp Images ${RELEASE_TAG#v}" \

@@ -14,10 +14,10 @@ const load = () => import("../../../tools/banner.mjs");
 const FILES = {
     "package.json": JSON.stringify({
         version: "9.9.9",
-        license: "MIT",
+        license: "MPL-2.0",
+        copyright: "2026 Someone",
         homepage: "https://github.com/someone/Project"
-    }),
-    LICENSE: "MIT License\n\nCopyright (c) 2026 Someone\n\nPermission is...\n"
+    })
 };
 
 const read = (relative) => Promise.resolve(FILES[relative]);
@@ -29,7 +29,10 @@ test("the banner is quoted from the repository, not retyped", async () => {
     assert.match(banner, /Stamp Images 9\.9\.9/u);
     assert.match(banner, /https:\/\/github\.com\/someone\/Project/u);
     assert.match(banner, /Copyright \(c\) 2026 Someone/u);
-    assert.match(banner, /SPDX-License-Identifier: MIT/u);
+    assert.match(banner, /SPDX-License-Identifier: MPL-2\.0/u);
+    assert.match(banner, /This Source Code Form is subject to the terms/u);
+    assert.match(banner, /https:\/\/mozilla\.org\/MPL\/2\.0\//u);
+    assert.match(banner, /Source Code Form: https:\/\/github\.com\/someone\/Project\/tree\/v9\.9\.9/u);
     assert.match(banner, /Requires macOS 12\.3 or later/u);
 });
 
@@ -53,43 +56,21 @@ test("it says the comments were stripped and where they went", async () => {
     assert.match(banner, /Generated file\. Edit the sources and rebuild/u);
 });
 
-test("a LICENSE that stops naming a holder is an error, not a blank", async () => {
+test("missing or invalid copyright metadata is refused", async () => {
     const { readMetadata } = await load();
 
-    await assert.rejects(
-        () => readMetadata(
-            (relative) => Promise.resolve(
-                relative === "LICENSE" ? "MIT License\n" : FILES[relative]
-            ),
-            "12.3"
-        ),
-        /LICENSE no longer carries a copyright line/u
-    );
+    await Promise.all([undefined, 2026, "", "   "].map((copyright) =>
+        assert.rejects(
+            () => readMetadata(() => Promise.resolve(JSON.stringify({copyright})), "12.3"),
+            /package.json no longer carries a copyright notice/u
+        )));
 });
 
-test("the copyright is taken whole, however it is worded", async () => {
-    const { copyrightFrom } = await load();
+test("the copyright notice is preserved with outer whitespace removed", async () => {
+    const { readMetadata } = await load();
+    const metadata = await readMetadata(() => Promise.resolve(JSON.stringify({
+        copyright: "  2019-2026 A. Person and others  "
+    })), "12.3");
 
-    assert.equal(
-        copyrightFrom("MIT License\n\nCopyright (c) 2019-2026 A. Person and others  \n"),
-        "2019-2026 A. Person and others"
-    );
-});
-
-test("the notice line is taken, not a sentence that mentions it", async () => {
-    // The line stands on its own; prose about it does not, and quoting the
-    // prose would put half a sentence in the header of every copy shipped.
-    const { copyrightFrom } = await load();
-
-    assert.equal(
-        copyrightFrom([
-            "MIT License",
-            "",
-            "Retain the Copyright (c) notice in every copy.",
-            "",
-            "Copyright (c) 2026 Someone",
-            ""
-        ].join("\n")),
-        "2026 Someone"
-    );
+    assert.equal(metadata.copyright, "2019-2026 A. Person and others");
 });

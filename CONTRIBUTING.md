@@ -14,6 +14,7 @@ committed artifact fails instead of shipping.
 The macOS integration gate needs the real tools and is run separately:
 
 ```sh
+brew update
 brew install exiftool vips shellcheck actionlint
 npm run test:integration:macos
 ```
@@ -94,7 +95,10 @@ started with; a build step that changed the program cannot reach the disk.
 The parsing lives in `tools/javascript.mjs`, the CommonJS shapes in
 `tools/commonjs.mjs`, the removal in `tools/excise.mjs`, and the header in
 `tools/banner.mjs`, which quotes the version and URL from `package.json` and
-the copyright line from `LICENSE` so the artifact cannot misstate them.
+the copyright notice from `package.json` so the artifact cannot misstate them.
+
+First-party contributions are covered by MPL 2.0. Keep third-party notices
+and licenses intact. `LICENSE` ships as an attested release asset.
 
 Edit the sources, run `npm run release`, and commit both.
 

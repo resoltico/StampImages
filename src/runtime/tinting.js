@@ -6,7 +6,7 @@ const {
     buildBandjoinArgv,
     buildIccArgv
 } = require("../core/colouring.js");
-const { buildSizeArgv } = require("../core/queries.js");
+const { positiveHeaderField } = require("./fidelity.js");
 const { succeeds } = require("./asking.js");
 const { runArgv } = require("./shell.js");
 
@@ -21,11 +21,7 @@ const { runArgv } = require("./shell.js");
  */
 
 function sizeOf(job, path) {
-    const measure = (field) => Number(runArgv(
-        job.app,
-        buildSizeArgv(job.tools.vipsheader, path, field),
-        "measuring the stamp"
-    ));
+    const measure = (field) => positiveHeaderField(job, path, field, "measuring the stamp");
 
     return { width: measure("width"), height: measure("height") };
 }

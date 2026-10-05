@@ -1,9 +1,14 @@
 /*
- * Stamp Images 1.2.0
+ * Stamp Images 1.2.1
  * https://github.com/resoltico/StampImages
  *
  * Copyright (c) 2026 Ervins Strauhmanis
- * SPDX-License-Identifier: MIT
+ * SPDX-License-Identifier: MPL-2.0
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ * Source Code Form: https://github.com/resoltico/StampImages/tree/v1.2.1
  *
  * Generated file. Edit the sources and rebuild; changes made to this copy are
  * overwritten and are not covered by any test. Comments are stripped on build:
@@ -18,7 +23,7 @@
 /* ===== src/core/version.js ===== */
 
 const APP_NAME = "Stamp Images";
-const VERSION = "1.2.0";
+const VERSION = "1.2.1";
 
 /* ===== src/core/executables.js ===== */
 
@@ -61,6 +66,15 @@ function parseInteger(value, minimum, maximum, label) {
     }
 
     return numeric;
+}
+
+function positiveIntegerFrom(value) {
+    const text = String(value).trim();
+    const numeric = Number(text);
+
+    return /^\d+$/u.test(text) && Number.isSafeInteger(numeric)
+        ? numeric
+        : 0;
 }
 
 function zeroPad(value, width) {
@@ -2021,7 +2035,7 @@ function probe(app, argv) {
 
 function hasHomebrew(app) {
     try {
-        return Boolean(app.doShellScript("command -v brew 2>/dev/null || true"));
+        return Boolean(app.doShellScript(`PATH=${shellQuote(TOOL_SEARCH_PATH)}; command -v brew 2>/dev/null || true`));
     } catch {
         return false;
     }
@@ -2941,15 +2955,87 @@ function publishImage(job, stagedPath, chooseName) {
     return claimName(job, stagedPath, facts, chooseName);
 }
 
+/* ===== src/runtime/fidelity.js ===== */
+
+
+const FAITHFUL = ["sRGB", "RGB", "RGB16", "B_W", "GREY16"];
+const INTERPRETATION = /VIPS_INTERPRETATION_(?<kind>\w+)/u;
+
+const GREY_ALPHA = 2;
+const COLOUR_ALPHA = 4;
+const ALPHA_BANDS = [GREY_ALPHA, COLOUR_ALPHA];
+
+function headerField(job, path, field, label) {
+    return String(runArgv(
+        job.app,
+        buildSizeArgv(job.tools.vipsheader, path, field),
+        label
+    ));
+}
+
+function positiveHeaderField(job, path, field, label) {
+    const value = positiveIntegerFrom(headerField(job, path, field, label));
+
+    if (value === 0) {
+        throw new Error(`The image's ${field} is not a readable positive whole number.`);
+    }
+
+    return value;
+}
+
+function bandsOf(job, path) {
+    return positiveHeaderField(job, path, "bands", "measuring the photograph");
+}
+
+function kindOf(job, path) {
+    return INTERPRETATION.exec(
+        headerField(job, path, "interpretation", "measuring the photograph")
+    )?.groups.kind ?? "";
+}
+
+function pagesIn(job, path) {
+    try {
+        return positiveHeaderField(job, path, "n-pages", "counting the images");
+    } catch (error) {
+        if (!isUserCancelled(error) &&
+            /^(?:vipsheader: )?vips_image_get: field "n-pages" not found$/u.test(
+                errorMessage(error.cause ?? error).trim())) {
+            return 1;
+        }
+
+        throw error;
+    }
+}
+
+function refuseUnfaithful(job, source) {
+    const kind = kindOf(job, source);
+
+    if (!FAITHFUL.includes(kind)) {
+        throw new Error(
+            "This photograph is not stored as colour or grey, so a stamped " +
+                `copy of it would not be the colours it is (${kind || "unreadable"}).`
+        );
+    }
+
+    const pages = pagesIn(job, source);
+
+    if (pages > 1) {
+        throw new Error(
+            `This file holds ${pages} images, and a stamped copy of it would ` +
+                "hold only the first."
+        );
+    }
+}
+
+function hasAlpha(job, path) {
+    return ALPHA_BANDS.includes(bandsOf(job, path));
+}
+
 /* ===== src/runtime/tinting.js ===== */
 
 
 function sizeOf(job, path) {
-    const measure = (field) => Number(runArgv(
-        job.app,
-        buildSizeArgv(job.tools.vipsheader, path, field),
-        "measuring the stamp"
-    ));
+    const measure = (field) => positiveHeaderField(job, path, field, "measuring the stamp");
 
     return { width: measure("width"), height: measure("height") };
 }
@@ -3162,67 +3248,6 @@ function stampFor(job, drawn) {
     return stamp;
 }
 
-/* ===== src/runtime/fidelity.js ===== */
-
-
-const FAITHFUL = ["sRGB", "RGB", "RGB16", "B_W", "GREY16"];
-const INTERPRETATION = /VIPS_INTERPRETATION_(?<kind>\w+)/u;
-
-const GREY_ALPHA = 2;
-const COLOUR_ALPHA = 4;
-const ALPHA_BANDS = [GREY_ALPHA, COLOUR_ALPHA];
-
-function headerField(job, path, field, label) {
-    return String(runArgv(
-        job.app,
-        buildSizeArgv(job.tools.vipsheader, path, field),
-        label
-    )).trim();
-}
-
-function bandsOf(job, path) {
-    return Number(headerField(job, path, "bands", "measuring the photograph"));
-}
-
-function kindOf(job, path) {
-    return INTERPRETATION.exec(
-        headerField(job, path, "interpretation", "measuring the photograph")
-    )?.groups.kind ?? "";
-}
-
-function pagesIn(job, path) {
-    const answer = Number(tryArgv(
-        job.app,
-        buildSizeArgv(job.tools.vipsheader, path, "n-pages")
-    ));
-
-    return answer > 1 ? answer : 1;
-}
-
-function refuseUnfaithful(job, source) {
-    const kind = kindOf(job, source);
-
-    if (!FAITHFUL.includes(kind)) {
-        throw new Error(
-            "This photograph is not stored as colour or grey, so a stamped " +
-                `copy of it would not be the colours it is (${kind || "unreadable"}).`
-        );
-    }
-
-    const pages = pagesIn(job, source);
-
-    if (pages > 1) {
-        throw new Error(
-            `This file holds ${pages} images, and a stamped copy of it would ` +
-                "hold only the first."
-        );
-    }
-}
-
-function hasAlpha(job, path) {
-    return ALPHA_BANDS.includes(bandsOf(job, path));
-}
-
 /* ===== src/runtime/image.js ===== */
 
 
@@ -3369,9 +3394,7 @@ function profileFor(job, source, token) {
 
 const GREY_BANDS = 2;
 
-function orient(job, source, token) {
-    const oriented = `${job.workspace}/oriented-${token}.v`;
-
+function orient(job, source, oriented) {
     runArgv(
         job.app,
         buildOrientArgv(job.tools.vips, source, oriented),
@@ -3379,7 +3402,6 @@ function orient(job, source, token) {
     );
     verifyFileWritten(job.app, oriented, "the photograph");
 
-    return oriented;
 }
 
 function inColour(job, oriented, profile, token) {
@@ -3398,9 +3420,16 @@ function inColour(job, oriented, profile, token) {
 function readPhotograph(job, source, token) {
     refuseUnfaithful(job, source);
 
-    const path = orient(job, source, token);
+    const path = `${job.workspace}/oriented-${token}.v`;
 
-    return { path, size: sizeOf(job, path), hasAlpha: hasAlpha(job, path) };
+    try {
+        orient(job, source, path);
+
+        return { path, size: sizeOf(job, path), hasAlpha: hasAlpha(job, path) };
+    } catch (error) {
+        removeFile(job.app, path);
+        throw error;
+    }
 }
 
 function meeting(job, photograph, profile, token) {

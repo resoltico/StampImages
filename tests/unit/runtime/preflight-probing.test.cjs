@@ -34,7 +34,8 @@ test("Homebrew is asked about in a way that cannot fail the run", () => {
 
     assert.throws(() => checkTools(app), /brew install/u);
     assert.ok(app.commands.some(
-        (command) => command === "command -v brew 2>/dev/null || true"
+        (command) => command.includes("command -v brew 2>/dev/null || true") &&
+            command.includes("/opt/homebrew/bin:/usr/local/bin")
     ));
 });
 

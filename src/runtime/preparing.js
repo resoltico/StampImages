@@ -3,7 +3,7 @@
 const { buildOrientArgv } = require("../core/commands.js");
 const { buildToSrgbArgv } = require("../core/colouring.js");
 const { wantsColour } = require("../core/colour.js");
-const { runArgv } = require("./shell.js");
+const { runArgv, removeFile } = require("./shell.js");
 const { verifyFileWritten } = require("./asking.js");
 const { sizeOf } = require("./tinting.js");
 const { refuseUnfaithful, hasAlpha, bandsOf } = require("./fidelity.js");
@@ -26,9 +26,7 @@ const GREY_BANDS = 2;
  * composited before that happens would sit along an edge the viewer never
  * sees as the bottom.
  */
-function orient(job, source, token) {
-    const oriented = `${job.workspace}/oriented-${token}.v`;
-
+function orient(job, source, oriented) {
     runArgv(
         job.app,
         buildOrientArgv(job.tools.vips, source, oriented),
@@ -36,7 +34,6 @@ function orient(job, source, token) {
     );
     verifyFileWritten(job.app, oriented, "the photograph");
 
-    return oriented;
 }
 
 /*
@@ -72,9 +69,16 @@ function readPhotograph(job, source, token) {
     // faithfully should cost two header reads and nothing else.
     refuseUnfaithful(job, source);
 
-    const path = orient(job, source, token);
+    const path = `${job.workspace}/oriented-${token}.v`;
 
-    return { path, size: sizeOf(job, path), hasAlpha: hasAlpha(job, path) };
+    try {
+        orient(job, source, path);
+
+        return { path, size: sizeOf(job, path), hasAlpha: hasAlpha(job, path) };
+    } catch (error) {
+        removeFile(job.app, path);
+        throw error;
+    }
 }
 
 /*
