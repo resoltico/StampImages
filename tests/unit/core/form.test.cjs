@@ -13,8 +13,8 @@ const {
     invitation,
     CREATE_BUTTON,
     CANCEL_BUTTON
-} = require("../../../src/core/form.js");
-const { defaultAnswers } = require("../../../src/core/form-defaults.js");
+} = require("../../../src/host/form.js");
+const { defaultAnswers } = require("../../../src/host/form-defaults.js");
 
 const FONTS = ["Menlo", "Menlo Bold"];
 const CONTEXT = { count: 0, fonts: FONTS };
@@ -73,11 +73,11 @@ test("a form with corrections retains its selection and output contract", () => 
         { count: 3, fonts: FONTS }
     );
 
-    assert.match(shown.detail, /Text size: enter a whole number/u);
-    assert.match(shown.detail, /Text colour must be six/u);
-    assert.match(shown.detail, /You have selected 3 images/u);
-    assert.match(shown.detail, /The original files are not changed/u);
-    assert.match(shown.detail, /does not remove location data/u);
+    assert.match(shown.fullDetail, /Text size: enter a whole number/u);
+    assert.match(shown.fullDetail, /Text colour must be six/u);
+    assert.match(shown.fullDetail, /You have selected 3 images/u);
+    assert.match(shown.fullDetail, /The original files are not changed/u);
+    assert.match(shown.fullDetail, /does not remove location data/u);
 });
 
 test("the rows carry the answers and the marks for the problems", () => {

@@ -4,27 +4,10 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const {
     normalizeInvocationInput,
-    isHeadlessInput,
     decodeFileUrl
 } = require("../../../src/core/invocation.js");
 
-test("headless is detected through osascript's argument separator", () => {
-    // osascript forwards its own "--" into run(), so the script's first
-    // argument is "--". Missing this sent the headless integration suite down
-    // the interactive path, where it blocked on a GUI dialog forever.
-    assert.equal(isHeadlessInput(["--", "--headless", "cfg.json", "a.png"]), true);
-    assert.equal(isHeadlessInput(["--headless", "cfg.json", "a.png"]), true);
-    assert.equal(isHeadlessInput(["--", "--", "--headless", "cfg.json"]), true);
-});
 
-test("non-headless invocations are left alone", () => {
-    assert.equal(isHeadlessInput([]), false);
-    assert.equal(isHeadlessInput(["--"]), false);
-    assert.equal(isHeadlessInput(undefined), false);
-    assert.equal(isHeadlessInput(null), false);
-    assert.equal(isHeadlessInput(["/a/b.png"]), false);
-    assert.equal(isHeadlessInput("/a/b.png"), false);
-});
 
 test("normalizeInvocationInput strips only leading separators", () => {
     assert.deepEqual(normalizeInvocationInput(undefined), []);
@@ -120,14 +103,6 @@ test("the caller's array is not modified while separators are stripped", () => {
     );
 });
 
-test("an empty selection is not a headless one", () => {
-    // Nothing at all arrives as an empty list, and asking whether its first
-    // item is the flag would be asking about a value that is not there.
-    assert.equal(isHeadlessInput([]), false);
-    assert.equal(isHeadlessInput(undefined), false);
-    assert.equal(isHeadlessInput(null), false);
-    assert.equal(isHeadlessInput(["--"]), false);
-});
 
 test("the separator is dropped only while it is the first thing there", () => {
     // osascript inserts it before the script's own arguments, and it can
@@ -140,4 +115,12 @@ test("the separator is dropped only while it is the first thing there", () => {
         "--"
     ]);
     assert.deepEqual(normalizeInvocationInput(["--"]), []);
+});
+
+test("flat CLI string argv cannot enter interactive collection", () => {
+    const { isCliInput } = require("../../../src/core/invocation.js");
+    assert.equal(isCliInput([]), true);
+    assert.equal(isCliInput(["--headless", "settings.json", "photo.jpg"]), true);
+    assert.equal(isCliInput([["/photo.jpg"], {}]), false);
+    assert.equal(isCliInput([{}]), false); assert.equal(isCliInput(null), false);
 });

@@ -1,90 +1,26 @@
 "use strict";
-
-/*
- * What a run remembers of the last one, and what it makes of finding it.
- *
- * One record under one key, and nothing that comes back from it is trusted: it
- * has been on disk, where anything can edit it, so it goes through the same
- * validation as a headless configuration -- the same function, not a second
- * one that agrees with it today.
- */
-
-const assert = require("node:assert/strict");
 const test = require("node:test");
-const {
-    DOMAIN,
-    KEY,
-    encode,
-    rememberedAnswers
-} = require("../../../src/core/preferences.js");
-const { defaultAnswers, defaultSettings } =
-    require("../../../src/core/form-defaults.js");
-
-const FONTS = ["Menlo", "Menlo Bold"];
-
-function remembered(settings = {}) {
-    return rememberedAnswers(
-        encode({ ...defaultSettings(FONTS), ...settings }),
-        FONTS
-    );
-}
-
-test("the domain is this action's own, and the version is in the key", () => {
-    // A record this version cannot read is one it must not overwrite either,
-    // and an older copy asking for a different key cannot reach a newer one's.
-    assert.equal(DOMAIN, "com.resoltico.StampImages");
-    assert.match(KEY, /\.v\d+$/u);
+const assert = require("node:assert/strict");
+const { DOMAIN, KEY, encode, rememberedAnswers } = require("../../../src/host/preferences.js");
+const { defaultSettings, defaultAnswers } = require("../../../src/host/form-defaults.js");
+const fonts = ["Menlo"];
+test("current preferences retain appearance and exclude private text and resolved typeface", () => {
+    assert.equal(DOMAIN, "com.resoltico.StampImages"); assert.equal(KEY, "lastSettings");
+    const settings = { ...defaultSettings(fonts), customText: "private", typeface: {} };
+    const held = JSON.parse(encode(settings));
+    assert.equal(held.customText, undefined); assert.equal(held.typeface, undefined);
+    assert.deepEqual(rememberedAnswers(encode(settings), fonts), defaultAnswers(fonts));
 });
-
-test("what is kept is the appearance, and what is written is not", () => {
-    // The text somebody typed is about this job, and is the field most likely
-    // to say something private.
-    const record = JSON.parse(encode({ ...defaultSettings(FONTS), customText: "Riga" }));
-
-    assert.equal(record.customText, undefined);
-    assert.equal(record.font, "Menlo");
-    assert.equal(record.textColour, "#FFFFFF");
+test("incomplete, obsolete and malformed preferences are forgotten without migration", () => {
+    const held = JSON.parse(encode(defaultSettings(fonts)));
+    for (const value of [null, [], false, { ...held, weight: "bold" }, { ...held, customText: "private" }, { ...held, size: "36" }]) {
+        assert.equal(rememberedAnswers(JSON.stringify(value), fonts), undefined);
+    }
+    assert.equal(rememberedAnswers("invalid", fonts), undefined);
+    delete held.margin; assert.equal(rememberedAnswers(JSON.stringify(held), fonts), undefined);
 });
-
-test("a remembered run comes back as the answers it gave", () => {
-    assert.deepEqual(
-        remembered({ font: "Menlo Bold", size: 72, position: "top-left" }),
-        {
-            ...defaultAnswers(FONTS),
-            font: "Menlo Bold",
-            size: "72",
-            position: "Top left"
-        }
-    );
-});
-
-test("what 1.0.0 stored is what this version stores", () => {
-    // 1.0.0 kept the typeface as one name with the weight in it, because the
-    // list offered the two weights as separate entries. This version keeps a
-    // face name, which is the same thing -- so there is nothing to migrate,
-    // and a record written two versions ago opens the form it was written
-    // from. The reader that used to pull the weight back out is gone.
-    const kept = JSON.stringify({
-        ...defaultSettings(FONTS),
-        font: "Menlo Bold",
-        size: 72
-    });
-
-    assert.deepEqual(
-        rememberedAnswers(kept, FONTS),
-        { ...defaultAnswers(FONTS), font: "Menlo Bold", size: "72" }
-    );
-});
-
-test("a setting this version has not is dropped rather than carried", () => {
-    // 1.1.0 was briefly written with a weight of its own before the typeface
-    // took the whole name back. A record holding one is still a record.
-    const kept = JSON.stringify({
-        ...defaultSettings(FONTS),
-        font: "Menlo",
-        weight: "bold"
-    });
-
-    assert.equal(rememberedAnswers(kept, FONTS).font, "Menlo");
-    assert.equal(rememberedAnswers(kept, FONTS).weight, undefined);
+test("an unavailable font name does not erase valid appearance choices", () => {
+    const held = encode({ ...defaultSettings(fonts), font: "Removed Font", size: 72 });
+    assert.equal(rememberedAnswers(held, fonts).size, "72");
+    assert.equal(rememberedAnswers(held, fonts).font, "Removed Font");
 });

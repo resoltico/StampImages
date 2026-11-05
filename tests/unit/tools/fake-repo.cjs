@@ -11,7 +11,8 @@ function fakeRepo(overrides = {}) {
     const files = {
         "package.json": JSON.stringify({
             version: "1.2.3",
-            engines: { node: ">=26.8.1" },
+            engines: { node: ">=26.8.1", npm: ">=12.2.1" },
+            packageManager: "npm@12.2.1",
             homepage: "https://github.com/someone/Project",
             repository: { type: "git", url: "git+https://github.com/someone/Project.git" }
         }),
@@ -24,7 +25,7 @@ function fakeRepo(overrides = {}) {
         "CHANGELOG.md": "# Changelog\n\n## [1.2.3] - 2026-01-01\n",
         "src/core/version.js": 'const VERSION = "1.2.3";\n',
         ".node-version": "26.8.1\n",
-        "mise.toml": '[tools]\nnode = "26.8.1"\n',
+        "mise.toml": '[tools]\nnode = "26.8.1"\nnpm = "12.2.1"\n',
         "README.md": "Source: https://github.com/someone/Project\n",
         ...overrides
     };

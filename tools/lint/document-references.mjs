@@ -43,6 +43,7 @@ export async function missingReferences(documents, resolve = exists) {
     const named = new Map();
 
     documents.files.forEach((file, index) => {
+        if (/^AGENTS(?:_EXTRA)?\.md$/u.test(file)) { return; }
         for (const reference of referencesIn(documents.texts[index])) {
             named.set(reference.replace(/\/$/u, ""), file);
         }

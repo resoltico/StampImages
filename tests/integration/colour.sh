@@ -66,7 +66,7 @@ stamp "$WORK/red.json" "$WORK/grey.jpg" > "$WORK/receipt.json"
 test "$(vipsheader -f bands "$WORK/grey_stamped.jpg")" = 3 ||
     fail "the copy is still grey, so the caption cannot be the colour that was chosen"
 
-assert_contains "$(cat "$WORK/receipt.json")" '"expanded":1' "and the run counted it"
+assert_contains "$(cat "$WORK/receipt.json")" '"expanded":true' "and the run counted it"
 
 # The caption is red where it was drawn: inside the first stroke, measured
 # rather than guessed, and red means the channels do not agree.

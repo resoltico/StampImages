@@ -17,8 +17,8 @@ const {
     resolvedRow,
     controlFor,
     formRows
-} = require("../../../src/core/form-rows.js");
-const { defaultAnswers } = require("../../../src/core/form-defaults.js");
+} = require("../../../src/host/form-rows.js");
+const { defaultAnswers } = require("../../../src/host/form-defaults.js");
 
 const FONTS = ["Menlo", "Menlo Bold"];
 

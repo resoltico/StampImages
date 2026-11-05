@@ -10,8 +10,8 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { ORDER, formRows } = require("../../../src/core/form-rows.js");
-const { defaultAnswers } = require("../../../src/core/form-defaults.js");
+const { ORDER, formRows } = require("../../../src/host/form-rows.js");
+const { defaultAnswers } = require("../../../src/host/form-defaults.js");
 
 const FONTS = ["Menlo", "Menlo Bold"];
 

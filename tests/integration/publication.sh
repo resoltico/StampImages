@@ -48,7 +48,7 @@ said() {
 }
 
 kept_copy() {
-    said | sed -n 's|^\(/[^"]*StampImages-recovered[^"]*\)".*|\1|p' | head -1
+    node -e 'const fs=require("fs");const receipt=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));process.stdout.write(receipt.images.find(image=>image.state==="recovered")?.recovery??"")' "$WORK/receipt"
 }
 
 in_folder() {
@@ -84,7 +84,7 @@ stamp "$WORK/link/photo.jpg"
 
 test -L "$WORK/link/photo_stamped.jpg" ||
     fail "the link was replaced instead of stepped around"
-test -f "$WORK/link/photo_stamped_2.jpg" || fail "the copy was not published beside it"
+test -f "$WORK/link/photo_stamped 2.jpg" || fail "the copy was not published beside it"
 assert_nothing_left_behind "$WORK/link"
 
 # ---------------------------------------------------------------------------
@@ -101,7 +101,7 @@ KEPT=$(kept_copy)
 test -n "$KEPT" || fail "no recovery path was named: $(cat "$WORK/receipt")"
 test -f "$KEPT" || fail "the copy is not where the message says it is: $KEPT"
 test "$(vipsheader -f width "$KEPT")" = 600 || fail "what was kept is not the copy"
-rm -rf "$(dirname "$KEPT")"
+rm -f "$KEPT"
 assert_nothing_left_behind "$WORK/readonly"
 test -z "$(find "$WORK/readonly" -name '*_stamped*')" ||
     fail "something was left at the output path"
@@ -121,8 +121,8 @@ chmod +a "$(id -un) deny add_file" "$WORK/denied"
 stamp "$WORK/denied/photo.jpg"
 
 REFUSAL=$(said)
-assert_contains "$REFUSAL" "Permission denied" "the system's own words are carried"
-assert_contains "$REFUSAL" "could not be created in one step" "and the plain ones first"
+assert_contains "$REFUSAL" '"state":"denied"' "the native cause is classified"
+assert_contains "$REFUSAL" "could not be saved to its requested destination" "the operation is explained"
 assert_not_contains "$REFUSAL" "drive" "no cause nobody established"
 assert_not_contains "$REFUSAL" "volume" "no cause nobody established"
 test -z "$(find "$WORK/denied" -name '*_stamped*')" ||
@@ -132,7 +132,7 @@ assert_nothing_left_behind "$WORK/denied"
 DENIED_KEPT=$(kept_copy)
 test -n "$DENIED_KEPT" || fail "no recovery path was named: $(cat "$WORK/receipt")"
 test -f "$DENIED_KEPT" || fail "the copy is not where the message says it is"
-rm -rf "$(dirname "$DENIED_KEPT")"
+rm -f "$DENIED_KEPT"
 chmod -a# 0 "$WORK/denied"
 
 printf 'macOS publication integration passed\n'

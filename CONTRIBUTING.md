@@ -2,8 +2,13 @@
 
 ## Working on this
 
+Use the Node and npm versions declared by mise.toml (also checked against
+.node-version and package.json). Run `mise install` and `mise exec -- npm ci --ignore-scripts`
+from a clean checkout, or install those exact versions with your own version manager.
+
 ```sh
-npm ci
+brew install exiftool vips shellcheck actionlint
+npm ci --ignore-scripts
 npm run release
 ```
 
@@ -22,7 +27,7 @@ npm run test:integration:macos
 ## What the gate enforces
 
 `QA.md` is the contract. It specifies every check, its threshold, and why the
-guard exists — file size, coverage, ESLint mode, the language target, mutation
+guard exists — coverage, ESLint mode, the language target, mutation
 score, and the facts that must agree across files.
 
 This file does not restate those rules, so that there is one place to change
@@ -39,79 +44,42 @@ go rather than merely passing or failing:
 
 ## Source layout
 
-`src/` holds small single-purpose CommonJS modules so each can be required and
-unit tested on its own:
+`src/core/` owns portable stamp rules, typed settings, geometry, source policy,
+outcomes and artifact/workspace lifecycle rules. `src/application/` owns inspection
+and run/per-image sequencing through explicit ports. `src/backend/` owns pure
+vips/exiftool command and response contracts. `src/host/` adapts those contracts to
+macOS, shell execution, fonts, files, CLI and AppKit. `src/entry.js` exposes the
+production run entry. `tools/lint/boundaries.mjs` enforces these dependencies.
 
-- `src/core/` — the portable half, which knows nothing about macOS: paths,
-  naming, ordering, colours, numbers, shell quoting, invocation parsing,
-  preflight probes, errors, and this product's own decisions — what a moment
-  is, how a place is written, what the stamp will say, where it goes, what the
-  form asks, and what a setting may be.
-- `src/runtime/` — the macOS host: shell execution, tool discovery, preflight,
-  the filesystem walk, input resolution, admission, the font probe, the stamp
-  renderer, the image pipeline, publication, the progress panel, the AppKit
-  form, the stepwise dialogs, the receipt, entry point.
+Keep UI answer conversion and wording in the host. Validate typed settings through
+`src/core/settings.js`; do not add a competing CLI or preferences validator.
+`src/core/inscription.js` decides what each photograph can say before rendering.
+Inspect originals before consent, then capture and independently inspect private
+bytes before metadata/profile extraction and decoding. Keep original paths for
+reporting. Application outcomes own source mappings and state; presenters derive
+counts and text without changing saved work.
 
-The split is about testability rather than tidiness. Everything in `src/core/`
-is a pure function over plain values, so what the tools are told and what the
-form asks are asserted directly rather than inferred from a run. `QA.md`
-records what came from where, and what has not been established.
-
-Two values are worth knowing about before you change anything in the middle of
-the program. `src/core/inscription.js` is what this run will write on one
-photograph, built from the metadata and the settings before the photograph is
-decoded — or the reason it will write nothing on it. The rule it exists for is
-that **nothing downstream of it may decide not to draw something**: if there
-is an inscription it is drawable, and if there is not, the photograph was one
-the request did not apply to and the report says so. Six defects were one
-defect before it existed, each stage coping locally with a decision nobody
-owned.
-
-The runtime layer takes `app` as a parameter rather than reaching for a global,
-which is what lets the whole macOS host be driven from Node by a fake host with
-an in-memory filesystem — including the non-clobbering publish, which a
-stateless stub cannot exercise.
-
-Each module has its own test file under `tests/unit/core/` or
-`tests/unit/runtime/`.
+The CLI and receipt contract is in [HEADLESS.md](HEADLESS.md). Keep it strict;
+do not add migrations or compatibility aliases.
 
 ## The released artifact
 
-Do not edit it. `dist/Stamp-Images.jxa` is generated from the modules
-under `src/` by `tools/bundle.mjs`, which concatenates the module bodies with
-their `require`, `module.exports` and strict directive removed. Everything then
-shares one script scope and `run` stays top level, where `osascript` finds it.
-The bundler fails the build on a duplicate top-level name or an out-of-order
-dependency.
+Do not edit `dist/Stamp-Images.jxa` directly. `tools/scoped-bundle.mjs` uses pinned
+esbuild with module scopes and a Safari 15.4 target. `tools/release.mjs` verifies
+that every production module is reachable and emits the banner and checksum.
+The artifact needs no Node or external JavaScript modules at runtime.
 
-Those are found in the syntax tree rather than by matching lines, so what the
-build recognises does not depend on how the sources happen to be formatted. The
-same applies to the comments, which are removed from the artifact — the file is
-pasted into a Shortcuts editor whose size ceiling nobody knows, and the header
-says where the sources are. What is removed is removed by byte range, and the
-build then asserts that what is left has the same token sequence as what it
-started with; a build step that changed the program cannot reach the disk.
-
-The parsing lives in `tools/javascript.mjs`, the CommonJS shapes in
-`tools/commonjs.mjs`, the removal in `tools/excise.mjs`, and the header in
-`tools/banner.mjs`, which quotes the version and URL from `package.json` and
-the copyright notice from `package.json` so the artifact cannot misstate them.
-
-First-party contributions are covered by MPL 2.0. Keep third-party notices
-and licenses intact. `LICENSE` ships as an attested release asset.
-
-Edit the sources, run `npm run release`, and commit both.
-
-`INSTALL.txt` ships with it, and is deliberately plain text rather than
-Markdown. It is a release asset: someone downloads it alongside the `.jxa` and
-opens it in a text editor, where `##` and backticks would be clutter rather
-than formatting. The repository's own documents are Markdown because they are
-read rendered on GitHub. Do not convert it.
+`tools/build-probe.mjs` builds explicit native test entrypoints with the same
+bundler options. End-to-end tests must also invoke the actual production artifact.
+First-party contributions use MPL 2.0; preserve notices and third-party licenses.
+Edit sources, run `npm run release`, and review sources plus generated output.
+`INSTALL.txt` remains plain text because it ships as a downloadable release asset.
 
 ## Releasing
 
-A release is a tag. Pushing `v<version>` runs the release workflow, which
-qualifies the tagged source on macOS, rebuilds the artifact on a clean runner,
+Release only with authorization. Prepare the version declarations and dated
+CHANGELOG section, rebuild and verify the committed artifact, then push
+`v<version>`. The release workflow qualifies the tagged source on macOS, rebuilds the artifact on a clean runner,
 and publishes it with a build attestation.
 
 Three things are checked that a local build cannot check:
@@ -132,14 +100,16 @@ Three things are checked that a local build cannot check:
 Release notes come from `CHANGELOG.md` rather than a per-tag file, because a
 second copy of the same prose is a second thing to keep in agreement.
 
-Building locally is unchanged: `npm run release` still builds and gates, and
-the committed `dist/` is still what the repository is reviewed against.
+`npm run release` builds and gates locally; it does not publish or create a tag.
+Review and commit the generated `dist/` alongside its sources.
 
-## Bumping Node
+## Updating dependencies and toolchains
 
-The Node version appears in `.node-version`, `mise.toml` and `engines`. The
-gate asserts they agree, but nothing watches for newer releases: Dependabot
-does not track version files, so bumping is a deliberate manual step.
+Use vendor release information to choose updates. Pin development dependencies in
+`package.json` and restore them through `package-lock.json`. Declare Node in
+`.node-version`, `mise.toml` and `package.json` engines, and npm in `mise.toml`,
+`packageManager` and engines. The consistency gate checks these declarations.
+Keep workflow action references pinned to reviewed vendor commit hashes.
 
 The Homebrew tools are not pinned at all — CI installs the current ones on
 every run, so a breaking change there surfaces as a failing integration job

@@ -14,7 +14,7 @@ const {
     SIZE,
     MARGIN,
     OUTLINE_WIDTH
-} = require("../../../src/core/bounds.js");
+} = require("../../../src/host/bounds.js");
 
 const CONTROLS = [SIZE, MARGIN, OUTLINE_WIDTH];
 

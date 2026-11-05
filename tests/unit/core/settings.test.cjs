@@ -37,12 +37,8 @@ test("what comes back is what the pipeline stores, in its own types", () => {
     assert.deepEqual(normalized(), { ...GOOD });
 });
 
-test("a number written as text is a number afterwards", () => {
-    const settings = normalized({ size: "36", margin: "24", outlineWidth: "0" });
-
-    assert.equal(settings.size, 36);
-    assert.equal(settings.margin, 24);
-    assert.equal(settings.outlineWidth, 0);
+test("JSON numbers cannot be supplied as strings", () => {
+    for (const key of ["size", "margin", "outlineWidth"]) { assert.throws(() => normalized({ [key]: "24" }), /whole number/u); }
 });
 
 test("a number outside its bounds is refused by name", () => {
@@ -72,7 +68,7 @@ test("a choice nothing offers is refused rather than passed on", () => {
     assert.throws(() => normalized({ position: "middle" }), /Unsupported position/u);
     assert.throws(
         () => normalized({ dateFormat: "rfc822" }),
-        /Unsupported date format/u
+        /Unsupported date\/time format/u
     );
     assert.throws(
         () => normalized({ coordinateFormat: "utm" }),
@@ -82,7 +78,7 @@ test("a choice nothing offers is refused rather than passed on", () => {
 
 test("a font is taken as typed, less the spaces around it", () => {
     assert.equal(normalized({ font: "  Menlo Bold  " }).font, "Menlo Bold");
-    assert.equal(normalized({ font: undefined }).font, "");
+    assert.throws(() => normalized({ font: undefined }), /Typeface/u);
 });
 
 test("custom text is bounded, because a stamp is a caption", () => {
@@ -96,9 +92,13 @@ test("custom text is bounded, because a stamp is a caption", () => {
     );
 });
 
-test("no custom text at all is empty text, not a failure", () => {
-    assert.equal(normalized({ customText: undefined }).customText, "");
-    assert.equal(normalized({ customText: null }).customText, "");
+test("all settings are required, unknown fields and malformed values are rejected together", () => {
+    const { validateSettings } = require("../../../src/core/settings.js");
+    assert.throws(() => normalized({ customText: null }), /Custom text/u);
+    const result = validateSettings({ ...GOOD, size: "36", margin: -1, extra: true });
+    assert.deepEqual(result.issues.map((issue) => issue.field).sort(), ["extra", "margin", "size"]);
+    for (const value of [null, [], 1, false]) { assert.equal(validateSettings(value).issues[0].code, "object"); }
+    for (const field of Object.keys(GOOD)) { const value = { ...GOOD }; delete value[field]; assert.ok(validateSettings(value).issues.some((issue) => issue.field === field)); }
 });
 
 test("a request that would stamp nothing is one to refuse", () => {
@@ -125,23 +125,35 @@ test("any one of the three is enough to be worth stamping", () => {
     assert.equal(stampsNothing(normalized({ ...nothing, customText: "Riga" })), false);
 });
 
-test("a value of the wrong kind is refused by the name of its setting", () => {
-    // Ten settings are listed together, and one that does not name itself is
-    // a sentence about nothing.
-    for (const [key, said] of [
-        ["size", "Text size must be a number"],
-        ["margin", "Margin must be a number"],
-        ["outlineWidth", "Outline must be a number"],
-        ["font", "The typeface must be text"],
-        ["customText", "Your own text must be text"],
-        ["position", "The position must be text"],
-        ["dateFormat", "The date format must be text"],
-        ["coordinateFormat", "The coordinate format must be text"]
-    ]) {
-        assert.throws(
-            () => normalized({ [key]: [] }),
-            new RegExp(said, "u"),
-            key
-        );
+test("each malformed field is identified structurally", () => {
+    const { validateSettings } = require("../../../src/core/settings.js");
+    for (const field of Object.keys(GOOD)) { assert.ok(validateSettings({ ...GOOD, [field]: [] }).issues.some((issue) => issue.field === field)); }
+});
+
+test("unknown individual settings and a blank typeface are refused", () => {
+    const { readSetting } = require("../../../src/core/settings.js");
+    assert.throws(() => readSetting("obsolete", 1), /Unknown setting/u);
+    assert.throws(() => normalized({ font: "   " }), /name a face/u);
+});
+
+test("typed settings report exact issue context and reject fractional boundaries", () => {
+    const { validateSettings, readSetting } = require("../../../src/core/settings.js");
+    assert.deepEqual(validateSettings(null), { issues: [{ code: "object", stage: "settings", message: "Settings must be a JSON object." }] });
+    assert.deepEqual(validateSettings({ ...GOOD, obsolete: true }).issues, [{ field: "obsolete", code: "unknown", stage: "settings", message: "Unknown setting: obsolete." }]);
+    assert.deepEqual(validateSettings({ ...GOOD, size: 36.5 }).issues, [{ field: "size", code: "setting", stage: "settings", message: "Text size must be a whole number from 8 to 400." }]);
+    for (const [field, values] of [["size", [7, 401, 36.5, NaN, Infinity]], ["margin", [-1, 2001, 1.5]], ["outlineWidth", [-1, 21, 1.5]]]) {
+        for (const value of values) { assert.throws(() => normalized({ [field]: value }), /whole number/u); }
     }
+    assert.equal(readSetting("font", " A long installed typeface name "), "A long installed typeface name");
+    assert.equal(readSetting("customText", "x".repeat(500)).length, 500);
+    assert.throws(() => normalizeSettings({ ...GOOD, size: 1, margin: -1 }), /Text size.*\nMargin/u);
+});
+
+test("field regression: unrenderable caption strings are invalid settings before processing", () => {
+    const { validateSettings } = require("../../../src/core/settings.js");
+    for (const customText of ["before\u0000after", "before\ud800after", "before\udfffafter"]) {
+        const result = validateSettings({ ...GOOD, customText });
+        assert.ok(result.issues.some((issue) => issue.field === "customText" && issue.stage === "settings"));
+    }
+    assert.equal(normalized({ customText: "Rīga & <literal>\nمرحبا 📷\t" }).customText, "Rīga & <literal>\nمرحبا 📷\t");
 });

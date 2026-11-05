@@ -1,6 +1,5 @@
 import { readdir } from "node:fs/promises";
 import path from "node:path";
-import { moduleOrder } from "../release.mjs";
 import { root } from "../repository.mjs";
 
 const SOURCE_EXTENSIONS = /\.(?:js|mjs|cjs)$/u;
@@ -69,7 +68,7 @@ export async function walk(directory, base = root, wanted = isSourceFile) {
  */
 export async function lintableFiles() {
     return [
-        ...moduleOrder,
+        ...await walk("src"),
         ...await walk("tools"),
         ...await walk("tests"),
         "eslint.config.mjs"

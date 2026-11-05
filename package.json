@@ -11,31 +11,36 @@
   "homepage": "https://github.com/resoltico/StampImages",
   "author": "Ervins Strauhmanis",
   "engines": {
-    "node": ">=26.10.0"
+    "node": ">=26.13.0",
+    "npm": ">=12.2.1"
   },
   "scripts": {
     "build": "node tools/build.mjs",
     "lint": "node tools/lint.mjs",
     "lint:js": "eslint .",
     "test": "node --test \"tests/unit/**/*.test.cjs\" \"tests/repo/**/*.test.cjs\"",
-    "test:coverage": "node --test --experimental-test-coverage --test-coverage-exclude=\"tests/**\" --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 \"tests/unit/**/*.test.cjs\" \"tests/repo/**/*.test.cjs\"",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=\"src/core/**\" --test-coverage-include=\"src/application/**\" --test-coverage-include=\"src/backend/**\" --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 \"tests/unit/**/*.test.cjs\" \"tests/repo/**/*.test.cjs\"",
     "check-dist": "node tools/check-dist.mjs",
     "quality": "npm run lint && npm run lint:js && npm run test:coverage && npm run test:mutation && npm run check-dist",
     "release": "npm run build && npm run quality",
-    "test:integration:macos": "bash tests/integration/macos.sh && bash tests/integration/copies.sh && bash tests/integration/selection.sh && bash tests/integration/publication.sh && bash tests/integration/volumes.sh && bash tests/integration/cards.sh && bash tests/integration/damaged.sh && bash tests/integration/typeface.sh && bash tests/integration/colour.sh && bash tests/integration/content.sh && bash tests/integration/measurements.sh && bash tests/integration/form.sh",
+    "test:integration:macos": "bash tests/integration/macos.sh && bash tests/integration/copies.sh && bash tests/integration/selection.sh && bash tests/integration/publication.sh && bash tests/integration/volumes.sh && bash tests/integration/cards.sh && bash tests/integration/damaged.sh && bash tests/integration/typeface.sh && bash tests/integration/colour.sh && bash tests/integration/content.sh && bash tests/integration/measurements.sh && bash tests/integration/form.sh && bash tests/integration/cli.sh && bash tests/integration/formats.sh && bash tests/integration/resources.sh && bash tests/integration/concurrency.sh",
     "test:mutation": "stryker run",
     "test:unit": "node --test \"tests/unit/**/*.test.cjs\""
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
-    "@stryker-mutator/core": "10.0.0",
-    "@stryker-mutator/tap-runner": "10.0.0",
-    "acorn": "8.18.0",
-    "eslint": "10.11.0",
-    "fast-check": "4.10.2"
+    "@stryker-mutator/core": "10.1.1",
+    "@stryker-mutator/tap-runner": "10.1.1",
+    "acorn": "8.19.0",
+    "eslint": "10.14.0",
+    "fast-check": "4.10.2",
+    "esbuild": "0.28.2"
   },
   "overrides": {
-    "qs": "6.16.0"
+    "qs": "6.17.1",
+    "glob": "14.0.3",
+    "minimatch": "11.0.4"
   },
-  "copyright": "2026 Ervins Strauhmanis"
+  "copyright": "2026 Ervins Strauhmanis",
+  "packageManager": "npm@12.2.1"
 }

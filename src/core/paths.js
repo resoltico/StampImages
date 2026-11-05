@@ -25,10 +25,10 @@
 const SUPPORTED_FORMATS = [
     { name: "JPEG", extensions: ["jpg", "jpeg"] },
     { name: "PNG", extensions: ["png"] },
-    { name: "HEIC", extensions: ["heic", "heif"] },
+    { name: "HEIC", family: "HEIF", compression: "hevc", extensions: ["heic", "heif"] },
     { name: "TIFF", extensions: ["tif", "tiff"] },
     { name: "WebP", extensions: ["webp"] },
-    { name: "AVIF", extensions: ["avif"] }
+    { name: "AVIF", family: "HEIF", compression: "av1", extensions: ["avif"] }
 ];
 
 const SUPPORTED_EXTENSIONS = SUPPORTED_FORMATS.flatMap(

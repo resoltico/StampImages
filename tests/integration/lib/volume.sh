@@ -15,10 +15,12 @@
 # decision rather than the code's.
 attach_test_volume() {
     local format=$1 name=$2 image
-    image=$(mktemp -t "StampImages-$name").dmg
+    image="$WORK/$name.dmg"
+    test ! -e "/Volumes/$name" || return 1
 
     hdiutil create -size 40m -fs "$format" -volname "$name" -quiet -ov "$image" &&
-        hdiutil attach -quiet "$image"
+        hdiutil attach -quiet -mountpoint "/Volumes/$name" "$image" &&
+        touch "$WORK/$name.attached"
 }
 
 # detach_test_volume <volume>
@@ -34,13 +36,15 @@ attach_test_volume() {
 # because the next volume cannot be attached over one that is still there.
 detach_test_volume() {
     local volume=$1
+    local name=${volume##*/}
+    test -f "$WORK/$name.attached" || return 0
 
     # Five tries, two seconds apart. Indexing a forty-megabyte volume does not
     # take ten seconds, and a volume still busy after that is not busy waiting.
     for _ in 1 2 3 4 5; do
-        hdiutil detach -quiet "$volume" 2>/dev/null && return 0
+        hdiutil detach -quiet "$volume" 2>/dev/null && { rm -f "$WORK/$name.attached"; return 0; }
         sleep 2
     done
 
-    hdiutil detach -force -quiet "$volume"
+    hdiutil detach -force -quiet "$volume" && rm -f "$WORK/$name.attached"
 }

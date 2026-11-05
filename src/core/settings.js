@@ -1,122 +1,57 @@
 "use strict";
-
 const { normalizeColour } = require("./colour.js");
-const { parseInteger } = require("./numbers.js");
-const { readNumeric, readWords } = require("./reading.js");
-const { POSITION, DATE_FORMAT, COORDINATE_FORMAT } = require("./choices.js");
-const {
-    MINIMUM_SIZE,
-    MAXIMUM_SIZE,
-    MINIMUM_MARGIN,
-    MAXIMUM_MARGIN,
-    MINIMUM_OUTLINE,
-    MAXIMUM_OUTLINE
-} = require("./bounds.js");
-
-/*
- * What a setting means, and validation of whatever arrives -- from the form,
- * from a remembered run, or from a headless caller.
- *
- * One validator, so a value that is refused in one place cannot be accepted
- * in another. Everything it returns is what the pipeline stores: a colour is
- * canonical, a number is a number, and a choice is its value rather than the
- * words a control offered it under.
- */
-
 const CUSTOM_TEXT_LIMIT = 500;
-
-function valuesOf(control) {
-    return control.choices.map((choice) => choice.value);
-}
-
-function assertChoice(value, control, label) {
-    const text = readWords(value, `The ${label}`);
-
-    if (!valuesOf(control).includes(text)) {
-        throw new Error(`Unsupported ${label}: ${text}`);
+// A NUL cannot cross argv; unpaired surrogates are incomplete Unicode, not caption text.
+// eslint-disable-next-line no-control-regex
+const UNRENDERABLE_TEXT = /\u0000|[\uD800-\uDFFF]/u;
+function choiceRule(name, values) { return { name, default: values[0], choices: values.map((value) => ({ value })) }; }
+const SETTINGS_SCHEMA = Object.freeze({
+    dateFormat: choiceRule("Date/time format", ["iso-minutes", "iso-date", "long-date", "none"]),
+    coordinateFormat: choiceRule("Coordinate format", ["none", "decimal", "sexagesimal"]),
+    customText: { name: "Custom text", maximumLength: CUSTOM_TEXT_LIMIT, default: "" },
+    font: { name: "Typeface", nonempty: true },
+    size: { name: "Text size", minimum: 8, maximum: 400, default: 36 },
+    textColour: { name: "Text colour", kind: "colour", default: "#FFFFFF" },
+    outlineWidth: { name: "Outline", minimum: 0, maximum: 20, default: 2 },
+    outlineColour: { name: "Outline colour", kind: "colour", default: "#202020" },
+    position: choiceRule("Position", ["bottom-right", "bottom-left", "top-right", "top-left", "bottom-centre", "top-centre"]),
+    margin: { name: "Margin", minimum: 0, maximum: 2000, default: 24 }
+});
+const SETTINGS_FIELDS = Object.keys(SETTINGS_SCHEMA);
+function isSettingsRecord(value) { return Boolean(value) && typeof value === "object" && !Array.isArray(value); }
+function readSetting(field, value) {
+    const rule = SETTINGS_SCHEMA[field];
+    if (!rule) { throw new Error(`Unknown setting: ${field}.`); }
+    if (rule.minimum !== undefined) {
+        if (!Number.isInteger(value) || value < rule.minimum || value > rule.maximum) {
+            throw new Error(`${rule.name} must be a whole number from ${rule.minimum} to ${rule.maximum}.`);
+        }
+        return value;
     }
-
-    return text;
-}
-
-/*
- * The one setting a person writes freely. It is bounded because a stamp is a
- * caption rather than a document, and an unbounded one renders a text image
- * larger than the photograph it is going on.
- */
-function readCustomText(value) {
-    const text = value === undefined || value === null
-        ? ""
-        : readWords(value, "Your own text");
-
-    if (text.length > CUSTOM_TEXT_LIMIT) {
-        throw new Error(
-            `Custom text must be ${CUSTOM_TEXT_LIMIT} characters or fewer.`
-        );
+    if (typeof value !== "string") { throw new Error(`${rule.name} must be text.`); }
+    if (rule.choices && !rule.choices.some((choice) => choice.value === value)) { throw new Error(`Unsupported ${rule.name.toLowerCase()}: ${value}`); }
+    if (field === "customText" && UNRENDERABLE_TEXT.test(value)) {
+        throw new Error("Custom text contains a null character or incomplete Unicode text. Remove it or paste the text again.");
     }
-
-    return text;
+    if (rule.kind === "colour") { return normalizeColour(value, rule.name); }
+    if (rule.nonempty && value.trim() === "") { throw new Error(`${rule.name}: name a face to draw with.`); }
+    if (rule.maximumLength !== undefined && value.length > rule.maximumLength) { throw new Error(`${rule.name} must be ${rule.maximumLength} characters or fewer.`); }
+    return rule.nonempty ? value.trim() : value;
 }
-
-/*
- * Valid JSON is not yet a set of settings. `null`, `false`, `0`, a bare string
- * and a list all parse, and asking any of them for a setting fails somewhere
- * further along, in words about the failure rather than about what was read:
- * "null is not an object", or an unsupported position that was never
- * supported because there was never a position.
- *
- * Asked in both places a set of settings arrives from outside this program --
- * a headless configuration file and a remembered record -- because they are
- * the same question and there is no version of it that should be answered
- * differently.
- */
-function isSettingsRecord(value) {
-    return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+function validateSettings(input) {
+    if (!isSettingsRecord(input)) { return { issues: [{ code: "object", stage: "settings", message: "Settings must be a JSON object." }] }; }
+    const issues = Object.keys(input).filter((field) => !SETTINGS_FIELDS.includes(field))
+        .map((field) => ({ field, code: "unknown", stage: "settings", message: `Unknown setting: ${field}.` }));
+    const settings = {};
+    for (const field of SETTINGS_FIELDS) {
+        try { settings[field] = readSetting(field, input[field]); }
+        catch (error) { issues.push({ field, code: "setting", stage: "settings", message: error.message }); }
+    }
+    return issues.length ? { issues } : { issues, settings };
 }
-
-/*
- * Nothing is migrated, because there is nothing to migrate. 1.0.0 stored the
- * typeface as one name with the weight in it -- "Arial Bold" -- and that is
- * again exactly what this version stores and reads: a face name. The reader
- * that used to pull the weight out of it, and the setting it put the weight
- * into, are both gone.
- */
-function normalizeSettings(settings) {
-    return {
-        font: readWords(settings.font ?? "", "The typeface").trim(),
-        size: parseInteger(
-            readNumeric(settings.size, "Text size"),
-            MINIMUM_SIZE,
-            MAXIMUM_SIZE,
-            "Text size"
-        ),
-        textColour: normalizeColour(settings.textColour, "Text colour"),
-        outlineColour: normalizeColour(settings.outlineColour, "Outline colour"),
-        outlineWidth: parseInteger(
-            readNumeric(settings.outlineWidth, "Outline"),
-            MINIMUM_OUTLINE,
-            MAXIMUM_OUTLINE,
-            "Outline"
-        ),
-        position: assertChoice(settings.position, POSITION, "position"),
-        margin: parseInteger(
-            readNumeric(settings.margin, "Margin"),
-            MINIMUM_MARGIN,
-            MAXIMUM_MARGIN,
-            "Margin"
-        ),
-        dateFormat: assertChoice(settings.dateFormat, DATE_FORMAT, "date format"),
-        coordinateFormat: assertChoice(
-            settings.coordinateFormat,
-            COORDINATE_FORMAT,
-            "coordinate format"
-        ),
-        customText: readCustomText(settings.customText)
-    };
+function normalizeSettings(input) {
+    const result = validateSettings(input);
+    if (result.issues.length) { const error = new Error(result.issues.map((issue) => issue.message).join("\n")); error.issues = result.issues; throw error; }
+    return result.settings;
 }
-
-module.exports = {
-    isSettingsRecord,
-    normalizeSettings,
-    CUSTOM_TEXT_LIMIT
-};
+module.exports = { SETTINGS_SCHEMA, SETTINGS_FIELDS, CUSTOM_TEXT_LIMIT, isSettingsRecord, readSetting, validateSettings, normalizeSettings };

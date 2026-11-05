@@ -27,6 +27,11 @@ case "\${STAMP_MEASUREMENT_CASE:-}:\$2" in
     bad-bands:bands) printf '4junk\\n'; exit 0 ;;
     bad-size:width) printf '900.5\\n'; exit 0 ;;
 esac
+if [ "\$1" = '-a' ]; then
+    case "\${STAMP_MEASUREMENT_CASE:-}" in
+        bad-bands|bad-size) printf 'force scalar fallback\\n' >&2; exit 1 ;;
+    esac
+fi
 exec '$REAL_HEADER' "\$@"
 SCRIPT
 chmod +x "$WORK/header"
@@ -45,7 +50,7 @@ for scenario in bad-pages failed-pages; do
     fi
     test ! -e "$WORK/two-pages_stamped.tif"
     if [ "$scenario" = bad-pages ]; then
-        assert_contains "$(cat "$WORK/receipt.json")" "n-pages" "the bad field is named"
+        assert_contains "$(cat "$WORK/receipt.json")" '"code":"damaged"' "malformed count is refused"
     else
         assert_contains "$(cat "$WORK/receipt.json")" "Injected page-count read failure" "reader failure is preserved"
     fi
@@ -62,7 +67,7 @@ for scenario in bad-bands bad-size; do
         fail "$scenario permitted a copy based on invalid measurements"
     fi
     test ! -e "$WORK/alpha_stamped.png"
-    assert_contains "$(cat "$WORK/receipt.json")" "positive whole number" "the measurement is refused"
+    assert_contains "$(cat "$WORK/receipt.json")" '"code":"damaged"' "the measurement is refused"
 done
 test "$BEFORE" = "$(shasum -a 256 < "$WORK/alpha.png")"
 printf 'macOS measurement integrity integration passed\n'

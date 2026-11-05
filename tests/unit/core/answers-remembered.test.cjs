@@ -16,8 +16,8 @@ const test = require("node:test");
 const {
     readAnswers,
     answersFromSettings
-} = require("../../../src/core/answers.js");
-const { defaultAnswers } = require("../../../src/core/form-defaults.js");
+} = require("../../../src/host/answers.js");
+const { defaultAnswers } = require("../../../src/host/form-defaults.js");
 
 const FONTS = ["Menlo", "Menlo Bold"];
 

@@ -19,7 +19,7 @@ VOLUME_NAME=StampImages-test-volume
 VOLUME="/Volumes/$VOLUME_NAME"
 
 cleanup() {
-    hdiutil detach -quiet "$VOLUME" 2>/dev/null || true
+    detach_test_volume "$VOLUME" 2>/dev/null || true
     rm -rf "$WORK"
 }
 trap cleanup EXIT
@@ -72,7 +72,7 @@ test "$(stat -f%l "$PUBLISHED")" = 1 ||
 
 stamp "$VOLUME/photo.jpg"
 
-test -f "$VOLUME/photo_stamped_2.jpg" || fail "the second copy was not published beside it"
+test -f "$VOLUME/photo_stamped 2.jpg" || fail "the second copy was not published beside it"
 assert_nothing_left_behind "$VOLUME"
 
 detach_test_volume "$VOLUME"

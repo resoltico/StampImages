@@ -11,8 +11,8 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { readAnswers } = require("../../../src/core/answers.js");
-const { defaultAnswers } = require("../../../src/core/form-defaults.js");
+const { readAnswers } = require("../../../src/host/answers.js");
+const { defaultAnswers } = require("../../../src/host/form-defaults.js");
 
 const FONTS = ["Menlo", "Menlo Bold"];
 
@@ -33,10 +33,10 @@ test("the labels a person chose become the values the pipeline stores", () => {
     assert.equal(read.settings.customText, "Riga");
 });
 
-test("a number is digits, and refused by name when it is not", () => {
+test("numeric syntax is plain decimal integer text", () => {
     // Number() also reads "0x12C" and "3e2" as 300, which would be guessing
     // rather than reading.
-    for (const typed of ["3e2", "0x12C", "36.5", " ", "-4", "thirty"]) {
+    for (const typed of ["3e2", "0x12C", "36.5", " ", "thirty"]) {
         const read = readAnswers(answers({ size: typed }), FONTS);
 
         assert.equal(read.problems.length, 1, typed);
@@ -49,6 +49,7 @@ test("a number outside its bounds is refused with the bounds", () => {
     const read = readAnswers(answers({ outlineWidth: "21" }), FONTS);
 
     assert.match(read.problems[0].message, /from 0 to 20/u);
+    assert.match(readAnswers(answers({ size: "-4" }), FONTS).problems[0].message, /from 8 to 400/u);
 });
 
 test("every problem is reported at once, each with its row", () => {
@@ -118,4 +119,10 @@ test("custom text of exactly the limit is text, not too much text", () => {
 
     assert.equal(read.problems, undefined);
     assert.equal(read.settings.customText.length, 500);
+});
+
+test("field regression: signed integer input receives the actual range error", () => {
+    const read = readAnswers(answers({ margin: "-1" }), FONTS);
+    assert.match(read.problems[0].message, /from 0 to 2000/u);
+    assert.equal(readAnswers(answers({ margin: "+24" }), FONTS).settings.margin, 24);
 });

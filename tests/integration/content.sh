@@ -34,7 +34,7 @@ settings_file "$WORK/dms.json" "" "bottom-right" "iso-minutes" "sexagesimal"
 if stamp "$WORK/default.json" "$WORK/photo.png" > /dev/null 2> "$WORK/error"; then
     fail "a configuration without coordinateFormat was accepted"
 fi
-assert_contains "$(cat "$WORK/error")" "coordinate format" "the refusal names the missing setting"
+assert_contains "$(cat "$WORK/error")" "Coordinate format" "the refusal names the missing setting"
 test ! -e "$WORK/photo_stamped.png" || fail "a refused configuration wrote a copy"
 
 OFF=$(stamp "$WORK/off.json" "$WORK/photo.png")
@@ -44,9 +44,9 @@ test "$(stamped_pixels "$WORK/photo_stamped.png" 380 440 520 160 110)" -gt 300 |
 
 stamp "$WORK/on.json" "$WORK/photo.png" > /dev/null
 stamp "$WORK/dms.json" "$WORK/photo.png" > /dev/null
-test "$(pixel_difference "$WORK/photo_stamped.png" "$WORK/photo_stamped_2.png")" != 0 ||
+test "$(pixel_difference "$WORK/photo_stamped.png" "$WORK/photo_stamped 2.png")" != 0 ||
     fail "enabling coordinates did not change the stamp"
-test "$(pixel_difference "$WORK/photo_stamped_2.png" "$WORK/photo_stamped_3.png")" != 0 ||
+test "$(pixel_difference "$WORK/photo_stamped 2.png" "$WORK/photo_stamped 3.png")" != 0 ||
     fail "decimal and degrees/minutes/seconds drew the same stamp"
 test "$BEFORE" = "$(shasum -a 256 < "$WORK/photo.png")" || fail "the original changed"
 
@@ -61,15 +61,15 @@ stamp "$WORK/off.json" "$WORK/no-gps.png" > /dev/null
 if stamp "$WORK/on.json" "$WORK/no-gps.png" > "$WORK/partial.json" 2> "$WORK/error"; then
     fail "missing requested coordinates must not be complete headless success"
 fi
-assert_contains "$(cat "$WORK/partial.json")" '"fields":["GPS coordinates"]' "missing GPS is reported"
-assert_contains "$(cat "$WORK/error")" "1 copy missing requested metadata" "incomplete status explains why"
-test -f "$WORK/no-gps_stamped_2.png" || fail "the date-only partial copy was lost"
+assert_contains "$(cat "$WORK/partial.json")" '"missingMetadata":["GPS coordinates"]' "missing GPS is reported"
+assert_contains "$(cat "$WORK/error")" "Missing requested metadata" "incomplete status explains why"
+test -f "$WORK/no-gps_stamped 2.png" || fail "the date-only partial copy was lost"
 
 solid "$WORK/no-date.png" 900 600 "#6e6e6e"
 settings_file "$WORK/caption-and-date.json" "caption" "bottom-right" "iso-minutes" "none"
 if stamp "$WORK/caption-and-date.json" "$WORK/no-date.png" > "$WORK/partial.json" 2> "$WORK/error"; then
     fail "a caption must not hide a missing requested date"
 fi
-assert_contains "$(cat "$WORK/partial.json")" '"fields":["date/time"]' "missing date is reported"
+assert_contains "$(cat "$WORK/partial.json")" '"missingMetadata":["date/time"]' "missing date is reported"
 test -f "$WORK/no-date_stamped.png" || fail "the caption-only partial copy was lost"
 printf 'macOS stamp content integration passed\n'

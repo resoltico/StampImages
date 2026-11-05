@@ -12,39 +12,26 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const {
-    outputExtension,
-    savingPath,
-    FALLBACK
+    outputFormat,
+    savingPath
 } = require("../../../src/core/formats.js");
 
 test("the copy keeps the kind of file the photograph was", () => {
     for (const extension of [
         ".jpg", ".jpeg", ".png", ".heic", ".heif", ".tif", ".tiff", ".webp", ".avif"
     ]) {
-        assert.equal(outputExtension(`/a/photo${extension}`), extension);
+        assert.equal(outputFormat(`/a/photo${extension}`).extension, extension);
     }
 });
 
 test("the spelling on disk does not decide the spelling written back", () => {
     // A name is matched however it was typed, and answered in one spelling.
-    assert.equal(outputExtension("/a/PHOTO.JPG"), ".jpg");
-    assert.equal(outputExtension("/a/photo.JPEG"), ".jpeg");
-    assert.equal(outputExtension("/a/photo.TiFf"), ".tiff");
+    assert.equal(outputFormat("/a/PHOTO.JPG").extension, ".jpg");
+    assert.equal(outputFormat("/a/photo.JPEG").extension, ".jpeg");
+    assert.equal(outputFormat("/a/photo.TiFf").extension, ".tiff");
 });
 
-test("something this cannot save is saved as the fallback", () => {
-    // A format vips will not write must still produce a copy, and the name
-    // must say what the copy really is.
-    assert.equal(outputExtension("/a/scan.gif"), FALLBACK.extension);
-    assert.equal(outputExtension("/a/photo"), FALLBACK.extension);
-    assert.equal(outputExtension("/a/.hidden"), FALLBACK.extension);
-    assert.equal(FALLBACK.extension, ".jpg");
-});
 
-test("a dot in a folder name is not an extension", () => {
-    assert.equal(outputExtension("/a/holiday.2026/photo"), FALLBACK.extension);
-    assert.equal(outputExtension("/a/holiday.2026/photo.png"), ".png");
-});
 
 test("a copy is written at a stated quality, not at the encoder's default", () => {
     // Measured: vips writes JPEG at quality 75 and HEIF lower still, so every
@@ -60,4 +47,27 @@ test("a format that loses nothing is asked for nothing", () => {
     assert.equal(savingPath("/a/photo_stamped.png"), "/a/photo_stamped.png");
     assert.equal(savingPath("/a/photo_stamped.tif"), "/a/photo_stamped.tif");
     assert.equal(savingPath("/a/photo_stamped.tiff"), "/a/photo_stamped.tiff");
+});
+
+test("unsupported output and disguised source formats are refused", () => {
+    const { extensionFor } = require("../../../src/core/formats.js");
+    assert.throws(() => outputFormat("photo.gif").extension, /Unsupported/u);
+    assert.equal(extensionFor("photo.jpg", "PNG"), ".png");
+    assert.equal(extensionFor("photo.JPEG", "JPEG"), ".jpeg");
+});
+
+test("actual content families match every supported extension", () => {
+    const { extensionFor } = require("../../../src/core/formats.js");
+    for (const [extension, family] of [["jpg", "JPEG"], ["jpeg", "JPEG"], ["png", "PNG"], ["tif", "TIFF"], ["tiff", "TIFF"], ["heic", "HEIF"], ["heif", "HEIF"], ["avif", "HEIF"], ["webp", "WebP"]]) {
+        assert.equal(extensionFor(`/photo.${extension}`, family, extension === "avif" ? "av1" : "hevc"), `.${extension}`);
+        assert.throws(() => extensionFor(`/photo.${extension}`, "unknown"), /could not be confirmed/u);
+    }
+});
+
+test("actual raster encoding determines mislabeled copy extensions", () => {
+    const { extensionFor } = require("../../../src/core/formats.js");
+    assert.equal(extensionFor("photo.jpg", "PNG"), ".png");
+    assert.equal(extensionFor("photo.png", "JPEG"), ".jpg");
+    assert.equal(extensionFor("photo.heic", "HEIF", "av1"), ".avif");
+    assert.equal(extensionFor("photo.avif", "HEIF", "hevc"), ".heic");
 });

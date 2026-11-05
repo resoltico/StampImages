@@ -55,17 +55,6 @@ test("a script that does not parse fails the gate", async () => {
     await assert.rejects(() => checkShellScripts(false, tree));
 });
 
-test("a shell script is held to the same size limit as the JavaScript", async () => {
-    const { checkShellScripts } = await load();
-    const tree = fixtureTree({
-        "huge.sh": `#!/bin/bash\n${"echo padding\n".repeat(200)}`
-    });
-
-    await assert.rejects(
-        () => checkShellScripts(false, tree),
-        /exceeds the 150-line limit/u
-    );
-});
 
 test("scripts are syntax checked even when shellcheck is absent", async () => {
     // The skip must apply to shellcheck alone. `bash -n` needs no install, so

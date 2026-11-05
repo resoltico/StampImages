@@ -139,9 +139,19 @@ export async function checkRepositoryUrl(read = readFromDisk) {
     ]);
 }
 
+export async function checkNpmVersion(read = readFromDisk) {
+    const metadata = JSON.parse(await read("package.json"));
+    return assertAll("npm versions", [
+        extract(metadata.packageManager, /^npm@(?<value>\d+\.\d+\.\d+)$/u, "package.json packageManager"),
+        extract(metadata.engines?.npm, /^>=(?<value>\d+\.\d+\.\d+)$/u, "package.json npm engine"),
+        extract(await read("mise.toml"), /npm = "(?<value>[\d.]+)"/u, "mise.toml npm")
+    ]);
+}
+
 export async function checkConsistency(read = readFromDisk) {
     const version = await checkVersion(read);
     const node = await checkNodeVersion(read);
+    await checkNpmVersion(read);
     const url = await checkRepositoryUrl(read);
 
     return `version ${version}, node ${node}, ${url}`;

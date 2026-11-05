@@ -11,7 +11,6 @@ const { fileStem, sanitizeFilename } = require("./paths.js");
  * neither is about any particular kind of file.
  */
 
-const FIRST_SUFFIX = 2;
 const MAXIMUM_SUFFIX = 10000;
 
 /*
@@ -67,7 +66,7 @@ function nameFrom(originalName, suffix) {
  * ours as surely as photo_stamped is.
  */
 const STAMPED = "_stamped";
-const STAMPED_NAME = /_stamped(?:_\d+)?$/u;
+const STAMPED_NAME = /_stamped(?: \d+)?$/u;
 
 function looksStamped(name) {
     return STAMPED_NAME.test(fileStem(name));
@@ -107,22 +106,10 @@ function splitExtension(path) {
  * Never overwrite: append _2, _3 and so on until the path is free. The caller
  * supplies the existence predicate so this stays pure.
  */
-function nextUniquePath(initialPath, exists) {
-    if (!exists(initialPath)) {
-        return initialPath;
-    }
-
-    const { stem, extension } = splitExtension(initialPath);
-
-    for (let suffix = FIRST_SUFFIX; suffix < MAXIMUM_SUFFIX; suffix += 1) {
-        const candidate = `${stem}_${suffix}${extension}`;
-
-        if (!exists(candidate)) {
-            return candidate;
-        }
-    }
-
-    throw new Error("Could not create a unique output filename.");
+function collisionPath(path, attempt) {
+    if (attempt === 1) { return path; }
+    const { stem, extension } = splitExtension(path);
+    return `${stem} ${attempt}${extension}`;
 }
 
 /*
@@ -140,11 +127,12 @@ function stagedPath(workspace, token, extension) {
 }
 
 module.exports = {
+    MAXIMUM_SUFFIX,
+    collisionPath,
     STAMPED,
     looksStamped,
     describeExcluded,
     nameFrom,
     splitExtension,
-    nextUniquePath,
     stagedPath
 };

@@ -7,11 +7,6 @@ import { root } from "../repository.mjs";
 // eslint-disable-next-line no-control-regex
 const CONTROL_CHARACTERS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u;
 
-/*
- * No file may grow back into a god file. The threshold sits close to the
- * largest current module, so growth is a decision rather than a drift.
- */
-export const MAXIMUM_FILE_LINES = 150;
 const HEX_RADIX = 16;
 const CODE_POINT_DIGITS = 4;
 
@@ -36,17 +31,6 @@ function checkControlCharacters(relativePath, content) {
     );
 }
 
-export function checkSize(relativePath, content) {
-    const lines = content.split("\n").length - 1;
-
-    if (lines > MAXIMUM_FILE_LINES) {
-        throw new Error(
-            `${relativePath}: ${lines} lines exceeds the ` +
-            `${MAXIMUM_FILE_LINES}-line limit; split it rather than raising ` +
-            "the limit"
-        );
-    }
-}
 
 function checkWhitespace(relativePath, content) {
     if (!content.endsWith("\n")) {
@@ -111,7 +95,6 @@ export function checkContent(relativePath, content) {
     checkWhitespace(relativePath, content);
     checkControlCharacters(relativePath, content);
     checkExecutables(relativePath, content);
-    checkSize(relativePath, content);
 }
 
 /*

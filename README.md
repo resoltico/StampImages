@@ -1,151 +1,121 @@
 # Stamp Images
 
-A macOS Finder Quick Action that writes the capture date, the place it was
-taken if you ask for it, and your own text into copies of your photographs.
-The originals are never touched.
+Stamp capture dates, GPS coordinates and custom text into copies of photographs
+with a macOS Finder Quick Action or a noninteractive command. Originals are never
+opened for writing, moved or deleted. Nothing is sent over the network.
 
-Select photographs in Finder, choose what to stamp and how it should look, and
-get a stamped copy of each — `holiday.jpg` becomes `holiday_stamped.jpg`, in
-the same format. A copy is saved in each folder you selected, or beside each
-image you selected. No preview, no photo viewer, no editing of the originals:
-one styled block of text, composited into new files.
+## Requirements and installation
 
-A photograph that stores only greys cannot hold a caption that is not grey.
-Where you ask for one, the copy is written in colour so the caption keeps the
-colour you chose, and the run says how many it did that to; the picture itself
-is unchanged.
-
-The metadata it reads is a record of what the camera wrote. A visible date or
-coordinate is a representation of that record, not proof that a clock or a
-location was right. A photograph that says nothing about itself still gets the
-text you typed, and nothing standing in for what is missing — and the run
-says which copies lack a date or a place you asked for. The date is the
-photograph's own `DateTimeOriginal` or `CreateDate`, never the file's
-modification time or today's.
-
-## What you can choose
-
-Ten settings, asked once for the whole selection:
-
-- how the date is written, or that it is not stamped
-- whether to include the GPS coordinates, and if so how they are written.
-  They are off until you turn them on
-- text of your own, which may run to several lines
-- the typeface, by name: one of the suggestions, or any other face your Mac
-  has, typed into the same control
-- the text size in points, and its colour
-- the outline width and colour, so light text stays readable on a light sky
-- which corner or edge the block goes in, and how far in from it
-
-Name a typeface as Font Book does: the family on its own, such as `Georgia`,
-or the family and the style you want after it, such as `Georgia Bold`,
-`Avenir Black` or `Source Serif 4 Semibold`. Every face on your Mac is
-available that way, including fonts switched on by a font manager and the
-named styles of a variable font. A name your Mac has not is refused with the
-reason before anything is stamped, and asking a family for a style it does not
-come in says which styles it does.
-
-The settings are remembered from one run to the next, the GPS choice included.
-Your own text is not: it is about one job, and it is the field most likely to
-say something private. The settings are kept in one preferences entry named
-`com.resoltico.StampImages`, which is the only thing this leaves on your Mac;
-`INSTALL.txt` says how to remove it.
-
-**Leaving GPS coordinates off does not remove location data already in the
-image.** It decides what the stamp says. The copy keeps the metadata the
-photograph had, the place included; this is not a tool for anonymising
-photographs.
-
-Before the settings, the window says what was selected, what will be made of
-it and where; selected items that cannot be stamped are listed first, and you
-can cancel there. If the window cannot be shown, the same questions are asked
-one at a time and end with a Create confirmation. A run that would stamp
-nothing at all — no date, no place, no text — is sent back for correction.
-
-A long run can be stopped: hold the Option key, and it stops at the next thing
-it is about to do. Nothing half-made is left in your folder. The panel says
-what it is doing while it works.
-
-## Requirements
-
-macOS 12.3 or later, and two command-line tools:
+Use macOS 12.3 or later and install the runtime tools with Homebrew:
 
 ```sh
 brew install exiftool vips
 ```
 
-The action checks both before asking anything, and says what is missing.
+Download `Stamp-Images.jxa` from the
+[releases page](https://github.com/resoltico/StampImages/releases), then follow
+[INSTALL.txt](INSTALL.txt) to verify the download and create the Finder Quick
+Action in Shortcuts. Node is needed only for development.
 
-## Installing
+## Using the Quick Action
 
-Releases, sources and build attestation:
+Select image files or folders in Finder and run **Stamp Images**. Folders are
+searched recursively. Copies of images discovered within a selected folder go
+into that selected folder, including images in subfolders. Directly selected
+images get copies beside them. Overlapping selections and hard links are
+processed once; the outermost selected folder takes precedence.
 
-    https://github.com/resoltico/StampImages
+Review any selection problems, then choose the ten settings for the run:
 
-Download the artifact from the releases page, open Shortcuts, create a Quick
-Action that receives files from Finder, add a **Run JavaScript for Automation**
-action, and paste the file into it. The build is attested: see `INSTALL.txt`
-for how to check what you downloaded.
+- Date/time format, including an option to omit it.
+- Coordinate format; GPS is off by default.
+- Custom text, including multiple lines.
+- Installed typeface name, selected from suggestions or typed.
+- Text size and colour.
+- Outline width and colour.
+- Position and margin.
 
-## What it does with your files
+Name typefaces as Font Book does, such as `Georgia`, `Georgia Bold` or
+`Avenir Black`. An unavailable name is refused before stamping. Custom text may
+contain up to 500 UTF-16 code units; null characters and incomplete Unicode are
+refused. All glyphs use the chosen text colour, including monochrome silhouettes
+of colour emoji.
 
-It reads the photographs you selected and writes new files beside them. It
-never opens an original for writing, never moves one, and never deletes one.
-Every photograph you select ends in exactly one of three places when the run
-is over: a copy that exists, a reason there is none, or a reason it failed.
-The second of those is for photographs the request did not apply to — a scan
-that does not say when it was taken, when the date is all you asked for. That
-is not a failure, and it is not silence either.
+Click **Create** to start. Independent setting errors appear together, and the
+form keeps your draft while you correct them. When native form capability is
+unavailable, stepwise dialogs end with a Create confirmation. Appearance settings,
+including the GPS choice, are remembered in the preferences domain
+`com.resoltico.StampImages`; custom text is never remembered.
 
-JPEG, PNG, HEIC/HEIF, TIFF, WebP and AVIF copies keep the source format; other
-readable image formats are saved as JPEG. Encoding quality is chosen so you
-would not notice the difference, and the copy keeps what the photograph said about
-itself — including, if it was there, where it was taken, whether or not the
-stamp shows it. The colour you chose for the text is the colour that appears,
-whatever colour space the photograph is in.
+The progress panel shows the current work and provides **Stop**. Stop takes effect
+at the next safe checkpoint, keeps saved copies and retains any finished
+unpublished copy in its existing temporary workspace. It reports the retained
+path without starting a new Downloads access request. Completion reports saved,
+recovered and unfinished work, metadata omissions and appearance notes, with
+selectable details and **Show in Finder** for available copies.
 
-Unreadable or malformed image measurements fail the photograph. A missing
-`n-pages` field denotes a single-image format; other page-count failures do
-not permit a copy of just the first page.
+## Supported files and output
 
-Selecting a folder again leaves the copies an earlier run put there alone.
+Supported still-image formats are JPEG, PNG, HEIC/HEIF, TIFF, WebP and AVIF, in RGB
+or greyscale. Convert other colour models, such as CMYK, before stamping. Animated
+and multi-image files, GIF, vectors, documents and camera RAW are refused. A
+supported filename extension is required for discovery; inspected image content
+determines the encoder and output extension. A PNG named `photo.jpg` produces
+`photo_stamped.png`.
 
-Nothing is sent anywhere. The only programs it runs are the two above and a
-handful of system tools, all named in `src/core/executables.js`.
+A copy normally keeps its source encoding. JPEG, HEIC, WebP and AVIF are re-encoded
+with quality 90; PNG and TIFF use lossless encoding. Re-encoding can change image
+pixels. A coloured caption on a greyscale source expands the copy to RGB and is
+reported. Colour profiles are used when converting caption colours; conversion
+problems are reported.
 
-## Running it without a person
+Copies use names such as `holiday_stamped.jpg`, then `holiday_stamped 2.jpg` on a
+collision. Nothing is overwritten. Folder walks skip dot-prefixed entries,
+packages, links and supported images whose stems end in `_stamped` or
+`_stamped <digits>`. Other supported names, including `holiday_stamped_2.jpg`, are
+inputs. Explicitly selecting a stamped image stamps it again. Unreadable entries
+are reported rather than silently omitted.
+
+The stamp's date comes from `DateTimeOriginal` or `CreateDate`, never the file's
+modification time or today's date. Dates and coordinates describe the camera's
+metadata, not independently verified time or location. Missing requested metadata
+is reported; custom text can still be stamped. A photograph with no requested
+content gets no copy and an explanation.
+
+**Turning GPS off does not remove embedded location metadata.** Copies retain
+source metadata, including coordinates. This is not an anonymisation tool.
+
+Sources are inspected before settings, then captured into private workspaces with
+identity, size and version checks. Metadata, profiles and pixels come from the
+same captured bytes. Coarse filesystem timestamps limit detection of concurrent
+edits; stop other writers while stamping.
+
+Failed publication attempts recovery to Downloads under the intended filename,
+then a confirmed temporary copy. If recovery cannot be completed, the workspace
+is retained and its location reported. Filesystem drivers without the necessary
+exclusive publication support use recovery; this includes FAT32 on some hosts.
+Only dead-owner workspaces without retained work are reclaimed. Follow reported
+recovery paths promptly because system temporary storage is not permanent.
+
+## Noninteractive use
 
 ```sh
-osascript -l JavaScript Stamp-Images.jxa -- --headless settings.json photo.jpg
+osascript -l JavaScript dist/Stamp-Images.jxa -- --headless settings.json photo.jpg
 ```
 
-The settings file is a JSON object with all ten settings in it;
-`"coordinateFormat": "none"` leaves the place off. The receipt is printed as
-JSON — what was stamped, what failed, what could not be used, and in
-`missingMetadata` each copy that lacks a date or a place it was asked for — and
-a run that could not honour everything writes that receipt and then exits
-non-zero, because a caller needs both. A copy missing part of what was asked
-for is kept, and still makes the run incomplete.
+[HEADLESS.md](HEADLESS.md) specifies settings, JSON receipts, exit statuses and tool
+overrides. CLI runs open no dialogs and do not access interactive preferences.
 
-## License
+## Development and verification
 
-First-party project files use the [Mozilla Public License 2.0](https://mozilla.org/MPL/2.0/)
-(`MPL-2.0`); see `LICENSE` for the full terms. Dependencies retain their own
-licenses. Preserve notices and provide covered source and modifications under
-MPL 2.0 when distributing them as required by the license. The standalone JXA
-header links to its corresponding source.
+[CONTRIBUTING.md](CONTRIBUTING.md) covers clean setup, source layout, builds and
+releases. [QA.md](QA.md) defines automated and live acceptance requirements; it is
+not a claim that every supported host has been qualified.
 
-## Development
+## License and security
 
-```sh
-npm install
-npm run release
-```
-
-That builds the artifact and runs the whole gate: lint, ESLint, unit tests
-with full coverage, mutation testing, and a check that the committed artifact
-is the one the sources produce. `npm run test:integration:macos` runs the
-scenarios that need a real Mac, and counts pixels rather than trusting that a
-file appeared.
-
-`QA.md` records what has been measured and what has not.
+First-party files use [Mozilla Public License 2.0](https://mozilla.org/MPL/2.0/)
+(`MPL-2.0`); see [LICENSE](LICENSE). Dependencies retain their own licenses. Preserve
+notices and provide covered source and modifications as required when distributing.
+The standalone script links to its corresponding source.
+[SECURITY.md](SECURITY.md) describes the security model and private reporting.

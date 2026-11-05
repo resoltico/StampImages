@@ -1,8 +1,25 @@
 # Changelog
 
-Notable changes to this project are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
 ## [Unreleased]
+
+- Require ten typed headless settings; reject unknown fields and numeric strings. Earlier preferences open defaults; no settings or receipt migration is provided.
+- Replace receipts with per-image source mappings, saved/recovered paths, explicit stopped/not-started states and structured issues; see [HEADLESS.md](HEADLESS.md).
+- CLI input is always noninteractive; add help/version, relative paths, native UTF-8 settings reading and explicit complete/incomplete/invalid/setup exit statuses.
+- Choose copy encoders and extensions from actual raster content, including HEIF compression, so mislabeled aliases do not suppress supported photos.
+- Inspect actual source content before settings; refuse disguised, animated and multi-image inputs, then process a checked private capture.
+- Earlier numbered `_stamped_2` copies are treated as inputs during folder walks; exclude them from folders you stamp again.
+- FAT32 drivers that refuse exclusive rename use confirmed recovery; completion names the actual recovery location.
+- Publish with native exclusive claims; collisions use Finder-style ` 2` suffixes. Recover failed saves to Downloads, then a confirmed temporary copy.
+- Track owned artifacts and workspace owners; retain uncertain validation work and reclaim only unretained dead-owner workspaces.
+- Use one progress panel with Stop and settings context; show selectable, scrollable details and saved/recovered paths with Show in Finder.
+- Require an installed-font catalogue before rendering; unavailable configured faces are invalid settings instead of allowing unchecked renderer substitution.
+- Stop retains finished unpublished copies in their owned temporary workspace without initiating new Downloads access.
+- Retain missing-metadata and colour/placement notes when a finished copy requires recovery; completion shows aggregate unfinished-work and omission counts.
+- Report independent field, font and content errors together; focus the first invalid editor and report numeric ranges for signed integer input.
+- Reject null characters and incomplete Unicode captions before processing.
+- Diagnose UI programming faults instead of silently switching interfaces; preserve saved outputs when observers or cleanup fail and stop remaining work on fatal issues.
+- Replace shared-scope concatenation with scoped esbuild; enforce domain/application/backend/host boundaries and build explicit native probe entrypoints.
+- Update vendor-verified development dependencies and pin Node/npm; remove the blanket 150-line file limit and verify native adapters separately from portable coverage.
 
 ## [1.2.1] - 2026-10-05
 

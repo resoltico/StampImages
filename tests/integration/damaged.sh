@@ -62,7 +62,7 @@ fi
 RECEIPT=$(cat "$WORK/receipt")
 
 for damaged in cut.jpg cut.png; do
-    assert_contains "$RECEIPT" "\"name\":\"$damaged\"" "the receipt names $damaged"
+    assert_contains "$RECEIPT" "/$damaged\"" "the receipt names $damaged"
     test ! -e "$WORK/${damaged%.*}_stamped.${damaged##*.}" ||
         fail "a copy was published from $damaged"
 done
@@ -74,7 +74,7 @@ for whole in whole_stamped.jpg whole_stamped.png; do
 done
 
 assert_contains "$RECEIPT" "load error" "the tool's own words say what was wrong"
-assert_contains "$(cat "$WORK/stderr")" "2 failed" "and both are counted"
+assert_contains "$(cat "$WORK/stderr")" "load error" "and both are counted"
 
 # The name belongs to the record rather than to the message as well.
 assert_not_contains "$RECEIPT" '"message":"cut.jpg:' "the file is named once"

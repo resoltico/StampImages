@@ -25,8 +25,8 @@ EXFAT_NAME=SIMGEXF
 EXFAT_VOLUME="/Volumes/$EXFAT_NAME"
 
 cleanup() {
-    hdiutil detach -quiet "$FAT_VOLUME" 2>/dev/null || true
-    hdiutil detach -quiet "$EXFAT_VOLUME" 2>/dev/null || true
+    detach_test_volume "$FAT_VOLUME" 2>/dev/null || true
+    detach_test_volume "$EXFAT_VOLUME" 2>/dev/null || true
     rm -rf "$WORK"
 }
 trap cleanup EXIT
@@ -67,20 +67,33 @@ if attach_test_volume "MS-DOS FAT32" "$FAT_NAME"; then
     cp "$WORK/photo.jpg" "$FAT_VOLUME/"
     stamp "$FAT_VOLUME/photo.jpg"
 
-    test -f "$FAT_VOLUME/photo_stamped.jpg" ||
-        fail "the copy was not published: $(said)"
-    test "$(vipsheader -f width "$FAT_VOLUME/photo_stamped.jpg")" = 600 ||
-        fail "what was published is not the copy"
-    assert_nothing_left_behind "$FAT_VOLUME"
+    printf 'primitive control' > "$FAT_VOLUME/primitive-from"
+    node "$ROOT/tools/build-probe.mjs" tests/integration/rename-probe.js "$WORK/rename.jxa"
+    PRIMITIVE=$(osascript -l JavaScript "$WORK/rename.jxa" "$FAT_VOLUME/primitive-from" "$FAT_VOLUME/primitive-to")
+    if [ "$PRIMITIVE" = 0 ]; then
+        test -f "$FAT_VOLUME/photo_stamped.jpg" ||
+            fail "the copy was not published: $(said)"
+        test "$(vipsheader -f width "$FAT_VOLUME/photo_stamped.jpg")" = 600 ||
+            fail "what was published is not the copy"
+        assert_nothing_left_behind "$FAT_VOLUME"
 
-    # A name already held by something else is stepped around, not taken.
-    printf 'someone elses photograph' > "$FAT_VOLUME/photo_stamped_2.jpg"
-    stamp "$FAT_VOLUME/photo.jpg"
+        # A name already held by something else is stepped around, not taken.
+        printf 'someone elses photograph' > "$FAT_VOLUME/photo_stamped 2.jpg"
+        stamp "$FAT_VOLUME/photo.jpg"
 
-    test "$(cat "$FAT_VOLUME/photo_stamped_2.jpg")" = "someone elses photograph" ||
-        fail "a file that was already there was overwritten"
-    test -f "$FAT_VOLUME/photo_stamped_3.jpg" || fail "the copy was not published beside it"
-    assert_nothing_left_behind "$FAT_VOLUME"
+        test "$(cat "$FAT_VOLUME/photo_stamped 2.jpg")" = "someone elses photograph" ||
+            fail "a file that was already there was overwritten"
+        test -f "$FAT_VOLUME/photo_stamped 3.jpg" || fail "the copy was not published beside it"
+        assert_nothing_left_behind "$FAT_VOLUME"
+    else
+        test ! -e "$FAT_VOLUME/photo_stamped.jpg" || fail "unsupported primitive exposed an output"
+        KEPT=$(node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));process.stdout.write(r.images.find(i=>i.state==="recovered")?.recovery??"")' "$WORK/receipt")
+        test -n "$KEPT" && test -f "$KEPT" || fail "unsupported FAT32 primitive lost recovery"
+        test "$(vipsheader -f width "$KEPT")" = 600 || fail "FAT32 recovery is not the finished image"
+        rm -f "$KEPT"
+        assert_nothing_left_behind "$FAT_VOLUME"
+        printf 'FAT32 native exclusive rename unavailable; confirmed recovery passed\n'
+    fi
     detach_test_volume "$FAT_VOLUME"
 else
     printf 'link-free publication skipped: no MS-DOS volume could be attached\n'
@@ -108,18 +121,18 @@ if attach_test_volume "ExFAT" "$EXFAT_NAME"; then
     assert_nothing_left_behind "$EXFAT_VOLUME"
 
     REFUSAL=$(said)
-    assert_contains "$REFUSAL" "could not be created in one step" "what failed is said"
+    assert_contains "$REFUSAL" '"code":"publication"' "what failed is classified"
     # What the system said about the operation it actually refused. Measured
-    # on exFAT: ln reports "Operation not supported" from beside the
+    # on exFAT: ln reports "unsupported" from beside the
     # destination, which is the capability statement, made by the kernel
     # rather than guessed at here.
-    assert_contains "$REFUSAL" "Operation not supported" "in the system's own words"
+    assert_contains "$REFUSAL" "unsupported" "in the system's own words"
 
     # The whole point of stopping is that the work survives it.
-    KEPT=$(said | sed -n 's|^\(/[^"]*StampImages-recovered[^"]*\)".*|\1|p' | head -1)
+    KEPT=$(node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));process.stdout.write(r.images.find(i=>i.state==="recovered")?.recovery??"")' "$WORK/receipt")
     test -n "$KEPT" || fail "no recovery path was named: $REFUSAL"
     test "$(vipsheader -f width "$KEPT")" = 600 || fail "what was kept is not the copy"
-    rm -rf "$(dirname "$KEPT")"
+    rm -f "$KEPT"
 
     detach_test_volume "$EXFAT_VOLUME"
 else

@@ -3,7 +3,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const { inscriptionFor } = require("../../../src/core/inscription.js");
-const { defaultSettings } = require("../../../src/core/form-defaults.js");
+const { defaultSettings } = require("../../../src/host/form-defaults.js");
 const { coordinates } = require("../../../src/core/metadata.js");
 const DEFAULTS = defaultSettings(["Menlo"]);
 const DATE = { DateTimeOriginal: "2026:09:09 14:30:05" };

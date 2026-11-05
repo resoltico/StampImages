@@ -8,7 +8,7 @@ const {
     describeExcluded,
     nameFrom,
     splitExtension,
-    nextUniquePath,
+    collisionPath,
     stagedPath
 } = require("../../../src/core/naming.js");
 
@@ -20,34 +20,9 @@ test("a name is the source stem, sanitized, with what the caller adds", () => {
     assert.equal(nameFrom("holiday.jpeg", "_T.jpeg"), "holiday_T.jpeg");
 });
 
-test("nextUniquePath returns the path when it is free", () => {
-    assert.equal(nextUniquePath("/tmp/b.jpg", () => false), "/tmp/b.jpg");
-});
 
-test("nextUniquePath starts suffixing at 2", () => {
-    // With only the original occupied, the first candidate must be _2. A
-    // sequence starting at 3 would still satisfy the two-occupied case below,
-    // so this is the assertion that pins the starting point.
-    const occupied = new Set(["/tmp/a.jpg"]);
 
-    assert.equal(
-        nextUniquePath("/tmp/a.jpg", (candidate) => occupied.has(candidate)),
-        "/tmp/a_2.jpg"
-    );
-});
 
-test("nextUniquePath suffixes past every occupied candidate", () => {
-    const occupied = new Set(["/tmp/a.jpg", "/tmp/a_2.jpg"]);
-
-    assert.equal(
-        nextUniquePath("/tmp/a.jpg", (candidate) => occupied.has(candidate)),
-        "/tmp/a_3.jpg"
-    );
-});
-
-test("nextUniquePath gives up rather than searching forever", () => {
-    assert.throws(() => nextUniquePath("/tmp/a.jpg", () => true), /Could not create/u);
-});
 
 test("stagedPath stays inside the workspace and sanitizes its token", () => {
     // Never beside the images: a file a tool writes into the output folder
@@ -82,29 +57,17 @@ test("the extension is the last one, not the first one found", () => {
         extension: ".bak"
     });
     assert.equal(
-        nextUniquePath("/tmp/a.jpg.bak", (path) => path === "/tmp/a.jpg.bak"),
-        "/tmp/a.jpg_2.bak"
+        collisionPath("/tmp/a.jpg.bak", 2),
+        "/tmp/a.jpg 2.bak"
     );
 });
 
-test("the unique-path search is bounded", () => {
-    let probed = 0;
-
-    assert.throws(() => nextUniquePath("/tmp/a.jpg", () => {
-        probed += 1;
-
-        return true;
-    }), /Could not create/u);
-    // Bounded, and the bound is not off by one: 2..9999 inclusive plus the
-    // original path.
-    assert.equal(probed, 9999);
-});
 
 test("a stamped copy is recognised by its mark, and by nothing else", () => {
     for (const name of [
         "holiday_stamped.jpg",
-        "holiday_stamped_2.png",
-        "holiday_stamped_10.jpeg",
+        "holiday_stamped 2.png",
+        "holiday_stamped 10.jpeg",
         "_stamped.jpg"
     ]) {
         assert.equal(looksStamped(name), true, name);

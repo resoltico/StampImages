@@ -26,28 +26,21 @@ const { splitExtension } = require("./naming.js");
 const QUALITY = "[Q=90]";
 const LOSSLESS = "";
 
-const KNOWN = {
-    ".jpg": { extension: ".jpg", options: QUALITY },
-    ".jpeg": { extension: ".jpeg", options: QUALITY },
-    ".png": { extension: ".png", options: LOSSLESS },
-    ".heic": { extension: ".heic", options: QUALITY },
-    ".heif": { extension: ".heif", options: QUALITY },
-    ".tif": { extension: ".tif", options: LOSSLESS },
-    ".tiff": { extension: ".tiff", options: LOSSLESS },
-    ".webp": { extension: ".webp", options: QUALITY },
-    ".avif": { extension: ".avif", options: QUALITY }
-};
-
-const FALLBACK = { extension: ".jpg", options: QUALITY };
-
-function outputFormat(sourcePath) {
-    const { extension } = splitExtension(String(sourcePath));
-
-    return KNOWN[extension.toLowerCase()] ?? FALLBACK;
+const { SUPPORTED_FORMATS } = require("./paths.js");
+function sourceFormat(path) {
+    const extension = splitExtension(String(path)).extension.toLowerCase();
+    return { extension, format: SUPPORTED_FORMATS.find((item) => item.extensions.includes(extension.slice(1))) };
 }
-
-function outputExtension(sourcePath) {
-    return outputFormat(sourcePath).extension;
+function extensionFor(path, family, compression) {
+    const source = sourceFormat(path);
+    const format = SUPPORTED_FORMATS.find((item) => (item.family ?? item.name) === family && (!item.compression || item.compression === compression));
+    if (!format) { throw new Error("The actual image encoding could not be confirmed as a supported format."); }
+    return format.extensions.includes(source.extension.slice(1)) ? source.extension : `.${format.extensions[0]}`;
+}
+function outputFormat(path) {
+    const { extension, format } = sourceFormat(path);
+    if (!format) { throw new Error("Unsupported output format."); }
+    return { extension, options: ["PNG", "TIFF"].includes(format.name) ? LOSSLESS : QUALITY };
 }
 
 /*
@@ -59,4 +52,4 @@ function savingPath(targetPath) {
     return `${targetPath}${outputFormat(targetPath).options}`;
 }
 
-module.exports = { outputFormat, outputExtension, savingPath, FALLBACK };
+module.exports = { outputFormat, savingPath, extensionFor };

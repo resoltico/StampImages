@@ -4,93 +4,89 @@ Source, releases and build attestation:
 
     https://github.com/resoltico/StampImages
 
-Verifying what you downloaded
-=============================
-
-Every file in the release is signed with a GitHub build attestation. With the
-GitHub CLI installed, from the folder you downloaded them into:
-
-    gh attestation verify "Stamp-Images.jxa" \
-        --repo resoltico/StampImages
-    shasum --check SHA256SUMS
-
 Requirements
 ============
 
-macOS 12.3 or later.
-
-The Shortcuts app is macOS 12 and later; 12.3 is the point at which its
-JavaScript engine supports everything this action uses.
-
-License terms
-=============
-
-This project uses Mozilla Public License 2.0 (MPL-2.0). LICENSE supplies the
-full terms, also available at https://mozilla.org/MPL/2.0/. Keep the JXA's
-license and source notices when sharing it. Dependencies keep their licenses.
-
-Runtime tools
-=============
-
-Open Terminal and run:
+macOS 12.3 or later, Shortcuts, and Homebrew runtime tools:
 
     brew install exiftool vips
 
-Nothing else has to be installed. Typefaces are read from the font system
-macOS already provides.
+Node is not a runtime dependency. Typefaces come from the macOS font system.
+
+Download and verify
+===================
+
+Download Stamp-Images.jxa, SHA256SUMS, INSTALL.txt and LICENSE from the release.
+With the GitHub CLI installed, run these commands in the download folder:
+
+    gh attestation verify Stamp-Images.jxa --repo resoltico/StampImages
+    gh attestation verify SHA256SUMS --repo resoltico/StampImages
+    gh attestation verify INSTALL.txt --repo resoltico/StampImages
+    gh attestation verify LICENSE --repo resoltico/StampImages
+    shasum --check SHA256SUMS
+
+The checksum manifest covers the JXA artifact; each downloaded file has its own
+build attestation. A local source build has no GitHub release attestation.
 
 Install the Quick Action
 ========================
 
-1. Open the Shortcuts app.
-2. Create a new shortcut.
-3. Open the shortcut details.
-4. Enable "Use as Quick Action".
-5. Enable Finder.
-6. Configure the shortcut to receive Files from Finder.
-7. Add "Run JavaScript for Mac Automation".
-8. Delete the example code in that action.
-9. Paste the complete contents of:
-
-       dist/Stamp-Images.jxa
-
-10. Save the shortcut as "Stamp Images".
+1. Open Shortcuts and create a shortcut.
+2. Open its details, enable "Use as Quick Action", and enable Finder.
+3. Configure it to receive Files from Finder.
+4. Add "Run JavaScript for Mac Automation".
+5. Replace the example code with the complete contents of Stamp-Images.jxa.
+   From a source checkout, use dist/Stamp-Images.jxa.
+6. Name the shortcut "Stamp Images".
 
 Use it
 ======
 
-Select image files or folders in Finder and run the Quick Action. Selected
-folders are searched recursively. Each image gets a stamped copy, saved in
-each folder you selected or beside each image you selected; the original
-files are not changed.
+Select image files or folders in Finder and run Stamp Images. Selected folders
+are searched recursively; copies go into the selected folder, including copies
+of images in its subfolders. Directly selected images get copies beside them.
+Overlapping selections process each source once. Originals are not modified.
 
-The date is on by default and GPS coordinates are off. Turning GPS on adds the
-place the photograph was taken to the stamp, and the choice is remembered for
-the next run. Leaving it off does not remove location data already in the
-image.
+Review selection problems, choose settings, and click Create. The date is on
+by default and GPS is off. Appearance settings, including GPS, are remembered;
+custom text is not. Turning GPS off changes only the visible stamp: embedded
+location metadata remains in the copy.
 
-Review any selection problems, choose the settings, and click Create. With
-stepwise dialogs, the last dialog confirms the settings before files are
-created. Completion reports the copies saved and anything not stamped.
+The progress panel offers Stop, which acts at the next safe checkpoint. Saved
+copies are kept. A finished unpublished copy is retained in its workspace and
+its path reported, without starting a Downloads access request. Completion
+reports saved and recovered paths, unfinished work and metadata omissions.
+
+Failed saves attempt recovery to Downloads, then a confirmed temporary copy.
+If recovery fails, the workspace is retained. Copy retained work somewhere
+permanent promptly: system temporary storage can be cleared by macOS.
+
+For supported formats and selection rules, see README.md in the source
+repository. HEADLESS.md specifies noninteractive settings and JSON receipts.
 
 Remove it
 =========
 
-1. In the Shortcuts app, delete the "Stamp Images" shortcut.
-2. To forget the settings it remembered, open Terminal and run:
+1. Delete the Stamp Images shortcut in Shortcuts.
+2. To forget its remembered appearance settings, run:
 
        defaults delete com.resoltico.StampImages
 
-That is everything it leaves on your Mac. It keeps one preferences entry,
-under that name, holding the settings of your last run -- never the text you
-typed, and nothing about your photographs. Its working files go in the system
-temporary folder and are cleared away as each run ends; a run that could not
-save a finished copy leaves them in place on purpose, and the message says
-where they are.
+The preferences domain holds appearance settings, never custom text or photo
+records. A message that the domain does not exist means there are no settings
+to remove. Normal working files are removed when a run ends. Finished retained
+copies and uncertain workspaces require attention at their reported locations;
+inspect and save needed work before removing those files. Saved outputs and
+Downloads recovery copies remain until you remove them yourself.
 
-exiftool and vips are yours rather than this action's, and anything else on
-your Mac may be using them, so they are left alone. Remove them with
+exiftool and vips are independently installed tools. If nothing else needs them,
+you can remove them with:
 
     brew uninstall exiftool vips
 
-if nothing else needs them.
+License terms
+=============
+
+First-party files use Mozilla Public License 2.0 (MPL-2.0); see LICENSE and
+https://mozilla.org/MPL/2.0/. Preserve the script's license and source notices
+when sharing it. Dependencies retain their own licenses.

@@ -134,3 +134,10 @@ test("an error carrying no command anywhere reports only its message", () => {
     assert.equal(describeForLog(plain), "something went wrong");
     assert.equal(describeForLog(new Error("outer", { cause: plain })), "outer");
 });
+
+test("expected operation errors and cause chains retain their exact identity", () => {
+    const { OperationError, causes } = require("../../../src/core/errors.js");
+    const cause = new Error("native"); const error = new OperationError("decode", { cause });
+    assert.equal(error.name, "OperationError"); assert.equal(error.cause, cause);
+    assert.deepEqual(causes(error), [error, cause]); assert.deepEqual(causes(null), []);
+});

@@ -115,15 +115,8 @@ test("a name that resolves is no problem, and carries both halves", () => {
     );
 });
 
-test("a host with no catalogue passes the name on whole", () => {
-    // Nothing can be checked, so nothing is: the description is written
-    // without the comma and pango splits it, which is worse and is all there
-    // is. Refusing every typeface on a machine that has them all is worse
-    // still, and a catalogue is not something a person can install.
-    assert.deepEqual(
-        resolved(null, "Helvetica Neue Bold"),
-        { typeface: { name: "Helvetica Neue Bold" } }
-    );
+test("font resolution requires a catalogue and cannot hand unchecked names to pango", () => {
+    assert.throws(() => resolved(null, "Helvetica Neue Bold"), /catalogue is required/u);
 });
 
 test("a list of faces reads as a person would say it", () => {

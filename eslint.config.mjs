@@ -4,7 +4,7 @@
  * The base is `js.configs.all`, which enables every core ESLint rule rather
  * than the curated `recommended` subset. `all` is not version-stable: a new
  * rule in a later release turns on by itself. That is why eslint is pinned to
- * an exact version in package.json and moved deliberately through Dependabot.
+ * an exact version in package.json and updated after checking vendor releases.
  *
  * The globals and the rule adjustments live in tools/eslint/; this file only
  * assembles them per area of the tree.
@@ -43,8 +43,8 @@ export default [
     { rules: { ...deliberateExceptions, ...tunedRules } },
 
     {
-        // Portable planning core: CommonJS for Node, concatenated for JXA.
-        files: ["src/core/**/*.js"],
+        // Portable planning core: CommonJS for Node, bundled for JXA.
+        files: ["src/entry.js", "src/core/**/*.js", "src/application/**/*.js", "src/backend/**/*.js"],
         languageOptions: {
             ecmaVersion: JXA_ECMA_VERSION,
             sourceType: "commonjs",
@@ -54,7 +54,7 @@ export default [
 
     {
         // macOS host layer: the same, plus the JavaScriptCore globals.
-        files: ["src/runtime/**/*.js"],
+        files: ["src/host/**/*.js"],
         languageOptions: {
             ecmaVersion: JXA_ECMA_VERSION,
             sourceType: "commonjs",
@@ -80,7 +80,7 @@ export default [
     },
 
     {
-        files: ["tests/**/*.cjs"],
+        files: ["tests/**/*.cjs", "tests/integration/*.js"],
         languageOptions: {
             ecmaVersion: "latest",
             sourceType: "commonjs",
@@ -90,7 +90,21 @@ export default [
             // Test fixtures are literal on purpose: naming 2480 as a constant
             // derived from the same source as the code under test would make
             // the assertion tautological.
-            "no-magic-numbers": "off"
+            "no-magic-numbers": "off",
+            // Native probes invoke bridged zero-argument methods through property access.
+            "no-unused-expressions": "off",
+            "no-console": "off"
+        }
+    },
+    {
+        files: ["tests/integration/*.mjs"],
+        languageOptions: { ecmaVersion: "latest", sourceType: "module", globals: { ...nodeGlobals, Buffer: "readonly" } },
+        rules: {
+            // Binary format fixtures use the literal values from their file-format contracts.
+            "no-magic-numbers": "off",
+            // PNG CRC32 is defined by bit operations.
+            "no-bitwise": "off"
         }
     }
+
 ];

@@ -16,7 +16,7 @@ const test = require("node:test");
 const {
     buildExiftoolProbeArgv,
     isExiftoolUsable
-} = require("../../../src/core/preflight.js");
+} = require("../../../src/backend/preflight.js");
 
 test("the exiftool probe asks for a tag, in the form the adapter reads", () => {
     // Every argument matters: without -json there is nothing to parse, and

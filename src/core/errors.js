@@ -1,4 +1,5 @@
 "use strict";
+/* eslint max-classes-per-file: ["error", 2] -- Expected failure and cancellation have different control flow. */
 
 /*
  * Error classification. The runtime distinguishes a deliberate cancellation,
@@ -55,6 +56,10 @@ function causes(error) {
     }
 
     return chain;
+}
+
+class OperationError extends Error {
+    constructor(message, options) { super(message, options); this.name = "OperationError"; }
 }
 
 class UserCancelled extends Error {
@@ -123,6 +128,8 @@ function describeForLog(error) {
 }
 
 module.exports = {
+    OperationError,
+    causes,
     UserCancelled,
     errorMessage,
     commandOf,

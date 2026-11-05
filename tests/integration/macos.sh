@@ -98,7 +98,7 @@ test "$ANONYMOUS" -gt 200 || fail "the typed text was not drawn: $ANONYMOUS"
 # ---------------------------------------------------------------------------
 
 stamp "$WORK/text-only.json" "$WORK/anonymous.png" > /dev/null
-test -f "$WORK/anonymous_stamped_2.png" || fail "the second run overwrote the first"
+test -f "$WORK/anonymous_stamped 2.png" || fail "the second run overwrote the first"
 test "$(vipsheader -f vips-loader "$WORK/anonymous_stamped.png")" = "pngload" ||
     fail "a PNG came back as something else"
 

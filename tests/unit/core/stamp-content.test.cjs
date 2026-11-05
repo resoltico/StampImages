@@ -2,13 +2,13 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { defaultAnswers, defaultSettings } = require("../../../src/core/form-defaults.js");
+const { defaultAnswers, defaultSettings } = require("../../../src/host/form-defaults.js");
 const { normalizeSettings } = require("../../../src/core/settings.js");
 const { contentProblem, requireStampContent } = require("../../../src/core/stamp-content.js");
-const { encode, rememberedAnswers } = require("../../../src/core/preferences.js");
-const { readAnswers } = require("../../../src/core/answers.js");
-const { selectionSummary } = require("../../../src/core/stamp-description.js");
-const { formSpec, invitation } = require("../../../src/core/form.js");
+const { encode, rememberedAnswers } = require("../../../src/host/preferences.js");
+const { readAnswers } = require("../../../src/host/answers.js");
+const { selectionSummary } = require("../../../src/host/stamp-description.js");
+const { formSpec, invitation } = require("../../../src/host/form.js");
 const FONTS = ["Menlo"];
 
 test("fresh settings stamp date/time only; GPS is off until someone turns it on", () => {
@@ -24,7 +24,7 @@ test("a headless configuration must say whether to stamp coordinates", () => {
     const { coordinateFormat, ...withoutLocation } = defaultSettings(FONTS);
 
     assert.equal(coordinateFormat, "none");
-    assert.throws(() => normalizeSettings(withoutLocation), /coordinate format/u);
+    assert.throws(() => normalizeSettings(withoutLocation), /Coordinate format/u);
 });
 
 test("headless coordinate opt-in must be an explicit valid mode", () => {
@@ -85,10 +85,10 @@ test("validation retains the selection, copy rules and metadata warning", () => 
         count: 3, selectedFolders: 1, fonts: FONTS
     });
 
-    assert.match(shown.detail, /^Fix the size\./u);
-    assert.match(shown.detail, /Found 3 images/u);
-    assert.match(shown.detail, /The original files are not changed/u);
-    assert.match(shown.detail, /Leaving GPS coordinates off does not remove location data/u);
+    assert.match(shown.fullDetail, /^Fix the size\./u);
+    assert.match(shown.fullDetail, /Found 3 images/u);
+    assert.match(shown.fullDetail, /The original files are not changed/u);
+    assert.match(shown.fullDetail, /Leaving GPS coordinates off does not remove location data/u);
     assert.equal(shown.rows.find((row) => row.key === "customText").label, "Custom text (optional):");
     const coordinate = shown.rows.find((row) => row.key === "coordinateFormat");
 

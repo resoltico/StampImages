@@ -13,7 +13,7 @@ const {
     buildColourArgv,
     buildBandjoinArgv,
     buildIccArgv
-} = require("../../../src/core/colouring.js");
+} = require("../../../src/backend/colouring.js");
 
 const VIPS = "/v/vips";
 
@@ -68,4 +68,10 @@ test("the colour is moved into the space the photograph is read in", () => {
             "relative"
         ]
     );
+});
+
+test("grey promotion uses explicit sRGB or relative ICC conversion argv", () => {
+    const { buildToSrgbArgv } = require("../../../src/backend/colouring.js");
+    assert.deepEqual(buildToSrgbArgv("vips", "in.v", "out.v", ""), ["vips", "colourspace", "in.v", "out.v", "srgb"]);
+    assert.deepEqual(buildToSrgbArgv("vips", "in.v", "out.v", "grey.icc"), ["vips", "icc_transform", "in.v", "out.v", "srgb", "--input-profile", "grey.icc", "--intent", "relative"]);
 });

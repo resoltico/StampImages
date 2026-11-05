@@ -12,12 +12,12 @@ const test = require("node:test");
 const {
     buildTextArgv,
     fontDescription
-} = require("../../../src/core/lettering.js");
+} = require("../../../src/backend/lettering.js");
 const {
     buildEmbedArgv,
     buildDilateArgv,
     windowFor
-} = require("../../../src/core/outlining.js");
+} = require("../../../src/backend/outlining.js");
 
 const VIPS = "/v/vips";
 
@@ -36,11 +36,9 @@ test("a description names the family, then the style, then the size", () => {
     );
 });
 
-test("a typeface that could not be split is written for pango to split", () => {
-    // Which is worse and is the point: without a catalogue there is nothing
-    // to split it with, and pango's own reading of "Menlo Bold 72" reaches the
-    // face while a comma after the whole name reaches nothing.
-    assert.equal(fontDescription({ name: "Menlo Bold" }, 72), "Menlo Bold 72");
+test("an unresolved typeface cannot reach the renderer", () => {
+    assert.throws(() => fontDescription({ name: "Menlo Bold" }, 72), /resolved typeface family/u);
+    assert.throws(() => fontDescription(null, 72), /resolved typeface family/u);
 });
 
 test("text is drawn as a coverage mask at a fixed DPI", () => {

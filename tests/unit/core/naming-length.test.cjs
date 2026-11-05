@@ -10,7 +10,7 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { nameFrom, nextUniquePath } = require("../../../src/core/naming.js");
+const { nameFrom, collisionPath } = require("../../../src/core/naming.js");
 const { utf8Length } = require("../../../src/core/numbers.js");
 
 const BUDGET = 255;
@@ -56,11 +56,10 @@ test("there is room left for the collision suffix", () => {
     // A name that fits only until it needs _2 is a name that fits until the
     // second run of the day.
     const name = nameFor("x".repeat(300));
-    const taken = new Set([`/a/${name}`]);
-    const next = nextUniquePath(`/a/${name}`, (path) => taken.has(path));
+    const next = collisionPath(`/a/${name}`, 2);
 
     assert.ok(utf8Length(next.slice("/a/".length)) <= BUDGET, next.length);
-    assert.ok(next.endsWith("_2.jpg"));
+    assert.ok(next.endsWith(" 2.jpg"));
 });
 
 test("the room reserved follows the timestamp it is given", () => {
@@ -86,11 +85,10 @@ test("a newline in the parent folder does not stop the numbering", () => {
     // The extension is read off the end rather than matched across the whole
     // path: a pattern could not reach it past a newline, and a folder with
     // one in its name is a folder this action handles everywhere else.
-    const taken = new Set(["/Scans\n2026/photo.png"]);
 
     assert.equal(
-        nextUniquePath("/Scans\n2026/photo.png", (path) => taken.has(path)),
-        "/Scans\n2026/photo_2.png"
+        collisionPath("/Scans\n2026/photo.png", 2),
+        "/Scans\n2026/photo 2.png"
     );
 });
 
@@ -99,21 +97,19 @@ test("a name is numbered whatever it is called, or is not called anything", () =
     // What is written here is whatever the photograph was, so the extension
     // is read off the name rather than assumed -- and a name without one is
     // numbered after it rather than refused.
-    const taken = (path) => path === "/a/notes.txt" || path === "/a/README";
 
-    assert.equal(nextUniquePath("/a/notes.txt", taken), "/a/notes_2.txt");
-    assert.equal(nextUniquePath("/a/README", taken), "/a/README_2");
+    assert.equal(collisionPath("/a/notes.txt", 2), "/a/notes 2.txt");
+    assert.equal(collisionPath("/a/README", 2), "/a/README 2");
 });
 
 test("a leading dot is a hidden name, not an extension", () => {
     assert.equal(
-        nextUniquePath("/a/.profile", (path) => path === "/a/.profile"),
-        "/a/.profile_2"
+        collisionPath("/a/.profile", 2),
+        "/a/.profile 2"
     );
 });
 
 test("the extension is matched whatever its case", () => {
-    const taken = new Set(["/a/b.JPG"]);
 
-    assert.equal(nextUniquePath("/a/b.JPG", (path) => taken.has(path)), "/a/b_2.JPG");
+    assert.equal(collisionPath("/a/b.JPG", 2), "/a/b 2.JPG");
 });

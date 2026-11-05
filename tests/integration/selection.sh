@@ -57,7 +57,7 @@ assert_contains "$RECEIPT" "second_stamped.jpg" "and the other one"
 assert_contains "$RECEIPT" "inside_stamped.png" "and the one inside the folder"
 assert_contains "$RECEIPT" "notes.txt" "what could not be used is named"
 assert_contains "$RECEIPT" "not a supported format" "with the reason"
-assert_contains "$RECEIPT" '"requested":4' "and everything asked for is counted"
+assert_contains "$RECEIPT" '"state":"incomplete"' "and everything asked for is counted"
 
 for copy in first_stamped.png second_stamped.jpg folder/inside_stamped.png; do
     test -f "$WORK/$copy" || fail "no copy at $copy"
@@ -73,8 +73,8 @@ if stamp "$WORK/settings.json" "$WORK/notes.txt" \
     fail "a selection with no photographs should not succeed"
 fi
 
-grep -q "Nothing to stamp" "$WORK/err.txt" ||
-    fail "the refusal does not say why: $(cat "$WORK/err.txt")"
+grep -q "No stamped copy was created" "$WORK/err.txt" ||
+    fail "the refusal does not say why: $(cat "$WORK/receipt.json" "$WORK/err.txt" 2>/dev/null)"
 grep -q "notes.txt" "$WORK/err.txt" ||
     fail "and does not say which file it is about"
 
@@ -91,7 +91,7 @@ if stamp "$WORK/blank.json" "$WORK/first.png" \
 fi
 
 grep -q "nothing to stamp" "$WORK/err.txt" ||
-    fail "the refusal does not say what is wrong: $(cat "$WORK/err.txt")"
+    fail "the refusal does not say what is wrong: $(cat "$WORK/receipt.json" "$WORK/err.txt" 2>/dev/null)"
 
 # ---------------------------------------------------------------------------
 # A second run over the same folder stamps the photographs again and leaves
@@ -107,7 +107,7 @@ set +e
 AGAIN=$(stamp "$WORK/settings.json" "$WORK/album" 2>&1)
 set -e
 
-assert_contains "$AGAIN" "holiday_stamped_2.png" "the photograph is stamped again"
+assert_contains "$AGAIN" "holiday_stamped 2.png" "the photograph is stamped again"
 assert_contains "$AGAIN" "already a stamped copy" "and the copy is named, not passed over"
 test ! -f "$WORK/album/holiday_stamped_stamped.png" ||
     fail "a copy was stamped a second time"

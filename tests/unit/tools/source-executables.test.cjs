@@ -26,7 +26,7 @@ test("a production module may not name an executable directly", async () => {
     );
     assert.throws(
         () => checkContent(
-            "src/core/commands.js",
+            "src/backend/commands.js",
             'const tool = "/opt/homebrew/bin/ghostscript";\n'
         ),
         /ghostscript/u

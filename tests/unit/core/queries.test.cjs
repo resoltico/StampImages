@@ -2,13 +2,13 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { buildMetadataArgv, buildSizeArgv, selectedTags } = require("../../../src/core/queries.js");
+const { buildMetadataArgv, buildSizeArgv, selectedTags } = require("../../../src/backend/queries.js");
 
 test("the default query requests only capture and creation dates, never GPS or modification time", () => {
-    assert.deepEqual(buildMetadataArgv("/v/exiftool", "/a/photo.jpg"), [
+    assert.deepEqual(buildMetadataArgv("/v/exiftool", "/a/photo.jpg", { dateFormat: "iso-minutes", coordinateFormat: "none" }), [
         "/v/exiftool", "-json", "-n", "-DateTimeOriginal", "-CreateDate", "/a/photo.jpg"
     ]);
-    assert.deepEqual(selectedTags({}), ["-DateTimeOriginal", "-CreateDate"]);
+    assert.deepEqual(selectedTags({ dateFormat: "iso-minutes", coordinateFormat: "none" }), ["-DateTimeOriginal", "-CreateDate"]);
 });
 
 test("GPS fields are queried only with explicit enabled coordinate formats", () => {
@@ -16,11 +16,11 @@ test("GPS fields are queried only with explicit enabled coordinate formats", () 
         assert.deepEqual(selectedTags({ dateFormat: "none", coordinateFormat }), [
             "-GPSLatitude", "-GPSLongitude"
         ]);
-        assert.deepEqual(selectedTags({ coordinateFormat }), [
+        assert.deepEqual(selectedTags({ dateFormat: "iso-minutes", coordinateFormat }), [
             "-DateTimeOriginal", "-CreateDate", "-GPSLatitude", "-GPSLongitude"
         ]);
     }
-    assert.deepEqual(selectedTags({ coordinateFormat: "none" }), selectedTags());
+    assert.deepEqual(selectedTags({ dateFormat: "iso-minutes", coordinateFormat: "none" }), ["-DateTimeOriginal", "-CreateDate"]);
 });
 
 test("no metadata requested cannot accidentally become an all-metadata ExifTool request", () => {
@@ -30,13 +30,13 @@ test("no metadata requested cannot accidentally become an all-metadata ExifTool 
     assert.throws(() => buildMetadataArgv("/v/exiftool", "/a/photo.jpg", none), /No stamp metadata/u);
     assert.throws(() => buildMetadataArgv("/v/exiftool", "/a/photo.jpg", {
         dateFormat: "none"
-    }), /No stamp metadata/u);
+    }), /Coordinate format/u);
 });
 
 test("invalid explicit query formats are not interpreted as opt-in", () => {
     for (const value of [null, true, false, "", "all", {}, []]) {
-        assert.throws(() => selectedTags({ coordinateFormat: value }), /Unrecognised value/u);
-        assert.throws(() => selectedTags({ dateFormat: value }), /Unrecognised value/u);
+        assert.throws(() => selectedTags({ dateFormat: "iso-minutes", coordinateFormat: value }), /Coordinate format|coordinate format/u);
+        assert.throws(() => selectedTags({ dateFormat: value, coordinateFormat: "none" }), /Date\/time format|date\/time format/u);
     }
 });
 

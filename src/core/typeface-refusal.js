@@ -49,14 +49,12 @@ function unknownTypeface(known, name) {
  * The one question both front ends ask: what a name names, or what to say
  * about it.
  *
- * A host with no catalogue cannot be told anything about fonts, so nothing is
- * checked and the name is passed on whole for pango to make what it can of.
- * Refusing every typeface on a machine that has them all would be the worse
- * failure, and a catalogue is not something a person can install.
+ * A catalogue is required. An unchecked name must never reach the renderer,
+ * where silent font substitution would change the requested stamp.
  */
 function resolved(known, name) {
     if (!known) {
-        return { typeface: { name } };
+        throw new Error("A typeface catalogue is required before choosing a face.");
     }
 
     const found = faceOf(known, name);

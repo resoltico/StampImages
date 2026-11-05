@@ -60,10 +60,10 @@ if stamp "$WORK/metadata-only.json" "$WORK/scan.png" \
 fi
 
 RECEIPT=$(cat "$WORK/out.txt")
-assert_contains "$RECEIPT" '"nothing"' "the third column exists"
+assert_contains "$RECEIPT" '"state":"nothing-to-stamp"' "the third column exists"
 assert_contains "$RECEIPT" "does not say when it was taken" "in the product's words"
 assert_not_contains "$RECEIPT" "no text to render" "not in the renderer's"
-assert_contains "$(cat "$WORK/err.txt")" "1 with nothing to stamp" "and is counted"
+assert_contains "$RECEIPT" '"state":"nothing-to-stamp"' "and is counted"
 test ! -f "$WORK/scan_stamped.png" || fail "a copy was published with nothing on it"
 
 # ---------------------------------------------------------------------------

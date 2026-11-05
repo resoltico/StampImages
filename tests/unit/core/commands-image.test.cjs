@@ -13,7 +13,7 @@ const {
     readingPath,
     buildOrientArgv,
     buildFlattenArgv
-} = require("../../../src/core/commands.js");
+} = require("../../../src/backend/commands.js");
 
 const VIPS = "/v/vips";
 
