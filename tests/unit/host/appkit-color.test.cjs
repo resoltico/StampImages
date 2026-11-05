@@ -1,16 +1,16 @@
 "use strict";
 
 /*
- * The colour rows, which are the one control that is a list and a field at
+ * The color rows, which are the one control that is a list and a field at
  * once. A popup could offer the presets and nothing else; a plain field could
- * take any colour and offer nothing. The row has to do both, in one control,
+ * take any color and offer nothing. The row has to do both, in one control,
  * or the form grows a second one to keep in step with the first.
  */
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const { buildForm } = require("../../../src/host/appkit-form.js");
-const { COLOUR_WIDTH } = require("../../../src/host/appkit-geometry.js");
+const { COLOR_WIDTH } = require("../../../src/host/appkit-geometry.js");
 const { WIDGETS } = require("../../../src/host/appkit.js");
 const { formSpec } = require("../../../src/host/form.js");
 const { defaultAnswers } = require("../../../src/host/form-defaults.js");
@@ -29,39 +29,39 @@ function build(spec = specFor()) {
     return { bridge, spec, ...buildForm(bridge, spec, WIDGETS) };
 }
 
-test("a colour is a control that is a list and a field at once", () => {
+test("a color is a control that is a list and a field at once", () => {
     // A popup could offer the presets and nothing else; a plain field could
-    // take any colour and offer nothing. The row has to do both, in one
+    // take any color and offer nothing. The row has to do both, in one
     // control, or the form grows a second one to keep in step with the first.
     const { controls } = build();
-    const { textColour } = controls;
+    const { textColor } = controls;
 
-    assert.equal(textColour.kind, "combo");
+    assert.equal(textColor.kind, "combo");
     assert.deepEqual(
-        textColour.items,
+        textColor.items,
         ["#FFFFFF", "#000000", "#FFD400", "#FF3B30"],
-        "the presets as the colours they are"
+        "the presets as the colors they are"
     );
     assert.equal(
-        textColour.stringValue,
+        textColor.stringValue,
         "#FFFFFF",
         "and the field showing a value, which is what makes it look like one"
     );
-    assert.equal(textColour.editable, true, "and it can be typed into");
-    assert.equal(textColour.completes, false, "without finishing the word for you");
-    assert.equal(textColour.rect.width, COLOUR_WIDTH, "as wide as a colour needs");
-    assert.equal(textColour.accessibilityLabel, "Text colour:");
+    assert.equal(textColor.editable, true, "and it can be typed into");
+    assert.equal(textColor.completes, false, "without finishing the word for you");
+    assert.equal(textColor.rect.width, COLOR_WIDTH, "as wide as a color needs");
+    assert.equal(textColor.accessibilityLabel, "Text color:");
 });
 
-test("a colour that could not be read is marked, keeping what was typed", () => {
+test("a color that could not be read is marked, keeping what was typed", () => {
     // The raw text stays in the control rather than being replaced by a
     // preset, so correcting it is a correction and not a retype.
-    const spec = specFor({ ...defaultAnswers(FONTS), outlineColour: "c7dae" }, [{ key: "outlineColour", message: "Outline colour must be six hex digits." }]);
+    const spec = specFor({ ...defaultAnswers(FONTS), outlineColor: "c7dae" }, [{ key: "outlineColor", message: "Outline color must be six hex digits." }]);
     const { controls } = build(spec);
 
-    assert.equal(controls.outlineColour.stringValue, "c7dae", "what was typed");
-    assert.equal(controls.outlineColour.drawsBackground, true);
-    assert.equal(controls.outlineColour.backgroundColor.name, "systemRed");
+    assert.equal(controls.outlineColor.stringValue, "c7dae", "what was typed");
+    assert.equal(controls.outlineColor.drawsBackground, true);
+    assert.equal(controls.outlineColor.backgroundColor.name, "systemRed");
 });
 
 test("the text row is marked too, when there is too much of it", () => {

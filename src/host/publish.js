@@ -3,7 +3,7 @@ const { requireValidatedArtifact, isPublished } = require("../core/artifacts.js"
 const { keep, clearAway } = require("./recovery.js");
 const { confirm } = require("./settling.js");
 const { ISSUE, issuesOf } = require("../core/outcomes.js");
-const { errorMessage, isUserCancelled, UserCancelled } = require("../core/errors.js");
+const { errorMessage, isUserCanceled, UserCanceled } = require("../core/errors.js");
 const { claimAvailable } = require("./destination.js");
 
 function confirmed(context) {
@@ -27,9 +27,9 @@ function publicationCode(error) {
 
 function retainedAfterStop(context) {
     const { job, paths, area } = context;
-    const failure = new UserCancelled();
+    const failure = new UserCanceled();
     failure.recovery = paths.staged;
-    failure.issues = [{ code: ISSUE.cancelled, stage: "publication", diagnostic: context.diagnostic, message: `Stopped before saving. Keep this finished copy from its temporary workspace before restarting:\n${paths.staged}` }];
+    failure.issues = [{ code: ISSUE.canceled, stage: "publication", diagnostic: context.diagnostic, message: `Stopped before saving. Keep this finished copy from its temporary workspace before restarting:\n${paths.staged}` }];
     try { failure.issues.push(...clearAway(job.app, { staging: area })); }
     catch (error) { failure.issues.push(...issuesOf(error, "cleanup")); }
     return failure;
@@ -42,14 +42,14 @@ function failedPublication(context, error) {
         claimedIdentity: claimed.identity, claimedSize: claimed.size
     })) {
         const saved = confirmed(context);
-        if (isUserCancelled(error)) { job.progress.requestStop(); }
+        if (isUserCanceled(error)) { job.progress.requestStop(); }
         else { saved.issues.push(...issuesOf(error, "publication")); }
         return saved;
     }
-    if (isUserCancelled(error)) { throw retainedAfterStop(context); }
+    if (isUserCanceled(error)) { throw retainedAfterStop(context); }
     try { job.progress.phase("Keeping the finished copy"); }
     catch (checkpoint) {
-        if (isUserCancelled(checkpoint)) { throw retainedAfterStop(context); }
+        if (isUserCanceled(checkpoint)) { throw retainedAfterStop(context); }
         throw checkpoint;
     }
     const failure = keep(job, paths, { reasons: [errorMessage(error)], staging: area });

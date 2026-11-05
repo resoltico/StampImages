@@ -5,7 +5,7 @@ const test = require("node:test");
 const { pagesIn, bandsOf } = require("../../../src/host/fidelity.js");
 const { sizeOf } = require("../../../src/host/tinting.js");
 const { readPhotograph, prepared } = require("../../../src/host/preparing.js");
-const { isUserCancelled } = require("../../../src/core/errors.js");
+const { isUserCanceled } = require("../../../src/core/errors.js");
 const { createFakeHost, WORKSPACE } = require("./fake-host.cjs");
 const { makeJob } = require("./fake-job.cjs");
 
@@ -44,7 +44,7 @@ test("cancellation remains a cancellation even if the message names the missing 
     const error = Object.assign(new Error('vips_image_get: field "n-pages" not found'), {errorNumber: -128});
     const {job} = jobOn({failures: [["'n-pages'", error]]});
 
-    assert.throws(() => pagesIn(job, "/photo.png"), isUserCancelled);
+    assert.throws(() => pagesIn(job, "/photo.png"), isUserCanceled);
 });
 
 test("invalid dimensions and band counts fail their measurement", () => {
@@ -97,12 +97,12 @@ test("an explicit missing-field diagnostic from vipsheader remains single-image"
     }
 });
 
-test("grey with alpha is expanded for a colour caption and its intermediate is owned", () => {
-    const {host} = jobOn({bands: 2, stored: "grey"});
-    const job = {...makeJob(host, {textColour: "#FF3B30", outlineWidth: 0}), workspace: WORKSPACE};
+test("gray with alpha is expanded for a color caption and its intermediate is owned", () => {
+    const {host} = jobOn({bands: 2, stored: "gray"});
+    const job = {...makeJob(host, {textColor: "#FF3B30", outlineWidth: 0}), workspace: WORKSPACE};
     const intermediates = [];
     const result = prepared(job, {path: "/photo.png"}, "1", intermediates);
 
     assert.equal(result.expanded, true);
-    assert.deepEqual(intermediates, [`${WORKSPACE}/oriented-1.v`, `${WORKSPACE}/colour-1.v`]);
+    assert.deepEqual(intermediates, [`${WORKSPACE}/oriented-1.v`, `${WORKSPACE}/color-1.v`]);
 });

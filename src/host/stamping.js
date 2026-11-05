@@ -52,7 +52,7 @@ function stampOnto(job, photograph, drawn, token) {
     const stamp = stampFor(job, drawn);
     const at = placeStamp(photograph.size, stamp.size, job.settings);
 
-    job.progress.phase("Stamping the photograph");
+    job.progress.phase("Stamping the image");
 
     return {
         stamped: composite(job, photograph, { path: stamp.path, at }, token),

@@ -89,7 +89,7 @@ function createTree(objc, ns, ref) {
         },
 
         // So that a folder selected twice, or a folder and its parent, are
-        // recognised as the same folder.
+        // recognized as the same folder.
         standardize(path) {
             return objc.unwrap(ns(path).stringByStandardizingPath);
         }

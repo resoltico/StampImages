@@ -90,7 +90,7 @@ function walk(tree, folder, taken, outcome) {
  * new is not the same as nothing at all: what is in here may already be in
  * the run because a folder above it was selected too.
  */
-const NO_IMAGES = "contains no supported images";
+const NO_IMAGES = "This folder contains no supported images.";
 
 function emptiness(outcome) {
     return outcome.found.length === 0 && !outcome.alreadyTaken ? NO_IMAGES : "";

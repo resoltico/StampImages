@@ -5,7 +5,7 @@
  *
  * pango answers every name: asked for one this Mac has not, it draws in a
  * default face and says nothing. So a name is resolved against the machine's
- * own catalogue before anything is drawn, and that happens on every path --
+ * own catalog before anything is drawn, and that happens on every path --
  * the headless one included, which is the one that used to go through a
  * different door.
  */
@@ -16,9 +16,9 @@ const { assemble } = require("../../../src/host/assembly.js");
 const { defaultSettings } = require("../../../src/host/form-defaults.js");
 const { createFakeHost } = require("./fake-host.cjs");
 const { recorder, prepared, place } = require("./fake-assembly.cjs");
-const { catalogueOf } = require("./fake-typefaces.cjs");
+const { catalogOf } = require("./fake-typefaces.cjs");
 
-const KNOWN = catalogueOf({ Menlo: ["Regular", "Italic", "Bold"] });
+const KNOWN = catalogOf({ Menlo: ["Regular", "Italic", "Bold"] });
 
 function headlessWith(host, font, progress) {
     const invocation = {
@@ -53,7 +53,7 @@ test("a headless configuration naming a face this Mac has not is refused", () =>
 });
 
 test("a configuration asking for a style the family has not is told which", () => {
-    // Which is a sentence only a real catalogue can write, and the reason for
+    // Which is a sentence only a real catalog can write, and the reason for
     // reading one: the old refusal could say the name failed and nothing else.
     assert.throws(
         () => headlessWith(createFakeHost(), "Menlo Heavy", recorder()),
@@ -86,7 +86,7 @@ function watching(asked) {
     };
 }
 
-test("the suggestions are asked of the catalogue, candidate by candidate", () => {
+test("the suggestions are asked of the catalog, candidate by candidate", () => {
     const asked = [];
 
     assemble(prepared(createFakeHost()), place(recorder()), watching(asked));
@@ -112,7 +112,7 @@ test("a headless run is offered nothing, because nobody is there", () => {
     assert.deepEqual(job.settings.typeface, { family: "Menlo", face: "" });
 });
 
-test("an unavailable font catalogue fails setup before any questions or rendering", () => {
+test("an unavailable font catalog fails setup before any questions or rendering", () => {
     const host = createFakeHost();
     assert.throws(() => assemble(prepared(host), place(recorder()), null), /could not be verified/u);
     assert.deepEqual(host.dialogs, []); assert.deepEqual(host.commands, []);

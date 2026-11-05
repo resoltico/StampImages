@@ -38,7 +38,7 @@ test("a photograph that produced nothing is not a photograph", () => {
 
     assert.throws(
         () => readPhotograph(job, "/a/one.jpg", "1"),
-        /the photograph is not a file with anything in it/u
+        /the image is not a file with anything in it/u
     );
 });
 

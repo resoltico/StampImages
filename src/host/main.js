@@ -1,7 +1,8 @@
 "use strict";
-const { isUserCancelled, OperationError } = require("../core/errors.js");
+const { isUserCanceled, OperationError } = require("../core/errors.js");
 const { isCliInput } = require("../core/invocation.js");
 const { runOutcome, issuesOf } = require("../core/outcomes.js");
+const { formatDuration } = require("../core/numbers.js");
 const { executeRun } = require("../application/run.js");
 const { checkTools } = require("./preflight.js");
 const { collectInvocation } = require("./input.js");
@@ -29,12 +30,13 @@ function prepare(app, input, options) {
     const access = injected ?? capabilities();
     if (!access.tree || !access.sources || !access.publication || !access.storage) { throw new OperationError("Required native filesystem capabilities are unavailable."); }
     progress.diagnostics.push(...reclaimWorkspaces(app, access.storage));
-    progress.phase("Finding photographs");
+    progress.phase("Finding images");
     const selected = collectImageFiles(app, invocation.inputItems, access.tree);
     return { app, tools, invocation, ...access, selection: inspectCandidates(app, selected, { tools, sources: access.sources, progress }) };
 }
 function execute(app, input, options) {
     const { headless, progress = openProgress(headless) } = options;
+    const started = Date.now();
     return executeRun({
         progress,
         prepare: () => prepare(app, input, { ...options, progress }),
@@ -45,7 +47,8 @@ function execute(app, input, options) {
             progress.expect(prepared.selection.images.length);
             return runJob(job, prepared.selection.images);
         }),
-        present: (result) => report(app, result, headless)
+        // Elapsed is the whole run as the person waited for it, as Image Files to PDF reports it.
+        present: (result) => report(app, { ...result, elapsed: formatDuration(Date.now() - started) }, headless)
     });
 }
 function application() { const app = Application.currentApplication(); app.includeStandardAdditions = true; return app; }
@@ -59,7 +62,7 @@ function handled(app, input, headless) {
         failed.diagnostics.push(...progress.diagnostics);
         if (error.issues?.some((issue) => ["settings", "request"].includes(issue.stage))) { failed.state = "invalid"; }
         if (headless) { return failed; }
-        if (!isUserCancelled(error)) { report(app, failed, false); }
+        if (!isUserCanceled(error)) { report(app, failed, false); }
         return undefined;
     } finally { progress.close(); }
 }

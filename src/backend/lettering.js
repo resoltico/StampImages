@@ -5,8 +5,8 @@
  * as a coverage mask, and the description of the face that shapes them.
  *
  * A mask says how much of each pixel a glyph covers and nothing about what
- * colour it is, which is what lets one drawing serve both the text and its
- * outline. Giving it a colour is colouring.js.
+ * color it is, which is what lets one drawing serve both the text and its
+ * outline. Giving it a color is coloring.js.
  *
  * Pure, so every flag the renderer receives is asserted by a test rather than
  * discovered on somebody's photographs. Nothing here runs anything.
@@ -14,7 +14,7 @@
 
 /*
  * The text, rendered to a coverage mask: one band saying how much of each
- * pixel the glyphs cover. A mask is what makes the colour a separate
+ * pixel the glyphs cover. A mask is what makes the color a separate
  * decision, so the same rendering serves the text and its outline.
  *
  * The DPI is fixed and the size travels in the font string, which is how

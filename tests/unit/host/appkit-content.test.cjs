@@ -109,5 +109,5 @@ test("binding teardown runs on success, Cancel and native abort without overridi
 
     assert.deepEqual(presentForm(bridge, formSpec(defaultAnswers(FONTS), [], {
         count: 1, fonts: FONTS
-    })), { cancelled: true });
+    })), { canceled: true });
 });

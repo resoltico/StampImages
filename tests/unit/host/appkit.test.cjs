@@ -31,7 +31,7 @@ function present(responses, spec, duringModal) {
 function controlsIn(alert) {
     const views = alert.accessoryView.subviews;
 
-    // Three rows are combos now -- the typeface and the two colours -- so
+    // Three rows are combos now -- the typeface and the two colors -- so
     // each is found by what it holds rather than by being the only one.
     return {
         combo: views.find((view) => view.kind === "combo" &&
@@ -49,10 +49,10 @@ test("clicking Stamp returns what the controls hold", () => {
     const { outcome } = present([CREATE]);
 
     assert.deepEqual(outcome.answers, defaultAnswers(FONTS));
-    assert.equal(outcome.cancelled, undefined);
+    assert.equal(outcome.canceled, undefined);
 });
 
-test("a colour typed over a preset is the answer, not the preset", () => {
+test("a color typed over a preset is the answer, not the preset", () => {
     // Selecting White and then replacing its text is the whole point of the
     // control. Reading the item last selected from the list would take the
     // preset and discard what the person actually wrote.
@@ -60,7 +60,7 @@ test("a colour typed over a preset is the answer, not the preset", () => {
         controlsIn(alert).combo.stringValue = "  c7dae8 ";
     });
 
-    assert.equal(outcome.answers.textColour, "  c7dae8 ");
+    assert.equal(outcome.answers.textColor, "  c7dae8 ");
 });
 
 test("what is being typed is committed before it is read", () => {
@@ -70,7 +70,7 @@ test("what is being typed is committed before it is read", () => {
     const { bridge } = present([CREATE]);
     const { combo, size, popup } = controlsIn(bridge.state.alerts[0]);
 
-    assert.ok(combo.committed > 0, "the colour");
+    assert.ok(combo.committed > 0, "the color");
     assert.ok(size.committed > 0, "and the numbers, which had the same fault");
     assert.equal(popup.committed, 0, "a menu has no editor to commit");
 });
@@ -78,7 +78,7 @@ test("what is being typed is committed before it is read", () => {
 test("clicking Cancel is an answer, not a failure", () => {
     const { outcome } = present([CANCEL]);
 
-    assert.deepEqual(outcome, { cancelled: true });
+    assert.deepEqual(outcome, { canceled: true });
 });
 
 test("a form that never appeared is reported as unavailable", () => {
@@ -94,9 +94,9 @@ test("nothing is scheduled against the form, and nothing ends it early", () => {
     // There was a watchdog here: an abortModal two minutes out, so a form that
     // never returned could not hang the run. It fired on forms that were
     // working perfectly -- taking two minutes to choose a typeface and a
-    // colour is not evidence of anything -- and dropped the user into the
+    // color is not evidence of anything -- and dropped the user into the
     // stepwise dialogs half way through answering. Nothing replaced it,
-    // deliberately: the form ends when it is answered or cancelled.
+    // deliberately: the form ends when it is answered or canceled.
     const { bridge } = present([CREATE]);
 
     assert.deepEqual(bridge.state.watchdogs, []);
@@ -113,6 +113,9 @@ test("the alert carries the form's own title, detail and buttons", () => {
     assert.equal(alert.informativeText, spec.detail);
     assert.match(alert.informativeText, /^Correct the highlighted setting, listed below\./u, "a correction is announced above the controls");
     assert.match(alert.accessoryView.subviews[0].documentView.string, /^something was wrong/u);
+    // Measured: inside a running alert the note opened two lines down, hiding its first line.
+    assert.deepEqual(alert.accessoryView.subviews[0].scrolledTo, { left: 0, top: 0 }, "the note opens at its start");
+    assert.equal(alert.accessoryView.subviews[0].reflected, 1);
     assert.match(alert.accessoryView.subviews[0].documentView.string, /You have selected 1 image\./u);
     assert.deepEqual(alert.buttons, ["Create", "Cancel"]);
     assert.ok(alert.accessoryView, "the form must be attached to the alert");

@@ -51,30 +51,30 @@ const TEXT = {
 };
 
 /*
- * A few colours worth having at hand, and the control takes any other.
+ * A few colors worth having at hand, and the control takes any other.
  *
- * The list holds the colours themselves rather than names for them: a menu of
+ * The list holds the colors themselves rather than names for them: a menu of
  * "White", "Black", "Warning yellow" is a menu of somebody's vocabulary, and
  * the thing being chosen is a value that can equally be typed. Which is also
  * why they are presets in a control that is a field, rather than a menu with a
  * "Custom..." item that makes a second control appear.
  */
 const { SETTINGS_SCHEMA } = require("../core/settings.js");
-const COLOUR_HINT = "or type #RRGGBB";
+const COLOR_HINT = "or type #RRGGBB";
 
-const TEXT_COLOUR = {
-    prompt: "Colour of the text:",
-    label: "Text colour:",
-    defaultAnswer: SETTINGS_SCHEMA.textColour.default,
-    hint: COLOUR_HINT,
+const TEXT_COLOR = {
+    prompt: "Color of the text:",
+    label: "Text color:",
+    defaultAnswer: SETTINGS_SCHEMA.textColor.default,
+    hint: COLOR_HINT,
     presets: ["#FFFFFF", "#000000", "#FFD400", "#FF3B30"]
 };
 
-const OUTLINE_COLOUR = {
-    prompt: "Colour of the outline:",
-    label: "Outline colour:",
-    defaultAnswer: SETTINGS_SCHEMA.outlineColour.default,
-    hint: COLOUR_HINT,
+const OUTLINE_COLOR = {
+    prompt: "Color of the outline:",
+    label: "Outline color:",
+    defaultAnswer: SETTINGS_SCHEMA.outlineColor.default,
+    hint: COLOR_HINT,
     presets: ["#202020", "#000000", "#FFFFFF"]
 };
 
@@ -89,9 +89,9 @@ const ORDER = [
     { kind: "text", key: "customText", control: TEXT },
     { kind: "font", key: "font", control: FONT },
     { kind: "number", key: "size", control: SIZE },
-    { kind: "colour", key: "textColour", control: TEXT_COLOUR },
+    { kind: "color", key: "textColor", control: TEXT_COLOR },
     { kind: "number", key: "outlineWidth", control: OUTLINE_WIDTH },
-    { kind: "colour", key: "outlineColour", control: OUTLINE_COLOUR },
+    { kind: "color", key: "outlineColor", control: OUTLINE_COLOR },
     { kind: "choice", key: "position", control: POSITION },
     { kind: "number", key: "margin", control: MARGIN }
 ];
@@ -125,7 +125,7 @@ function controlFor(row, fonts) {
 const BUILDERS = {
     choice: listRow,
     font: listRow,
-    colour: listRow,
+    color: listRow,
     number: numberRow,
     text: textRow
 };

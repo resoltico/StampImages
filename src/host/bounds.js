@@ -24,27 +24,27 @@ const MAXIMUM_OUTLINE = SETTINGS_SCHEMA.outlineWidth.maximum;
  * photograph in the batch, which is the opposite of what a batch is for.
  */
 const SIZE = {
-    prompt: `Text size in points (${MINIMUM_SIZE}-${MAXIMUM_SIZE}):`,
+    prompt: `Text size in points (${MINIMUM_SIZE}–${MAXIMUM_SIZE}):`,
     label: "Text size:",
-    hint: `${MINIMUM_SIZE}-${MAXIMUM_SIZE} pt`,
+    hint: `${MINIMUM_SIZE}–${MAXIMUM_SIZE} pt`,
     defaultAnswer: String(SETTINGS_SCHEMA.size.default),
     minimum: MINIMUM_SIZE,
     maximum: MAXIMUM_SIZE
 };
 
 const MARGIN = {
-    prompt: `Margin in pixels (${MINIMUM_MARGIN}-${MAXIMUM_MARGIN}):`,
+    prompt: `Margin in pixels (${MINIMUM_MARGIN}–${MAXIMUM_MARGIN}):`,
     label: "Margin:",
-    hint: `${MINIMUM_MARGIN}-${MAXIMUM_MARGIN} px`,
+    hint: `${MINIMUM_MARGIN}–${MAXIMUM_MARGIN} px`,
     defaultAnswer: String(SETTINGS_SCHEMA.margin.default),
     minimum: MINIMUM_MARGIN,
     maximum: MAXIMUM_MARGIN
 };
 
 const OUTLINE_WIDTH = {
-    prompt: `Outline width in pixels (${MINIMUM_OUTLINE}-${MAXIMUM_OUTLINE}):`,
+    prompt: `Outline width in pixels (${MINIMUM_OUTLINE}–${MAXIMUM_OUTLINE}):`,
     label: "Outline:",
-    hint: `${MINIMUM_OUTLINE}-${MAXIMUM_OUTLINE} px, 0 for none`,
+    hint: `${MINIMUM_OUTLINE}–${MAXIMUM_OUTLINE} px, 0 for none`,
     defaultAnswer: String(SETTINGS_SCHEMA.outlineWidth.default),
     minimum: MINIMUM_OUTLINE,
     maximum: MAXIMUM_OUTLINE

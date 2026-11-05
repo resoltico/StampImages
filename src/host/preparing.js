@@ -1,13 +1,13 @@
 "use strict";
 const { removeOwned } = require("./owned-cleanup.js");
 const { buildOrientArgv } = require("../backend/commands.js");
-const { buildToSrgbArgv } = require("../backend/colouring.js");
-const { wantsColour } = require("../core/colour.js");
+const { buildToSrgbArgv } = require("../backend/coloring.js");
+const { wantsColor } = require("../core/color.js");
 const { runArgv } = require("./shell.js");
 const { verifyFileWritten } = require("./asking.js");
 const { sizeOf } = require("./tinting.js");
 const { refuseUnfaithful, hasAlpha, bandsOf } = require("./fidelity.js");
-const { profileFor } = require("./colour-space.js");
+const { profileFor } = require("./color-space.js");
 const { OperationError, errorMessage, commandOf } = require("../core/errors.js");
 const { sourceIssue } = require("../core/source-policy.js");
 
@@ -32,12 +32,12 @@ function damagedOr(error) {
  * What a photograph has to be before a stamp can go on it.
  *
  * Two things, and the second only sometimes: turned the way it is meant to be
- * seen, and in a colour space that can hold the caption's colour. Putting the
+ * seen, and in a color space that can hold the caption's color. Putting the
  * stamp on it and saving the result is image.js.
  */
 
-// A photograph that stores only greys, with or without an alpha band.
-const GREY_BANDS = 2;
+// A photograph that stores only grays, with or without an alpha band.
+const GRAY_BANDS = 2;
 
 /*
  * Orientation is applied rather than carried. A photograph whose tag says to
@@ -49,36 +49,36 @@ function orient(job, source, oriented) {
     runArgv(
         job.app,
         buildOrientArgv(job.tools.vips, source, oriented),
-        "reading the photograph"
+        "reading the image"
     );
-    verifyFileWritten(job.app, oriented, "the photograph");
+    verifyFileWritten(job.app, oriented, "the image");
 
 }
 
 /*
- * A grey photograph, read into sRGB so a colour can be painted on it.
+ * A gray photograph, read into sRGB so a color can be painted on it.
  *
- * The stamp's colour is moved into the photograph's own space before it is
- * painted, and a grey space cannot hold a colour: measured, #FF3B30 moved into
- * a grey profile is one band with the value 138, and the caption came out grey
- * with the run reporting that the colour had been handled. A photograph that
- * stores only greys and a caption that is not grey cannot meet in the
+ * The stamp's color is moved into the photograph's own space before it is
+ * painted, and a gray space cannot hold a color: measured, #FF3B30 moved into
+ * a gray profile is one band with the value 138, and the caption came out gray
+ * with the run reporting that the color had been handled. A photograph that
+ * stores only grays and a caption that is not gray cannot meet in the
  * photograph's space, so they meet in sRGB instead -- the picture unchanged,
- * a value of 200 read back as 200, 200, 200, and the colour that was chosen.
+ * a value of 200 read back as 200, 200, 200, and the color that was chosen.
  *
- * Only when the colour actually needs it. White, black and the default
- * outline are greys, so the ordinary run over a grey photograph is untouched
- * and the copy stays as grey as the photograph was.
+ * Only when the color actually needs it. White, black and the default
+ * outline are grays, so the ordinary run over a gray photograph is untouched
+ * and the copy stays as gray as the photograph was.
  */
-function inColour(job, oriented, profile, token) {
-    const expanded = `${job.workspace}/colour-${token}.v`;
+function inColor(job, oriented, profile, token) {
+    const expanded = `${job.workspace}/color-${token}.v`;
 
     runArgv(
         job.app,
         buildToSrgbArgv(job.tools.vips, oriented, expanded, profile),
-        "reading the photograph"
+        "reading the image"
     );
-    verifyFileWritten(job.app, expanded, "the photograph");
+    verifyFileWritten(job.app, expanded, "the image");
 
     return expanded;
 }
@@ -103,17 +103,17 @@ function readPhotograph(job, source, token) {
 
 /*
  * The photograph and the stamp have to meet in one space, and it has to be a
- * space that can hold the colour. A photograph storing only greys cannot, so
+ * space that can hold the color. A photograph storing only grays cannot, so
  * it is read into sRGB and the stamp stays there with it -- which is the whole
  * of what the profile is for, so the profile goes with it.
  */
 function meeting(job, photograph, profile, token) {
-    if (bandsOf(job, photograph.path) > GREY_BANDS || !wantsColour(job.settings)) {
+    if (bandsOf(job, photograph.path) > GRAY_BANDS || !wantsColor(job.settings)) {
         return { photograph, profile, expanded: false };
     }
 
     return {
-        photograph: { ...photograph, path: inColour(job, photograph.path, profile.path, token) },
+        photograph: { ...photograph, path: inColor(job, photograph.path, profile.path, token) },
         profile: { path: "", failed: profile.failed },
         expanded: true
     };
@@ -139,4 +139,4 @@ function prepared(job, image, token, intermediates) {
     return met;
 }
 
-module.exports = { readPhotograph, inColour, meeting, prepared };
+module.exports = { readPhotograph, inColor, meeting, prepared };

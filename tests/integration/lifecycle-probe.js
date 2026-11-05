@@ -8,7 +8,7 @@ const { createProgress } = require("../../src/host/progress.js");
 const { cliCommand } = require("../../src/host/cli.js");
 const { CP } = require("../../src/core/executables.js");
 const { runArgv } = require("../../src/host/shell.js");
-const { UserCancelled } = require("../../src/core/errors.js");
+const { UserCanceled } = require("../../src/core/errors.js");
 function run(input) {
     const [scenario, replacement, ...argv] = input;
     const nativeApp = Application.currentApplication();
@@ -37,14 +37,14 @@ function run(input) {
         const result = nativeLink(from, to);
         if (result.state === "created" && scenario === "fault-after-commit") { injected += 1; throw new TypeError("Injected fault after native commit"); }
         if (result.state === "created" && scenario === "false-refusal") { injected += 1; return { state: "denied" }; }
-        if (scenario === "stop-after-commit" && result.state === "created") { injected += 1; throw new UserCancelled(); }
+        if (scenario === "stop-after-commit" && result.state === "created") { injected += 1; throw new UserCanceled(); }
         return result;
     };
     const {invocation} = cliCommand(argv);
     const progress = createProgress([]);
     const {phase} = progress;
     progress.phase = (text) => {
-        if ((scenario === "stop-before-publication" && text === "Saving image") || (scenario === "stop-before-recovery" && text === "Keeping the finished copy")) { injected += 1; throw new UserCancelled(); }
+        if ((scenario === "stop-before-publication" && text === "Saving image") || (scenario === "stop-before-recovery" && text === "Keeping the finished copy")) { injected += 1; throw new UserCanceled(); }
         return phase(text);
     };
     const result = execute(app, invocation, { headless: true, progress, capabilities: {

@@ -42,11 +42,53 @@ test("field regression: stopped and partial completion expose unfinished counts 
     const { describe, detailOf } = require("../../../src/host/completion.js");
     const stopped = runOutcome([
         { source: "/a", state: "saved", output: "/out", issues: [] },
-        { source: "/b", state: "cancelled", issues: [] },
+        { source: "/b", state: "canceled", issues: [] },
         { source: "/c", state: "not-started", issues: [] }
     ]);
-    assert.match(detailOf(stopped).split("\n\n")[0], /1 saved; 1 cancelled; 1 not started/u);
+    assert.match(detailOf(stopped).split("\n\n")[0], /1 saved; 1 canceled; 1 not started/u);
     const partial = runOutcome([{ source: "/a", state: "saved", output: "/out", issues: [], missingMetadata: ["date/time"] }]);
     assert.match(describe(partial), /issues/u);
     assert.match(detailOf(partial).split("\n\n")[0], /1 copy missing requested metadata/u);
+});
+
+test("a usage error says what was wrong and the one line that would be right, not the whole help", () => {
+    // Shared with Image Files to PDF. The whole help used to be dumped into
+    // the receipt and stderr for a mistyped flag.
+    const said = (args) => { try { cliCommand(args); } catch (error) { return error.issues[0]; } return null; };
+    const cases = [
+        [[], "No arguments were given."], [["--bogus"], "Unknown option: --bogus."], [["photo.png"], "Unknown option: photo.png."],
+        [["--headless"], "--headless needs a settings file and at least one path."], [["--headless", "s.json", ""], "An argument is empty."],
+        [["--help", "x"], "--help and --version take no other arguments."], [["--version", "--help"], "--help and --version take no other arguments."]
+    ];
+    for (const [args, problem] of cases) {
+        const issue = said(args);
+
+        assert.equal(issue.code, "usage");
+        assert.equal(issue.message, `${problem}\nUsage: osascript -l JavaScript Stamp-Images.jxa -- --headless <settings.json> <path…>\nRun with --help to see the settings.`, args.join(" "));
+    }
+});
+
+test("help lists each setting with its values, captions that add something, and its default", () => {
+    const help = usage();
+
+    assert.match(help, /\n {2}dateFormat — Date\/time format: iso-minutes \(2026-09-09 14:30\) \| iso-date \(2026-09-09\) \| long-date \(September 9, 2026\) \| none \(Do not stamp the date\); default iso-minutes\n/u);
+    assert.match(help, /\n {2}position — Position: bottom-right \| bottom-left \| top-right \| top-left \| bottom-center \| top-center; default bottom-right\n/u);
+    assert.match(help, /\n {2}size — Text size: 8–400 pt; default 36\n/u);
+    assert.match(help, /\n {2}customText — Custom text: text\n/u);
+    assert.match(help, /\n {2}font — Typeface: text\n/u);
+    assert.match(help, /Paths may be absolute or relative to the working directory\./u);
+});
+
+test("the command-line report separates sections with one blank line and ends with the elapsed time", () => {
+    const written = [];
+    const result = { ...runOutcome([{ source: "/a.jpg", state: "saved", output: "/o/a_stamped.jpg", issues: [], missingMetadata: [] }]), elapsed: "2 seconds" };
+
+    reportHeadless(result, (text, unused, stderr) => written.push({ text, stderr }), () => 0);
+    assert.equal(JSON.parse(written[0].text).elapsed, "2 seconds");
+    assert.equal(written[1].text, "Created 1 stamped copy.\n\n1 saved.\n\nSaved to:\n/o/\na_stamped.jpg\n\nElapsed: 2 seconds\n");
+    assert.doesNotMatch(written[1].text, /Stamp Images \d/u, "no version line on the command line");
+    const empty = [];
+
+    reportHeadless({ ...runOutcome(), state: "complete", images: [] }, (text) => empty.push(text), () => 0);
+    assert.doesNotMatch(empty[1], /0 saved/u, "zero counts are not printed");
 });

@@ -20,7 +20,7 @@ const TOOL_SEARCH_PATH =
 /*
  * Three, and fc-match is not among them any more. It was asked which family a
  * name resolves to, which turned out to be a question about fontconfig's
- * catalogue while the renderer draws from the system's own -- so the answer
+ * catalog while the renderer draws from the system's own -- so the answer
  * was about the wrong machine. The font system is asked directly now, across
  * the same bridge the form is built with, and nothing has to be installed for
  * it.

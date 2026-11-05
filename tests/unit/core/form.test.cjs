@@ -32,17 +32,21 @@ test("the buttons say what will happen, and what will not", () => {
     assert.deepEqual(spec().buttons, ["Create", "Cancel"]);
 });
 
-test("the invitation says how many photographs Cancel would call off", () => {
+test("the invitation says how many images Cancel would call off, and where copies go", () => {
     // Selecting a folder can mean a great many, and this is the only place
-    // between the selection and the work where a run can be stopped.
-    assert.match(invitation(20), /^You have selected 20 images\./u);
-    assert.match(invitation(1), /^You have selected 1 image\./u);
-    assert.match(invitation(0), /^Choose what to stamp and how it should look\./u);
+    // between the selection and the work where a run can be stopped. Worded
+    // as Image Files to PDF states its outcome.
+    assert.match(invitation({ count: 20, folders: ["/Trip/"] }),
+        /^20 images → 20 stamped copies, saved in Trip\/\n\nSave locations:\n\/Trip\/\n\n/u);
+    assert.match(invitation({ count: 1, folders: ["/a/"] }), /^1 image → 1 stamped copy, saved in a\//u);
+    assert.match(invitation({ count: 3, folders: ["/a/", "/b/"] }), /saved in 2 folders\n\nSave locations:\n\/a\/\n\/b\//u);
+    assert.match(invitation({ count: 0 }), /^Choose what to stamp and how it should look\./u);
+    assert.match(invitation(), /^Choose what to stamp/u);
 });
 
-test("every invitation says what is being asked for", () => {
-    for (const count of [0, 1, 20]) {
-        assert.match(invitation(count), /Each image gets a stamped copy, saved in each folder you selected or beside each image you selected\. The original files are not changed\./u);
+test("every invitation says the originals are not changed", () => {
+    for (const context of [{ count: 0 }, { count: 1, folders: ["/a/"] }, { count: 20, selectedFolders: 1 }]) {
+        assert.match(invitation(context), /The original files are not changed\./u);
     }
 });
 
@@ -68,13 +72,13 @@ test("a form with corrections retains its selection and output contract", () => 
         defaultAnswers(FONTS),
         [
             { key: "size", message: "Text size: enter a whole number from 8 to 400." },
-            { key: "textColour", message: "Text colour must be six hexadecimal digits." }
+            { key: "textColor", message: "Text color must be six hexadecimal digits." }
         ],
         { count: 3, fonts: FONTS }
     );
 
     assert.match(shown.fullDetail, /Text size: enter a whole number/u);
-    assert.match(shown.fullDetail, /Text colour must be six/u);
+    assert.match(shown.fullDetail, /Text color must be six/u);
     assert.match(shown.fullDetail, /You have selected 3 images/u);
     assert.match(shown.fullDetail, /The original files are not changed/u);
     assert.match(shown.fullDetail, /does not remove location data/u);

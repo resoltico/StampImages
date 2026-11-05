@@ -54,9 +54,9 @@ function nameFrom(originalName, suffix) {
 }
 
 /*
- * The mark a stamped copy carries, and how to recognise one.
+ * The mark a stamped copy carries, and how to recognize one.
  *
- * Recognised only where a folder is being walked. Somebody who selects a file
+ * Recognized only where a folder is being walked. Somebody who selects a file
  * by hand has asked for it, whatever it is called; somebody who selects a
  * folder has asked for the photographs in it, and the copies a previous run
  * left there are not photographs they took. Stamping one again produces a

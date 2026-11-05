@@ -18,16 +18,16 @@ assert_contains() {
 # Reads one pixel of an image as "R G B".
 #
 # vips getpoint prints the channels space separated on a single line, so the
-# separators must be normalised rather than deleted.
+# separators must be normalized rather than deleted.
 getpoint() {
     vips getpoint "$1" "$2" "$3" | tr -d '[],' | tr -s ' ' ' '
 }
 
 # stamped_pixels <image> <left> <top> <width> <height> <background>
 #
-# Counts the pixels in a region that are not the background colour.
+# Counts the pixels in a region that are not the background color.
 #
-# The fixtures are one flat colour, so "not the background" is exactly
+# The fixtures are one flat color, so "not the background" is exactly
 # "stamped". Measured with vips rather than eyeballed: a screenshot proves
 # nothing in a shell, and a stamp that landed in the wrong corner passes every
 # assertion about the file itself.
@@ -37,7 +37,7 @@ stamped_pixels() {
     work=$(mktemp -d -t StampImages-assert)
 
     vips crop "$image" "$work/region.v" "$left" "$top" "$width" "$height"
-    # Every band differs, rather than any: a JPEG rounds a flat colour exactly
+    # Every band differs, rather than any: a JPEG rounds a flat color exactly
     # and rounds an edge unevenly, and one band off by one is not a glyph.
     vips relational_const "$work/region.v" "$work/differs.v" noteq "$background"
     vips bandmean "$work/differs.v" "$work/mean.v"

@@ -2,33 +2,25 @@
 
 ## [Unreleased]
 
-- Require ten typed headless settings; reject unknown fields and numeric strings. Earlier preferences open defaults; no settings or receipt migration is provided.
-- Replace receipts with per-image source mappings, saved/recovered paths, explicit stopped/not-started states and structured issues; see [HEADLESS.md](HEADLESS.md).
-- CLI input is always noninteractive; add help/version, relative paths, native UTF-8 settings reading and explicit complete/incomplete/invalid/setup exit statuses.
-- Choose copy encoders and extensions from actual raster content, including HEIF compression, so mislabeled aliases do not suppress supported photos.
-- Inspect actual source content before settings; refuse disguised, animated and multi-image inputs, then process a checked private capture.
-- Earlier numbered `_stamped_2` copies are treated as inputs during folder walks; exclude them from folders you stamp again.
-- FAT32 drivers that refuse exclusive rename use confirmed recovery; completion names the actual recovery location.
-- Publish with native exclusive claims; collisions use Finder-style ` 2` suffixes. Recover failed saves to Downloads, then a confirmed temporary copy.
-- Track owned artifacts and workspace owners; retain uncertain validation work and reclaim only unretained dead-owner workspaces.
-- Use one progress panel with Stop and settings context; show selectable, scrollable details and saved/recovered paths with Show in Finder.
-- Require an installed-font catalogue before rendering; unavailable configured faces are invalid settings instead of allowing unchecked renderer substitution.
-- Stop retains finished unpublished copies in their owned temporary workspace without initiating new Downloads access.
-- Retain missing-metadata and colour/placement notes when a finished copy requires recovery; completion shows aggregate unfinished-work and omission counts.
-- Report independent field, font and content errors together; focus the first invalid editor and report numeric ranges for signed integer input.
-- Reject null characters and incomplete Unicode captions before processing.
-- A photograph too small for its stamp fails on its own as an `operation` issue instead of stopping every later photograph.
-- Each stamp line is drawn as its own bidirectional isolate, so a right-to-left caption no longer reorders the date or coordinates.
-- Files whose decode fails after inspection, such as truncated JPEGs, are refused as `damaged`; decoder output stays in the diagnostic.
-- Selection refusals carry `code` and `stage`; pipes and devices are no longer described as links. See [HEADLESS.md](HEADLESS.md).
-- Receipts add `invalidMetadata` and the `substituted` note, and list `missingMetadata` on `nothing-to-stamp` records too.
-- Copies keep the Unicode form of their original's name; publication diagnostics report POSIX `errno` codes.
-- Completion counts copies kept elsewhere, says why a folder refused a copy, lists each refusal once, and Details returns to the summary.
-- The form announces corrections above its controls and Tab leaves the custom text; PostScript typeface names get their Font Book name.
-- Remembering settings removes the 1.2.0 `lastSettings.v1` preference entry, which nothing reads.
-- Diagnose UI programming faults instead of silently switching interfaces; preserve saved outputs when observers or cleanup fail and stop remaining work on fatal issues.
-- Replace shared-scope concatenation with scoped esbuild; enforce domain/application/backend/host boundaries and build explicit native probe entrypoints.
-- Update vendor-verified development dependencies and pin Node/npm; remove the blanket 150-line file limit and verify native adapters separately from portable coverage.
+## [2.0.0] - 2026-11-05
+
+- Headless settings use US English names: `textColor`, `outlineColor`, `bottom-center` and `top-center`. All ten fields are required and typed; update settings files.
+- Receipts are rebuilt around per-image records, `canceled`/`not-started` states, `elapsed` and stable issue codes; see [HEADLESS.md](HEADLESS.md). No migration is provided.
+- The `long-date` format stamps US-style dates such as `September 9, 2026`.
+- Remembered settings from 1.2.x open the defaults; the old `lastSettings.v1` entry is removed when settings are next remembered.
+- Command-line runs never open dialogs; usage errors name the problem; `--help` lists values and defaults; exit statuses are 0, 1, 2 and 3.
+- A right-to-left caption no longer reorders the stamped date or coordinates.
+- One image too small for its stamp fails alone instead of stopping the rest of the run.
+- Sources are inspected before settings and processed from a checked private copy; disguised, animated, multi-image and truncated files are refused.
+- The copy's format follows the image content, so a PNG named `.jpg` becomes `_stamped.png`.
+- Copies are never overwritten: collisions use `_stamped 2`, and a failed save is recovered to Downloads or a confirmed temporary copy.
+- Copy names keep the original's Unicode form; pipes and devices are refused as such, and earlier numbered `_stamped_2` copies count as inputs.
+- Each copy reports missing or invalid metadata, crowded placement, grayscale expansion, unread profiles and characters drawn in a fallback face.
+- One progress panel with Stop; Stop keeps saved copies and retains a finished unsaved copy in its workspace.
+- The form lists every problem at once, keeps your draft, and states how many copies will be made and where; Tab leaves the custom text.
+- Completion counts copies kept elsewhere, groups copies by folder, and offers Show in Finder for every copy and Details with Back.
+- PostScript typeface names are answered with their Font Book name; unavailable faces are refused before stamping.
+- Wording, spelling and command-line conventions match Image Files to PDF, in US English.
 
 ## [1.2.1] - 2026-10-05
 

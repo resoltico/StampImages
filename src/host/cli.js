@@ -5,31 +5,51 @@ const { contentProblem } = require("../core/stamp-content.js");
 const { OperationError } = require("../core/errors.js");
 const { normalizeInvocationInput } = require("../core/invocation.js");
 const { writeReceipt, exitCli } = require("./receipt.js");
+const { POSITION, DATE_FORMAT, COORDINATE_FORMAT } = require("./choices.js");
 
+// The captions the form shows, so a value in help reads as it does in the form.
+const CAPTIONED = { position: POSITION.choices, dateFormat: DATE_FORMAT.choices, coordinateFormat: COORDINATE_FORMAT.choices };
+
+// A caption that only restates the value ("Bottom right" for bottom-right) is left out.
 function choiceCaption(choice) {
     const caption = choice.label ?? choice.name;
-    return caption && caption !== choice.value ? `${choice.value} (${caption})` : choice.value;
+    const restates = caption && caption.toLowerCase().replace(/\s+/gu, "-") === choice.value;
+    return caption && !restates ? `${choice.value} (${caption})` : choice.value;
 }
 
+// One line per setting, in the form Image Files to PDF uses: values, then the default.
 function settingsHelp() {
     return Object.entries(SETTINGS_SCHEMA).map(([field, rule]) => {
-        let values = rule.kind === "colour" ? "#RRGGBB" : "text";
-        if (rule.choices) { values = rule.choices.map(choiceCaption).join(" | "); }
-        else if (rule.minimum !== undefined) { values = `integer ${rule.minimum}–${rule.maximum}`; }
-        return `  ${field} — ${rule.name}: ${values}`;
+        let values = rule.kind === "color" ? "#RRGGBB" : "text";
+        if (rule.choices) { values = (CAPTIONED[field] ?? rule.choices).map(choiceCaption).join(" | "); }
+        else if (rule.minimum !== undefined) { values = `${rule.minimum}–${rule.maximum}${rule.unit ? ` ${rule.unit}` : ""}`; }
+        const fallback = rule.default === undefined || rule.default === "" ? "" : `; default ${rule.default}`;
+        return `  ${field} — ${rule.name}: ${values}${fallback}`;
     }).join("\n");
 }
+const RUN_LINE = "osascript -l JavaScript Stamp-Images.jxa -- --headless <settings.json> <path…>";
 function usage() {
     return `${APP_NAME} ${VERSION}\n\nUsage:\n  osascript -l JavaScript Stamp-Images.jxa -- --help\n` +
         "  osascript -l JavaScript Stamp-Images.jxa -- --version\n" +
-        "  osascript -l JavaScript Stamp-Images.jxa -- --headless <settings.json> <path…>\n\nSettings (all ten required):\n" +
-        `${settingsHelp()}\n\nPaths may be relative to the working directory. Settings must be UTF-8 JSON without a BOM.\n`;
+        `  ${RUN_LINE}\n\nSettings (all ten required):\n` +
+        `${settingsHelp()}\n\nPaths may be absolute or relative to the working directory. Settings must be UTF-8 JSON without a BOM.\n`;
 }
-
 function requestError(code, message, diagnostic = null) {
     const error = new OperationError(message);
     error.issues = [{ code, stage: "request", message, ...(diagnostic ? { diagnostic } : {}) }];
     return error;
+}
+
+// What was wrong, and the one line that would have been right; the settings are --help's to list.
+function usageProblem(args) {
+    if (args.length === 0) { return "No arguments were given."; }
+    if (args.some((argument) => argument === "")) { return "An argument is empty."; }
+    if (["--help", "--version"].includes(args[0])) { return "--help and --version take no other arguments."; }
+    if (args[0] !== "--headless") { return `Unknown option: ${args[0]}.`; }
+    return "--headless needs a settings file and at least one path.";
+}
+function usageError(args) {
+    return requestError("usage", `${usageProblem(args)}\nUsage: ${RUN_LINE}\nRun with --help to see the settings.`);
 }
 
 function settingsFileError(path, cause, diagnostic = null) {
@@ -104,7 +124,7 @@ function cliCommand(input, injected = null) {
     if (args.length === 1 && args[0] === "--version") { return { kind: "version" }; }
     const minimumArguments = 3;
     if (args[0] !== "--headless" || args.length < minimumArguments || args.some((argument) => argument === "")) {
-        throw requestError("usage", usage());
+        throw usageError(args);
     }
     const io = injected ?? nativeCliIO();
     const configuration = io.read(io.absolute(args[1]));

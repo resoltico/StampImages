@@ -12,10 +12,10 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const { availableFonts, CANDIDATES } = require("../../../src/host/fonts.js");
-const { catalogueOf } = require("./fake-typefaces.cjs");
+const { catalogOf } = require("./fake-typefaces.cjs");
 
 function withEvery(faces) {
-    return catalogueOf(
+    return catalogOf(
         Object.fromEntries(CANDIDATES.map((family) => [family, faces]))
     );
 }
@@ -45,7 +45,7 @@ test("a family with no bold face is offered alone", () => {
 
 test("a family this Mac has not is not offered", () => {
     const offered = availableFonts(
-        catalogueOf({ Menlo: ["Regular"], Georgia: ["Regular", "Bold"] })
+        catalogOf({ Menlo: ["Regular"], Georgia: ["Regular", "Bold"] })
     );
 
     assert.deepEqual(offered, ["Georgia", "Georgia Bold", "Menlo"]);
@@ -54,12 +54,12 @@ test("a family this Mac has not is not offered", () => {
 test("a machine with none of them is not a machine that cannot be used", () => {
     // The field takes any name, so a Mac with none of these ten and hundreds
     // of others must not be stopped at the door.
-    assert.deepEqual(availableFonts(catalogueOf({})), []);
+    assert.deepEqual(availableFonts(catalogOf({})), []);
 });
 
-test("a host with no catalogue is offered the candidates unfiltered", () => {
+test("a host with no catalog is offered the candidates unfiltered", () => {
     // Nothing can be checked without one, and offering nothing at all on a
-    // machine that has them would be the worse failure. A catalogue is not
+    // machine that has them would be the worse failure. A catalog is not
     // something a person can go and install.
     assert.deepEqual(availableFonts(null), CANDIDATES);
 });

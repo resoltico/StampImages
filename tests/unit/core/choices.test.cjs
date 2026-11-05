@@ -50,11 +50,11 @@ test("a word no control offers is refused rather than guessed at", () => {
     for (const control of CONTROLS) {
         assert.throws(
             () => valueOfLabel(control, "Sideways"),
-            /Unrecognised choice: Sideways/u
+            /Unrecognized choice: Sideways/u
         );
         assert.throws(
             () => labelOfValue(control, "sideways"),
-            /Unrecognised value: sideways/u
+            /Unrecognized value: sideways/u
         );
     }
 });
@@ -88,7 +88,7 @@ test("the choices a date offers are shown as dates, not described", () => {
     assert.deepEqual(labelsOf(DATE_FORMAT), [
         "2026-09-09 14:30",
         "2026-09-09",
-        "9 September 2026",
+        "September 9, 2026",
         "Do not stamp the date"
     ]);
 });
@@ -101,21 +101,21 @@ test("the coordinates are shown the two ways they can be written", () => {
     ]);
 });
 
-test("every corner and both centres are offered, named for the edges", () => {
+test("every corner and both centers are offered, named for the edges", () => {
     assert.deepEqual(labelsOf(POSITION), [
         "Bottom right",
         "Bottom left",
         "Top right",
         "Top left",
-        "Bottom centre",
-        "Top centre"
+        "Bottom center",
+        "Top center"
     ]);
     assert.deepEqual(POSITION.choices.map((choice) => choice.value), [
         "bottom-right",
         "bottom-left",
         "top-right",
         "top-left",
-        "bottom-centre",
-        "top-centre"
+        "bottom-center",
+        "top-center"
     ]);
 });

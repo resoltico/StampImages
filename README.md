@@ -1,126 +1,157 @@
 # Stamp Images
 
-Stamp capture dates, GPS coordinates and custom text into copies of photographs
-with a macOS Finder Quick Action or a noninteractive command. Originals are never
-opened for writing, moved or deleted. Nothing is sent over the network.
+A Finder Quick Action for macOS that stamps the date a photo was taken, where it
+was taken and your own text onto copies of your images. Originals are never
+modified. The same script also runs from the command line, with a JSON settings
+file and a JSON receipt; see [HEADLESS.md](HEADLESS.md).
 
-## Requirements and installation
+Source and releases: https://github.com/resoltico/StampImages
 
-Use macOS 12.3 or later and install the runtime tools with Homebrew:
+## Requirements
+
+- macOS 12.3 or later, with Shortcuts.
+- `exiftool` and `vips` (which includes `vipsheader`), installed with Homebrew:
 
 ```sh
 brew install exiftool vips
 ```
 
-Download `Stamp-Images.jxa` from the
-[releases page](https://github.com/resoltico/StampImages/releases), then follow
-[INSTALL.txt](INSTALL.txt) to verify the download and create the Finder Quick
-Action in Shortcuts. Node is needed only for development.
+The Quick Action is one standalone JavaScript for Automation (JXA) file. Node.js
+and npm are needed only for development. Typefaces come from the macOS font
+system, including faces activated by a font manager.
 
-## Using the Quick Action
+## Install in Shortcuts
 
-Select image files or folders in Finder and run **Stamp Images**. Folders are
-searched recursively. Copies of images discovered within a selected folder go
-into that selected folder, including images in subfolders. Directly selected
-images get copies beside them. Overlapping selections and hard links are
-processed once; the outermost selected folder takes precedence.
+1. Download `Stamp-Images.jxa` from a
+   [release](https://github.com/resoltico/StampImages/releases), or use
+   `dist/Stamp-Images.jxa` from a source checkout.
+2. In Shortcuts, create a shortcut and enable **Use as Quick Action → Finder**
+   in its details. Configure it to receive **Files** from Finder.
+3. Add **Run JavaScript for Mac Automation** and replace its example code with
+   the complete JXA file.
+4. Name the shortcut **Stamp Images**.
 
-Review any selection problems, then choose the ten settings for the run:
+To install a newer build, replace the entire pasted script.
+[INSTALL.txt](INSTALL.txt) has plain-text steps for verifying a download,
+installing and removing the action.
 
-- Date/time format, including an option to omit it.
-- Coordinate format; GPS is off by default.
-- Custom text, including multiple lines.
-- Installed typeface name, selected from suggestions or typed.
-- Text size and colour.
-- Outline width and colour.
-- Position and margin.
+## Use it
 
-Name typefaces as Font Book does, such as `Georgia`, `Georgia Bold` or
-`Avenir Black`. An unavailable name is refused before stamping. Custom text may
-contain up to 500 UTF-16 code units; null characters and incomplete Unicode are
-refused. All glyphs use the chosen text colour, including monochrome silhouettes
-of colour emoji. Characters the typeface lacks are drawn in another face, and the
-copy reports that. Each line keeps its own writing direction, so a right-to-left
-caption does not reorder the date or coordinates.
+1. Select images or folders in Finder and run **Stamp Images**.
+2. If some selected items cannot be stamped, a review lists each one with its
+   reason and folder; choose **Continue** or **Cancel**.
+3. Choose the settings and click **Create**. The note above the controls says
+   how many stamped copies will be made and where they will be saved. If a
+   setting is wrong, every problem is listed at once and your draft is kept.
+4. A progress panel shows the current image. **Stop** takes effect at the next
+   safe point and keeps every copy already saved.
+5. Completion lists what was saved, where, and anything to know about each copy.
+   **Show in Finder** reveals the copies; **Details** shows technical
+   diagnostics and **Back** returns to the summary.
 
-Click **Create** to start. Independent setting errors are announced above the
-controls and listed together, and the form keeps your draft while you correct them. Tab moves between
-controls, including out of the custom text; Return there starts a new line. When native form capability is
-unavailable, stepwise dialogs end with a Create confirmation. Appearance settings,
-including the GPS choice, are remembered in the preferences domain
-`com.resoltico.StampImages`; custom text is never remembered.
-
-The progress panel shows the current work and provides **Stop**. Stop takes effect
-at the next safe checkpoint, keeps saved copies and retains any finished
-unpublished copy in its existing temporary workspace. It reports the retained
-path without starting a new Downloads access request. Completion reports saved,
-recovered and unfinished work, metadata omissions and appearance notes, with
-selectable details and **Show in Finder** for available copies; technical
-**Details** returns to that summary.
-
-## Supported files and output
-
-Supported still-image formats are JPEG, PNG, HEIC/HEIF, TIFF, WebP and AVIF, in RGB
-or greyscale. Convert other colour models, such as CMYK, before stamping. Animated
-and multi-image files, GIF, vectors, documents and camera RAW are refused. A
-supported filename extension is required for discovery; inspected image content
-determines the encoder and output extension. A PNG named `photo.jpg` produces
-`photo_stamped.png`.
-
-A copy normally keeps its source encoding. JPEG, HEIC, WebP and AVIF are re-encoded
-with quality 90; PNG and TIFF use lossless encoding. Re-encoding can change image
-pixels. A coloured caption on a greyscale source expands the copy to RGB and is
-reported. Colour profiles are used when converting caption colours; conversion
-problems are reported.
-
-Copies use names such as `holiday_stamped.jpg`, keeping the original name's Unicode
-form, then `holiday_stamped 2.jpg` on a
-collision. Nothing is overwritten. Folder walks skip dot-prefixed entries,
-packages, links and supported images whose stems end in `_stamped` or
-`_stamped <digits>`. Other supported names, including `holiday_stamped_2.jpg`, are
-inputs. Explicitly selecting a stamped image stamps it again. Unreadable entries
-are reported rather than silently omitted.
-
-The stamp's date comes from `DateTimeOriginal` or `CreateDate`, never the file's
-modification time or today's date. Dates and coordinates describe the camera's
-metadata, not independently verified time or location. Missing requested metadata
-is reported; custom text can still be stamped. A photograph with no requested
-content gets no copy and an explanation.
-
-**Turning GPS off does not remove embedded location metadata.** Copies retain
-source metadata, including coordinates. This is not an anonymisation tool.
-
-Sources are inspected before settings, then captured into private workspaces with
-identity, size and version checks. Metadata, profiles and pixels come from the
-same captured bytes. Coarse filesystem timestamps limit detection of concurrent
-edits; stop other writers while stamping.
-
-Failed publication attempts recovery to Downloads under the intended filename,
-then a confirmed temporary copy. If recovery cannot be completed, the workspace
-is retained and its location reported. Filesystem drivers without the necessary
-exclusive publication support use recovery; this includes FAT32 on some hosts.
-Only dead-owner workspaces without retained work are reclaimed. Follow reported
-recovery paths promptly because system temporary storage is not permanent.
-
-## Noninteractive use
+Appearance settings, including the GPS choice, are remembered for the next run
+in the preferences domain `com.resoltico.StampImages`; custom text is not. To
+reset them:
 
 ```sh
-osascript -l JavaScript dist/Stamp-Images.jxa -- --headless settings.json photo.jpg
+defaults delete com.resoltico.StampImages
 ```
 
-[HEADLESS.md](HEADLESS.md) specifies settings, JSON receipts, exit statuses and tool
-overrides. CLI runs open no dialogs and do not access interactive preferences.
+## Settings
 
-## Development and verification
+| Field | Setting | Values | Default |
+| --- | --- | --- | --- |
+| `dateFormat` | Date/time format | `iso-minutes` (2026-09-09 14:30), `iso-date` (2026-09-09), `long-date` (September 9, 2026), `none` | `iso-minutes` |
+| `coordinateFormat` | Include GPS coordinates | `none`, `decimal` (56.9496, 24.1052), `sexagesimal` (56°56'58.6"N 24°6'18.7"E) | `none` |
+| `customText` | Custom text | Up to 500 UTF-16 code units; may span lines | empty |
+| `font` | Typeface | An installed face, named as in Font Book: `Georgia`, `Georgia Bold`, `Avenir Black` | Helvetica Neue |
+| `size` | Text size | 8–400 pt, at the image's own scale | 36 |
+| `textColor` | Text color | `#RRGGBB` | `#FFFFFF` |
+| `outlineWidth` | Outline | 0–20 px; 0 for none | 2 |
+| `outlineColor` | Outline color | `#RRGGBB` | `#202020` |
+| `position` | Position | `bottom-right`, `bottom-left`, `top-right`, `top-left`, `bottom-center`, `top-center` | `bottom-right` |
+| `margin` | Margin | 0–2000 px from the edges the position names | 24 |
 
-[CONTRIBUTING.md](CONTRIBUTING.md) covers clean setup, source layout, builds and
-releases. [QA.md](QA.md) defines automated and live acceptance requirements; it is
-not a claim that every supported host has been qualified.
+The stamp says at least one thing: a date, coordinates or custom text. The date
+comes from the image's `DateTimeOriginal`, or `CreateDate` when that is absent,
+never from the file's modification time; coordinates come from its GPS tags.
+Both describe what the camera recorded, not an independently verified time or
+place. An image that lacks a requested field is still stamped with what it has,
+and completion says which field was missing or recorded but not valid. An image
+with nothing to stamp gets no copy.
 
-## License and security
+Every character uses the chosen text color, including emoji, which are drawn as
+silhouettes. Characters the typeface lacks are drawn in another face, and the copy
+says so. Each line keeps its own writing direction, so a right-to-left caption
+does not reorder the date or coordinates. A stamp larger than an image is refused
+for that image; a margin larger than the room available places the stamp against
+the opposite edge, and the copy says so.
 
-First-party files use [Mozilla Public License 2.0](https://mozilla.org/MPL/2.0/)
-(`MPL-2.0`); see [LICENSE](LICENSE). Dependencies retain their own licenses. Preserve
-notices and provide covered source and modifications as required when distributing.
-The standalone script links to its corresponding source.
-[SECURITY.md](SECURITY.md) describes the security model and private reporting.
+## Images and copies
+
+Supported formats are JPEG, PNG, HEIC/HEIF, TIFF, WebP and AVIF, in RGB or
+grayscale, with a matching filename extension. Convert other color models, such as
+CMYK, before stamping. Animated and multi-image files, GIF, vectors, documents and
+camera RAW are refused, as are files whose content turns out to be damaged.
+
+Selected folders are searched recursively. The search skips hidden entries,
+packages, links and earlier stamped copies, and reports entries it cannot read.
+Overlapping selections and hard links are stamped once.
+
+A copy of an image found in a selected folder is saved in that selected folder; a
+copy of an image selected directly is saved beside it. Copies are named
+`holiday_stamped.jpg`, then `holiday_stamped 2.jpg` and so on; nothing is ever
+overwritten. Selecting a stamped copy directly stamps it again.
+
+A copy keeps its source's format, chosen from the image content rather than its
+extension: a PNG named `photo.jpg` becomes `photo_stamped.png`. PNG and TIFF are
+saved losslessly; JPEG, HEIC, WebP and AVIF are re-encoded at quality 90, which can
+change pixels. EXIF orientation is applied, so the stamp sits along the edge you
+see. A colored stamp on a grayscale image makes the copy RGB, and the copy says so.
+
+## Privacy and safety
+
+**Turning GPS off does not remove location data.** A copy keeps all of the
+metadata its original carried, including coordinates. This is not an
+anonymization tool.
+
+Stamp Images reads only the images you select, works in a private temporary
+folder, and never opens an original for writing. Nothing is sent over the
+network. If a copy cannot be saved where it belongs, it is saved to Downloads
+under its intended name, or failing that to a checked temporary copy, and
+completion shows where. [SECURITY.md](SECURITY.md) describes the file-safety rules
+in full.
+
+## Command line
+
+```sh
+osascript -l JavaScript Stamp-Images.jxa -- --headless settings.json photo.jpg folder
+```
+
+Command-line runs open no dialogs and do not use remembered settings.
+[HEADLESS.md](HEADLESS.md) specifies the settings file, the JSON receipt and the
+exit statuses.
+
+## Verify a download
+
+Each release carries a checksum manifest and GitHub build attestations. From the
+download folder, with GitHub CLI installed:
+
+```sh
+gh attestation verify Stamp-Images.jxa --repo resoltico/StampImages
+shasum --check SHA256SUMS
+```
+
+The checksum verifies the downloaded file, not a copy pasted into Shortcuts. The
+script's header and completion details state its version.
+
+## Development and license
+
+[CONTRIBUTING.md](CONTRIBUTING.md) covers setup, source layout and releases.
+[QA.md](QA.md) defines the verification requirements and their limits.
+[SECURITY.md](SECURITY.md) describes the trust boundaries and private reporting.
+
+First-party files use [Mozilla Public License 2.0](LICENSE) (`MPL-2.0`). Preserve
+license and source notices and provide covered source as that license requires
+when distributing covered files or modifications. Dependencies keep their own
+licenses. The generated JXA carries the MPL and corresponding-source notices.

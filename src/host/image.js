@@ -11,7 +11,7 @@ const { sizeOf } = require("./tinting.js");
  * Putting the stamp on the photograph, and saving what comes out.
  *
  * What the photograph has to be first -- oriented, and in a space that can
- * hold the caption's colour -- is preparing.js.
+ * hold the caption's color -- is preparing.js.
  *
  * The source is never written to and never even opened for writing. Every
  * stage reads one file and writes another, in a workspace of this run's own,
@@ -34,9 +34,9 @@ function composite(job, base, stamp, token) {
             stamped,
             stamp.at
         ),
-        "stamping the photograph"
+        "stamping the image"
     );
-    verifyFileWritten(job.app, stamped, "the stamped photograph");
+    verifyFileWritten(job.app, stamped, "the stamped image");
 
     return stamped;
 }

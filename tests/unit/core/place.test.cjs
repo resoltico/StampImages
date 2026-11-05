@@ -84,7 +84,7 @@ test("the sign is read off the coordinate, not off the rounding", () => {
     // Half of the smallest displayed unit south of the equator rounds to a
     // magnitude of one unit, and rounded again as a signed number to negative
     // zero -- so a place a tenth of a second south of the equator was
-    // labelled north of it.
+    // labeled north of it.
     assert.equal(sexagesimal(-0.5 / 36000, "N", "S"), "0°0'0.1\"S");
     assert.equal(sexagesimal(0.5 / 36000, "N", "S"), "0°0'0.1\"N");
     assert.equal(sexagesimal(-0.4 / 36000, "N", "S"), "0°0'0.0\"N", "rounds to nothing");

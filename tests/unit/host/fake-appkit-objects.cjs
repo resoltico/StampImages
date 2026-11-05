@@ -52,7 +52,12 @@ function makeTextView(rect) {
 }
 
 function makeScrollView(rect) {
-    return { kind: "scroll", rect, contentSize: { width: rect.width, height: rect.height }, documentView: null };
+    const scroll = { kind: "scroll", rect, contentSize: { width: rect.width, height: rect.height }, documentView: null, reflected: 0 };
+
+    scroll.contentView = { scrollToPoint(point) { scroll.scrolledTo = point; } };
+    scroll.reflectScrolledClipView = () => { scroll.reflected += 1; };
+
+    return scroll;
 }
 
 function makeCombo(rect) {

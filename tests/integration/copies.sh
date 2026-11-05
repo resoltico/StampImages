@@ -27,7 +27,7 @@ require_tools
 test -f "$SCRIPT" || fail "no built artifact at $SCRIPT"
 
 BACKGROUND=110
-GREY="#6e6e6e"
+GRAY="#6e6e6e"
 
 stamp() {
     osascript -l JavaScript "$SCRIPT" -- --headless "$@"
@@ -38,7 +38,7 @@ stamp() {
 # the photograph and "<b>x</b>" used to come out bold.
 # ---------------------------------------------------------------------------
 
-solid "$WORK/family.jpg" 900 600 "$GREY"
+solid "$WORK/family.jpg" 900 600 "$GRAY"
 taken_at "$WORK/family.jpg" "2024:07:14 18:32:05"
 settings_file "$WORK/ampersand.json" "Mum & Dad <b>x</b>"
 
@@ -51,7 +51,7 @@ test "$DRAWN" -gt 500 || fail "the caption was not drawn: $DRAWN"
 # A photograph the request does not apply to is neither a copy nor a failure.
 # ---------------------------------------------------------------------------
 
-solid "$WORK/scan.png" 600 400 "$GREY"
+solid "$WORK/scan.png" 600 400 "$GRAY"
 settings_file "$WORK/metadata-only.json" "" "bottom-right" "iso-minutes" "none"
 
 if stamp "$WORK/metadata-only.json" "$WORK/scan.png" \
@@ -70,7 +70,7 @@ test ! -f "$WORK/scan_stamped.png" || fail "a copy was published with nothing on
 # A stamp that cannot fit is refused rather than cropped.
 # ---------------------------------------------------------------------------
 
-solid "$WORK/small.jpg" 120 80 "$GREY"
+solid "$WORK/small.jpg" 120 80 "$GRAY"
 settings_file "$WORK/huge.json" "A very long caption indeed"
 sed -i '' 's/"size": 28/"size": 90/' "$WORK/huge.json"
 
@@ -79,7 +79,7 @@ if stamp "$WORK/huge.json" "$WORK/small.jpg" \
     fail "a stamp that does not fit should not be published"
 fi
 
-assert_contains "$(cat "$WORK/out.txt")" "does not fit on this photograph" "said plainly"
+assert_contains "$(cat "$WORK/out.txt")" "does not fit on this image" "said plainly"
 assert_contains "$(cat "$WORK/out.txt")" "120 by 80 pixels" "with both sizes in it"
 test ! -f "$WORK/small_stamped.jpg" || fail "a cropped stamp was published"
 
@@ -98,7 +98,7 @@ assert_contains \
     "the copy keeps what the photograph said about itself"
 
 # ---------------------------------------------------------------------------
-# The colour that was chosen is the colour that gets painted, whatever space
+# The color that was chosen is the color that gets painted, whatever space
 # the photograph's numbers are read in.
 # ---------------------------------------------------------------------------
 
@@ -121,7 +121,7 @@ WIDE=$(vips getpoint "$WORK/wide_stamped.jpg" $GLYPH | tr -d "[]," | tr -s " ")
 # shellcheck disable=SC2086
 PLAIN=$(vips getpoint "$WORK/plain_stamped.jpg" $GLYPH | tr -d "[]," | tr -s " ")
 test "$WIDE" != "$PLAIN" ||
-    fail "the colour was not moved into the photograph's space: $WIDE"
+    fail "the color was not moved into the photograph's space: $WIDE"
 
 for file in wide plain; do
     vips icc_import "$WORK/${file}_stamped.jpg" "$WORK/$file.v" \
@@ -140,14 +140,14 @@ DIFFERENCE=$(awk -v l1="$WIDE_L" -v a1="$WIDE_A" -v b1="$WIDE_B" \
 
 # A difference of 2 is visible. Painted as plain numbers this was about 19.
 test "$DIFFERENCE" -le 2 ||
-    fail "the caption is a different colour in the two copies: $DIFFERENCE"
+    fail "the caption is a different color in the two copies: $DIFFERENCE"
 
 # A copy's name keeps the Unicode form of its original's. Field regression:
 # NSFileManager wrote "rīga" decomposed, so a precomposed original and its
 # copy no longer matched byte for byte.
 PRECOMPOSED=$(printf 'r\xc4\xabga')
 settings_file "$WORK/name.json" "Riga"
-solid "$WORK/$PRECOMPOSED.png" 300 200 "$GREY"
+solid "$WORK/$PRECOMPOSED.png" 300 200 "$GRAY"
 stamp "$WORK/name.json" "$WORK/$PRECOMPOSED.png" > /dev/null
 test -f "$WORK/${PRECOMPOSED}_stamped.png" ||
     fail "the copy of a precomposed name was not written under that name"

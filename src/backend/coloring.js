@@ -1,11 +1,11 @@
 "use strict";
 
-const { rgbOf } = require("../core/colour.js");
+const { rgbOf } = require("../core/color.js");
 
 /*
- * Giving a coverage mask a colour, as argument vectors.
+ * Giving a coverage mask a color, as argument vectors.
  *
- * A solid image of the colour, with the mask for its alpha. The edge of a
+ * A solid image of the color, with the mask for its alpha. The edge of a
  * glyph keeps the softness the renderer gave it, where painting the mask
  * directly would cut it to a hard shape.
  */
@@ -23,11 +23,11 @@ function buildSolidArgv(vipsPath, outputPath, size) {
 }
 
 /*
- * A black image plus the colour is that colour, and linear takes the two as
+ * A black image plus the color is that color, and linear takes the two as
  * vectors so the three bands are set in one operation.
  */
-function buildColourArgv(vipsPath, inputPath, outputPath, colour) {
-    const { red, green, blue } = rgbOf(colour);
+function buildColorArgv(vipsPath, inputPath, outputPath, color) {
+    const { red, green, blue } = rgbOf(color);
 
     return [
         vipsPath,
@@ -41,21 +41,21 @@ function buildColourArgv(vipsPath, inputPath, outputPath, colour) {
 }
 
 /*
- * The colour with the mask as its alpha.
+ * The color with the mask as its alpha.
  *
  * bandjoin takes its inputs as one space-separated argument, which is the
  * one place in this program where a path containing a space would be read as
  * two paths. The workspace is checked for that when it is made, because the
  * alternative is a failure that names a file nobody asked about.
  */
-function buildBandjoinArgv(vipsPath, colourPath, maskPath, outputPath) {
-    return [vipsPath, "bandjoin", `${colourPath} ${maskPath}`, outputPath];
+function buildBandjoinArgv(vipsPath, colorPath, maskPath, outputPath) {
+    return [vipsPath, "bandjoin", `${colorPath} ${maskPath}`, outputPath];
 }
 
 /*
- * The colour, moved out of sRGB and into the space the photograph's numbers
- * are read in. Relative colorimetric because the colour asked for is a
- * colour, not a picture: what matters is that it comes out as itself, and
+ * The color, moved out of sRGB and into the space the photograph's numbers
+ * are read in. Relative colorimetric because the color asked for is a
+ * color, not a picture: what matters is that it comes out as itself, and
  * anything outside the destination's reach is brought to its nearest edge.
  */
 function buildIccArgv(vipsPath, inputPath, outputPath, profilePath) {
@@ -73,9 +73,9 @@ function buildIccArgv(vipsPath, inputPath, outputPath, profilePath) {
 }
 
 /*
- * A grey photograph, read into sRGB.
+ * A gray photograph, read into sRGB.
  *
- * Through its own profile when it has one, so the greys keep their meaning --
+ * Through its own profile when it has one, so the grays keep their meaning --
  * measured, a value of 200 comes back 200, 200, 200. Without a profile there
  * is nothing to read it through and the numbers are already what they are.
  */
@@ -98,7 +98,7 @@ function buildToSrgbArgv(vipsPath, inputPath, outputPath, profilePath) {
 module.exports = {
     buildToSrgbArgv,
     buildSolidArgv,
-    buildColourArgv,
+    buildColorArgv,
     buildBandjoinArgv,
     buildIccArgv
 };

@@ -19,8 +19,8 @@ const { stampsNothing } = require("../../../src/core/stamp-content.js");
 const GOOD = {
     font: "Helvetica Neue",
     size: 36,
-    textColour: "#FFFFFF",
-    outlineColour: "#000000",
+    textColor: "#FFFFFF",
+    outlineColor: "#000000",
     outlineWidth: 2,
     position: "bottom-right",
     margin: 24,
@@ -49,30 +49,30 @@ test("a number outside its bounds is refused by name", () => {
     assert.throws(() => normalized({ outlineWidth: 21 }), /Outline/u);
 });
 
-test("a colour is canonical however it was written", () => {
-    const settings = normalized({ textColour: "ff8000", outlineColour: " #ffffff " });
+test("a color is canonical however it was written", () => {
+    const settings = normalized({ textColor: "ff8000", outlineColor: " #ffffff " });
 
-    assert.equal(settings.textColour, "#FF8000");
-    assert.equal(settings.outlineColour, "#FFFFFF");
+    assert.equal(settings.textColor, "#FF8000");
+    assert.equal(settings.outlineColor, "#FFFFFF");
 });
 
-test("something that is not a colour is refused by name", () => {
-    assert.throws(() => normalized({ textColour: "sky" }), /Text colour/u);
-    assert.throws(() => normalized({ outlineColour: "#12345" }), /Outline colour/u);
+test("something that is not a color is refused by name", () => {
+    assert.throws(() => normalized({ textColor: "sky" }), /Text color/u);
+    assert.throws(() => normalized({ outlineColor: "#12345" }), /Outline color/u);
     // Shorthand is refused rather than guessed at: #FFF is as readily an
     // unfinished #FFF000 as it is white.
-    assert.throws(() => normalized({ textColour: "#FFF" }), /Text colour/u);
+    assert.throws(() => normalized({ textColor: "#FFF" }), /Text color/u);
 });
 
 test("a choice nothing offers is refused rather than passed on", () => {
-    assert.throws(() => normalized({ position: "middle" }), /Unsupported position/u);
+    assert.throws(() => normalized({ position: "middle" }), /Position must be one of: bottom-right, bottom-left, top-right, top-left, bottom-center, top-center\./u);
     assert.throws(
         () => normalized({ dateFormat: "rfc822" }),
-        /Unsupported date\/time format/u
+        /Date\/time format must be one of: iso-minutes, iso-date, long-date, none\./u
     );
     assert.throws(
         () => normalized({ coordinateFormat: "utm" }),
-        /Unsupported coordinate format/u
+        /Coordinate format must be one of: none, decimal, sexagesimal\./u
     );
 });
 
@@ -140,7 +140,7 @@ test("typed settings report exact issue context and reject fractional boundaries
     const { validateSettings, readSetting } = require("../../../src/core/settings.js");
     assert.deepEqual(validateSettings(null), { issues: [{ code: "object", stage: "settings", message: "Settings must be a JSON object." }] });
     assert.deepEqual(validateSettings({ ...GOOD, obsolete: true }).issues, [{ field: "obsolete", code: "unknown", stage: "settings", message: "Unknown setting: obsolete." }]);
-    assert.deepEqual(validateSettings({ ...GOOD, size: 36.5 }).issues, [{ field: "size", code: "setting", stage: "settings", message: "Text size must be a whole number from 8 to 400." }]);
+    assert.deepEqual(validateSettings({ ...GOOD, size: 36.5 }).issues, [{ field: "size", code: "integer", stage: "settings", message: "Text size must be a whole number from 8 to 400." }]);
     for (const [field, values] of [["size", [7, 401, 36.5, NaN, Infinity]], ["margin", [-1, 2001, 1.5]], ["outlineWidth", [-1, 21, 1.5]]]) {
         for (const value of values) { assert.throws(() => normalized({ [field]: value }), /whole number/u); }
     }
@@ -156,4 +156,15 @@ test("field regression: unrenderable caption strings are invalid settings before
         assert.ok(result.issues.some((issue) => issue.field === "customText" && issue.stage === "settings"));
     }
     assert.equal(normalized({ customText: "Rīga & <literal>\nمرحبا 📷\t" }).customText, "Rīga & <literal>\nمرحبا 📷\t");
+});
+
+test("each refused setting carries the shared code for its kind of value", () => {
+    // Shared with Image Files to PDF: unknown, choice, integer, text and color.
+    const { validateSettings: validate, readSetting } = require("../../../src/core/settings.js");
+    const codes = Object.fromEntries(validate({
+        ...GOOD, extra: 1, position: 7, size: "36", textColor: "red", font: " ", customText: 5
+    }).issues.map((issue) => [issue.field, issue.code]));
+
+    assert.deepEqual(codes, { extra: "unknown", position: "choice", size: "integer", textColor: "color", font: "text", customText: "text" });
+    assert.throws(() => readSetting("nope", 1), (error) => error.code === "unknown");
 });

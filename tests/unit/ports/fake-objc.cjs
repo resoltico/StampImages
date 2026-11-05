@@ -25,17 +25,17 @@ const { makeWindow, makeBox } = require("./fake-panel-objects.cjs");
  * The classes the widget layer reaches for, and nothing else: a fake that
  * grew past what is used would stop being evidence about the real code.
  */
-function colourClass() {
+function colorClass() {
     return {
-        labelColor: { kind: "colour", name: "label" },
-        separatorColor: { kind: "colour", name: "separator" },
-        controlAccentColor: { kind: "colour", name: "controlAccent" },
-        secondaryLabelColor: { kind: "colour", name: "secondaryLabel" },
+        labelColor: { kind: "color", name: "label" },
+        separatorColor: { kind: "color", name: "separator" },
+        controlAccentColor: { kind: "color", name: "controlAccent" },
+        secondaryLabelColor: { kind: "color", name: "secondaryLabel" },
         systemRedColor: {
-            kind: "colour",
+            kind: "color",
             name: "systemRed",
             colorWithAlphaComponent: (alpha) => ({
-                kind: "colour",
+                kind: "color",
                 name: "systemRed",
                 alpha
             })
@@ -56,7 +56,7 @@ function installClasses(ns, state, application) {
         NSTextField: { alloc: { initWithFrame: makeField } },
         NSPopUpButton: { alloc: { initWithFramePullsDown: makePopup } },
         NSComboBox: { alloc: { initWithFrame: makeCombo } },
-        NSColor: colourClass(),
+        NSColor: colorClass(),
         NSFont: {
             systemFontSize: 13,
             systemFontOfSize: (size) => ({ kind: "font", size }),

@@ -6,15 +6,15 @@
  * compared literally.
  */
 
-const { UserCancelled } = require("../../../src/core/errors.js");
+const { UserCanceled } = require("../../../src/core/errors.js");
 const { SILENT } = require("../../../src/host/progress.js");
 
 const SETTINGS = Object.freeze({
     font: "Helvetica Neue",
     typeface: { family: "Helvetica Neue", face: "" },
     size: 24,
-    textColour: "#FFFFFF",
-    outlineColour: "#000000",
+    textColor: "#FFFFFF",
+    outlineColor: "#000000",
     outlineWidth: 2,
     position: "bottom-right",
     margin: 16,
@@ -38,7 +38,7 @@ function makeJob(app, settings = {}) {
         workspace: "/tmp/StampImages.X",
         stamps: new Map(),
         // How many drawings this run has made, which names their files, and
-        // the colour profiles it has seen, one file each.
+        // the color profiles it has seen, one file each.
         drawn: 0,
         profiles: [],
         artifacts: new Map(),
@@ -77,7 +77,7 @@ function reporter(stopAfter = Infinity, stopAt = null) {
         said.push(line);
 
         if (finished >= stopAfter || line === stopAt) {
-            throw new UserCancelled();
+            throw new UserCanceled();
         }
     };
 

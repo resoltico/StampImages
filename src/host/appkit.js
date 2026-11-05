@@ -11,6 +11,7 @@ const {
 } = require("./appkit-widgets.js");
 const { makeField, makeCombo, makeCaption } = require("./appkit-fields.js");
 const { buildForm } = require("./appkit-form.js");
+const { perform } = require("./appkit-bridge.js");
 const { optionalAnswer, unbindChoices } = require("./appkit-choice.js");
 
 // Gathered into one object so a test can substitute the whole widget layer.
@@ -52,7 +53,7 @@ const WIDGETS = {
  * There used to be a watchdog here: an abortModal scheduled two minutes out,
  * so a form that never returned could not hang the run. It fired on forms
  * that were working perfectly, because taking two minutes to choose a
- * typeface and a colour is not evidence of anything -- and the user was
+ * typeface and a color is not evidence of anything -- and the user was
  * dropped into the stepwise dialogs half way through answering. Measured, not
  * assumed: abortModal yields NSModalResponseAbort, which is -1001, and -1000
  * is NSModalResponseStop.
@@ -117,7 +118,7 @@ function editorFor(row, control) {
 }
 
 function presentForm(bridge, spec, widgets = WIDGETS) {
-    const { view, controls } = buildForm(bridge, spec, widgets);
+    const { view, controls, details } = buildForm(bridge, spec, widgets);
 
     try {
         const alert = widgets.makeAlert(bridge.ns, spec);
@@ -125,6 +126,12 @@ function presentForm(bridge, spec, widgets = WIDGETS) {
         alert.accessoryView = view;
         const focus = spec.rows.find((row) => row.invalid) ?? spec.rows[0];
         alert.window.initialFirstResponder = editorFor(focus, controls[focus.key]);
+        // Measured: laid out inside a running alert, the note opened two lines
+        // down, hiding the outcome line that leads it. It is laid out first and
+        // put back at its start.
+        perform(alert, "layout");
+        details.contentView.scrollToPoint(bridge.ns.NSMakePoint(0, 0));
+        details.reflectScrolledClipView(details.contentView);
 
         const response = Number(alert.runModal);
 
@@ -134,7 +141,7 @@ function presentForm(bridge, spec, widgets = WIDGETS) {
 
         return response === FIRST_BUTTON
             ? { answers: readControls(bridge, spec, controls) }
-            : { cancelled: true };
+            : { canceled: true };
     } finally {
         unbindChoices(spec, controls);
     }

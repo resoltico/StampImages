@@ -68,7 +68,7 @@ test("the stamp starts out saying something", () => {
 });
 
 test("the text starts white with a dark outline, because photographs vary", () => {
-    assert.equal(defaultSettings(FONTS).textColour, "#FFFFFF");
-    assert.equal(defaultSettings(FONTS).outlineColour, "#202020");
+    assert.equal(defaultSettings(FONTS).textColor, "#FFFFFF");
+    assert.equal(defaultSettings(FONTS).outlineColor, "#202020");
     assert.ok(defaultSettings(FONTS).outlineWidth > 0);
 });

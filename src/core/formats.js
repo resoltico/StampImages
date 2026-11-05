@@ -18,7 +18,7 @@ const { splitExtension } = require("./naming.js");
  * said so. A copy somebody keeps should not be the place a default like that
  * takes effect.
  *
- * 90 rather than 100: at 90 vips also stops subsampling the colour channels,
+ * 90 rather than 100: at 90 vips also stops subsampling the color channels,
  * which is where visible damage to a stamp's edges would come from, and the
  * difference above it is file size rather than something anybody can see.
  */

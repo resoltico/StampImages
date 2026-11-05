@@ -3,7 +3,7 @@ const { APP_NAME } = require("../core/version.js");
 const { formRows } = require("./form-rows.js");
 const { defaultAnswers } = require("./form-defaults.js");
 const {
-    selectionSummary, COPY_NOTE, SOURCE_NOTE, LOCATION_NOTE
+    selectionSummary, outcomeSummary, ORIGINALS_NOTE, SOURCE_NOTE, LOCATION_NOTE
 } = require("./stamp-description.js");
 
 /*
@@ -21,13 +21,12 @@ const {
 const CREATE_BUTTON = "Create";
 const CANCEL_BUTTON = "Cancel";
 
-function invitation(count, selectedFolders = 0) {
-    return [
-        selectionSummary({ count, selectedFolders }),
-        COPY_NOTE,
-        SOURCE_NOTE,
-        LOCATION_NOTE
-    ].join("\n");
+function invitation({ count = 0, selectedFolders = 0, folders = [] } = {}) {
+    const outcome = count > 0 && folders.length > 0
+        ? [outcomeSummary({ count, folders }), `Save locations:\n${folders.join("\n")}`]
+        : [selectionSummary({ count, selectedFolders })];
+
+    return [...outcome, [ORIGINALS_NOTE, SOURCE_NOTE, LOCATION_NOTE].join("\n")].join("\n\n");
 }
 
 /*
@@ -42,7 +41,7 @@ function correction(count) {
 }
 
 function formSpec(answers, problems, context) {
-    const { count, fonts, selectedFolders } = context;
+    const { fonts } = context;
 
     // That something needs correcting is said where the alert puts its
     // message, above the controls; what it is leads the scrolling note. The
@@ -50,10 +49,10 @@ function formSpec(answers, problems, context) {
     // measured, ten of them in the message grew the form past 744 points.
     return {
         title: APP_NAME,
-        detail: problems.length > 0 ? correction(problems.length) : "Choose the stamp for this selection.",
+        detail: problems.length > 0 ? correction(problems.length) : "Choose the stamp settings, then Create.",
         fullDetail: [
             ...problems.map((problem) => problem.message),
-            invitation(count, selectedFolders)
+            invitation(context)
         ].join("\n"),
         rows: formRows(
             answers ?? defaultAnswers(fonts),

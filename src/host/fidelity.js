@@ -3,14 +3,14 @@ const { OperationError } = require("../core/errors.js");
 
 const { buildSizeArgv } = require("../backend/queries.js");
 const { positiveIntegerFrom } = require("../core/numbers.js");
-const { errorMessage, isUserCancelled } = require("../core/errors.js");
+const { errorMessage, isUserCanceled } = require("../core/errors.js");
 const { runArgv } = require("./shell.js");
 
 /*
  * What this program will and will not copy, asked of the file rather than
  * assumed about it.
  *
- * A stamped copy is a copy: the same picture, in the same colours, with one
+ * A stamped copy is a copy: the same picture, in the same colors, with one
  * block of text on it. A file this cannot say that about is refused with the
  * reason, which is a better outcome than a copy that is quietly something
  * else.
@@ -19,23 +19,23 @@ const { runArgv } = require("./shell.js");
 /*
  * What this can copy faithfully, asked rather than assumed.
  *
- * Colour photographs and grey ones, at either depth. Anything else is
- * refused: the four bands of a CMYK photograph are not three colours and an
- * alpha, and compositing onto them would produce a copy in different colours
+ * Color photographs and gray ones, at either depth. Anything else is
+ * refused: the four bands of a CMYK photograph are not three colors and an
+ * alpha, and compositing onto them would produce a copy in different colors
  * from the original -- which is not a stamped copy of it. Measured, because
  * the band count alone cannot tell them apart: a CMYK JPEG and a PNG with
  * transparency both report four.
  */
-const FAITHFUL = ["sRGB", "RGB", "RGB16", "B_W", "GREY16"];
+const FAITHFUL = ["sRGB", "RGB", "RGB16", "B_W", "GRAY16"];
 const INTERPRETATION = /VIPS_INTERPRETATION_(?<kind>\w+)/u;
 
 /*
- * Grey and an alpha, or colour and an alpha. Once the interpretations above
+ * Gray and an alpha, or color and an alpha. Once the interpretations above
  * are the only ones left, an even band count is the alpha and nothing else.
  */
-const GREY_ALPHA = 2;
-const COLOUR_ALPHA = 4;
-const ALPHA_BANDS = [GREY_ALPHA, COLOUR_ALPHA];
+const GRAY_ALPHA = 2;
+const COLOR_ALPHA = 4;
+const ALPHA_BANDS = [GRAY_ALPHA, COLOR_ALPHA];
 
 function headerField(job, path, field, label) {
     return String(runArgv(
@@ -56,12 +56,12 @@ function positiveHeaderField(job, path, field, label) {
 }
 
 function bandsOf(job, path) {
-    return positiveHeaderField(job, path, "bands", "measuring the photograph");
+    return positiveHeaderField(job, path, "bands", "measuring the image");
 }
 
 function kindOf(job, path) {
     return INTERPRETATION.exec(
-        headerField(job, path, "interpretation", "measuring the photograph")
+        headerField(job, path, "interpretation", "measuring the image")
     )?.groups.kind ?? "";
 }
 
@@ -70,7 +70,7 @@ function pagesIn(job, path) {
     try {
         return positiveHeaderField(job, path, "n-pages", "counting the images");
     } catch (error) {
-        if (!isUserCancelled(error) &&
+        if (!isUserCanceled(error) &&
             /^(?:vipsheader: )?vips_image_get: field "n-pages" not found$/u.test(
                 errorMessage(error.cause ?? error).trim())) {
             return 1;
@@ -94,8 +94,8 @@ function refuseUnfaithful(job, source) {
 
     if (!FAITHFUL.includes(kind)) {
         throw new OperationError(
-            "This photograph is not stored as colour or grey, so a stamped " +
-                `copy of it would not be the colours it is (${kind || "unreadable"}).`
+            "This image is not stored as color or gray, so a stamped " +
+                `copy of it would not be the colors it is (${kind || "unreadable"}).`
         );
     }
 

@@ -1,7 +1,7 @@
 "use strict";
 const { ISSUE } = require("./outcomes.js");
 const { SUPPORTED_FORMATS, basename, supportedFormatList } = require("./paths.js");
-const GREY_ALPHA_BANDS = 2;
+const GRAY_ALPHA_BANDS = 2;
 const RGB_BANDS = 3;
 const RGBA_BANDS = 4;
 const RASTER_FAMILIES = new Set(SUPPORTED_FORMATS.map((format) => format.family ?? format.name));
@@ -15,7 +15,7 @@ function sourceIssue(code, facts = {}, diagnostic = null) {
         empty: "This file is empty.",
         "not-an-image": "This file is not a supported still raster image.",
         "unsupported-content": `This image uses unsupported content; use ${supportedFormatList()}.`,
-        "unsupported-colour": "This image uses an unsupported colour model or channel layout; convert it to RGB or greyscale before stamping.",
+        "unsupported-color": "This image uses an unsupported color model or channel layout; convert it to RGB or grayscale before stamping.",
         "multiple-images": `This file contains ${facts.pages} images; only single images are supported.`,
         damaged: "This image is damaged or incomplete."
     };
@@ -40,8 +40,8 @@ function sourceIssues(descriptor) {
         .every((value) => Number.isSafeInteger(value) && value > 0) || descriptor.orientation > LAST_ORIENTATION) {
         return [sourceIssue("damaged")];
     }
-    const bandsByInterpretation = { "b-w": [1, GREY_ALPHA_BANDS], grey16: [1, GREY_ALPHA_BANDS], srgb: [RGB_BANDS, RGBA_BANDS], rgb: [RGB_BANDS, RGBA_BANDS], rgb16: [RGB_BANDS, RGBA_BANDS] };
-    if (!(bandsByInterpretation[descriptor.interpretation] ?? []).includes(descriptor.bands)) { return [sourceIssue("unsupported-colour")]; }
+    const bandsByInterpretation = { "b-w": [1, GRAY_ALPHA_BANDS], grey16: [1, GRAY_ALPHA_BANDS], srgb: [RGB_BANDS, RGBA_BANDS], rgb: [RGB_BANDS, RGBA_BANDS], rgb16: [RGB_BANDS, RGBA_BANDS] };
+    if (!(bandsByInterpretation[descriptor.interpretation] ?? []).includes(descriptor.bands)) { return [sourceIssue("unsupported-color")]; }
     return descriptor.pages === 1 ? [] : [sourceIssue("multiple-images", descriptor)];
 }
 

@@ -1,22 +1,22 @@
 "use strict";
 const { removeOwned } = require("./owned-cleanup.js");
-const { isUserCancelled } = require("../core/errors.js");
+const { isUserCanceled } = require("../core/errors.js");
 const { runArgvInto } = require("./shell.js");
 const { sameBytes, isRegularNonEmpty } = require("./asking.js");
 
 /*
- * Which colours a photograph's numbers mean.
+ * Which colors a photograph's numbers mean.
  *
- * A colour chosen in the form is three sRGB numbers, and writing those
- * numbers into a photograph does not make them that colour: they are read
+ * A color chosen in the form is three sRGB numbers, and writing those
+ * numbers into a photograph does not make them that color: they are read
  * through whatever profile the photograph carries. Measured on this Mac, in
  * Lab: #FF3B30 written into a Display P3 photograph lands about 19 away from
  * the red that was asked for, and #FFD400 about 28. A difference of 2 is
  * visible. Every recent iPhone photograph is Display P3, so this is the
- * ordinary case rather than an exotic one -- and white and grey are exact,
+ * ordinary case rather than an exotic one -- and white and gray are exact,
  * which is why the defaults never showed it.
  *
- * So the photograph's profile is taken out of it and the colour is moved into
+ * So the photograph's profile is taken out of it and the color is moved into
  * that space before it is painted. A photograph with no profile needs none of
  * this: numbers with no profile are sRGB by convention, which is what they
  * already are.
@@ -27,7 +27,7 @@ const { sameBytes, isRegularNonEmpty } = require("./asking.js");
  *
  * "There is no profile" and "the profile could not be read" used to be the
  * same empty string, and the empty string took the no-profile path -- which
- * reports the colour as handled. So an extraction that failed was a stamp
+ * reports the color as handled. So an extraction that failed was a stamp
  * painted in unconverted numbers and a run that said everything went well.
  * They are told apart now, and a failure is counted rather than assumed away.
  */
@@ -63,10 +63,10 @@ function extract(job, source, token) {
             job.app,
             [job.tools.exiftool, "-icc_profile", "-b", source],
             written,
-            "reading the photograph's colour profile"
+            "reading the image's color profile"
         );
     } catch (error) {
-        if (isUserCancelled(error)) {
+        if (isUserCanceled(error)) {
             throw error;
         }
 
@@ -85,7 +85,7 @@ function extract(job, source, token) {
 }
 
 /*
- * The profile this photograph's colours are in, as a file this run owns.
+ * The profile this photograph's colors are in, as a file this run owns.
  */
 function profileFor(job, source, token) {
     const found = extract(job, source, token);

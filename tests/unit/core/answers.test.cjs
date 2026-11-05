@@ -22,7 +22,7 @@ function answers(overrides = {}) {
 
 test("the labels a person chose become the values the pipeline stores", () => {
     const read = readAnswers(answers({
-        dateFormat: "9 September 2026",
+        dateFormat: "September 9, 2026",
         position: "Top left",
         customText: "Riga"
     }), FONTS);
@@ -55,21 +55,21 @@ test("a number outside its bounds is refused with the bounds", () => {
 test("every problem is reported at once, each with its row", () => {
     const read = readAnswers(answers({
         size: "huge",
-        textColour: "sky",
+        textColor: "sky",
         position: "Sideways"
     }), FONTS);
 
     assert.deepEqual(
         read.problems.map((problem) => problem.key),
-        ["size", "textColour", "position"]
+        ["size", "textColor", "position"]
     );
     assert.equal(read.settings, undefined);
 });
 
-test("a colour is refused in the same words the settings would use", () => {
-    const read = readAnswers(answers({ outlineColour: "#12345" }), FONTS);
+test("a color is refused in the same words the settings would use", () => {
+    const read = readAnswers(answers({ outlineColor: "#12345" }), FONTS);
 
-    assert.match(read.problems[0].message, /Outline colour must be six/u);
+    assert.match(read.problems[0].message, /Outline color must be six/u);
 });
 
 test("a typeface is a name, and a name off the list is still a name", () => {

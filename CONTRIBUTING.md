@@ -53,7 +53,7 @@ production run entry. `tools/lint/boundaries.mjs` enforces these dependencies.
 
 Keep UI answer conversion and wording in the host. Validate typed settings through
 `src/core/settings.js`; do not add a competing CLI or preferences validator.
-`src/core/inscription.js` decides what each photograph can say before rendering.
+`src/core/inscription.js` decides what each image can say before rendering.
 Inspect originals before consent, then capture and independently inspect private
 bytes before metadata/profile extraction and decoding. Keep original paths for
 reporting. Application outcomes own source mappings and state; presenters derive
@@ -61,6 +61,42 @@ counts and text without changing saved work.
 
 The CLI and receipt contract is in [HEADLESS.md](HEADLESS.md). Keep it strict;
 do not add migrations or compatibility aliases.
+
+## Interface wording
+
+Stamp Images and its sibling [Image Files to PDF](https://github.com/resoltico/ImageFilesToPDF)
+are Finder Quick Actions on the same stack, used by the same people, so they share
+one set of interface conventions and one document layout. Mirror a change here in
+the sibling repository.
+
+- US English everywhere: UI text, receipt tokens and messages, documents, comments
+  and identifiers.
+- Selected files are *images*; outputs are *stamped copies* (*PDFs* in the sibling).
+  Buttons are `Create`, `Cancel`, `Continue`, `Stop`, `OK`, `Show in Finder`,
+  `Details` and `Back`.
+- Settings form: the message line is `Choose the stamp settings, then Create.`; the
+  note opens with `<N images> → <outputs>, saved in <place>` and `Save locations:`.
+  Corrections say `Correct the highlighted setting, listed below.` and the note lists
+  them first. Range hints use an en dash and a unit (`8–400 pt`); color presets add
+  `or type #RRGGBB`.
+- Selection review: `<N items> in your selection cannot be included.`, then
+  `Not included:` with `<name>: <reason sentence>` and `in <folder>`, ending
+  `Continue with <N images>?`.
+- Completion: `Created …` or `No … was created.`, prefixed `Finished with issues.`
+  or `Stopped.`; copies saved elsewhere are counted in the headline, and refusals
+  agreed to in the review do not add `Finished with issues.`. The detail lists the
+  non-zero counts, `Saved to:`, notes, failures, recoveries, `Not started`,
+  `Not included from your selection:`, `Elapsed:` and, in the dialog only, the
+  version. `Show in Finder` reveals every saved or recovered copy; `Details` shows
+  `key: value` lines and `Back` returns to the summary.
+- Command line: the same commands and exit statuses; usage errors name the problem
+  and print only the run line; `--help` lists `field — Name: values; default X`;
+  stderr sections are separated by one blank line; receipts share the state and
+  issue-code vocabulary in [HEADLESS.md](HEADLESS.md).
+- Documents: README (users), INSTALL.txt (release asset), HEADLESS.md (command
+  line), SECURITY.md (trust and file safety), QA.md (verification) and this file,
+  with matching section order in both repositories. Documents describe the current
+  state only; history belongs in `CHANGELOG.md`.
 
 ## The released artifact
 

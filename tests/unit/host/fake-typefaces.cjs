@@ -2,8 +2,8 @@
 
 const {
     STOCK,
-    catalogueOf,
-    catalogueFor
+    catalogOf,
+    catalogFor
 } = require("../core/fake-typefaces.cjs");
 
 /*
@@ -11,7 +11,7 @@ const {
  * strings for the families, and for each family a list of rows describing a
  * face four ways, of which the second is the style.
  *
- * The catalogue itself is the core fake's, because the catalogue is a core
+ * The catalog itself is the core fake's, because the catalog is a core
  * idea -- what a name resolves to is decided without a bridge. This is only
  * the shape the answer arrives in.
  */
@@ -35,4 +35,4 @@ function fontManager(families = STOCK) {
     };
 }
 
-module.exports = { STOCK, catalogueOf, catalogueFor, fontManager };
+module.exports = { STOCK, catalogOf, catalogFor, fontManager };

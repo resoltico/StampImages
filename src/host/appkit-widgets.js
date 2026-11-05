@@ -23,7 +23,7 @@ const HINT_FONT_SIZE = 11;
 // wrong the moment the form appears in dark mode.
 const INVALID_TINT_ALPHA = 0.18;
 
-// NSTextAlignmentRight. On macOS right is 1 and centre is 2, which is the
+// NSTextAlignmentRight. On macOS right is 1 and center is 2, which is the
 // reverse of UIKit, so the constant is named rather than written inline.
 const ALIGN_RIGHT = 1;
 

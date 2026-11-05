@@ -141,6 +141,6 @@ test("without a tree, a photo inside a refused folder is still converted", () =>
 
     assert.deepEqual(images.map((image) => image.path), ["/Trip/a.png"]);
     assert.deepEqual(rejected.map((entry) => entry.reason), [
-        "a folder; select the images inside it"
+        "This is a folder; select the images inside it."
     ]);
 });

@@ -15,7 +15,7 @@ function inherit(state, source, destination, identity) {
 }
 
 /*
- * What the tools that change the filesystem do, modelled from the real ones.
+ * What the tools that change the filesystem do, modeled from the real ones.
  *
  * The distinctions matter to the code under test: ln makes another name for
  * one file and refuses a name that is taken, mv carries a file along and

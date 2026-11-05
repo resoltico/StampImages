@@ -58,6 +58,6 @@ test("an entry that cannot be looked at is named, and is not an exclusion", () =
     const found = imagesInFolder(tree, "/a", new Set());
 
     assert.deepEqual(found.problems, [
-        { path: "/a/b.png", reason: "could not be examined", excluded: false }
+        { path: "/a/b.png", reason: "This item could not be examined.", excluded: false }
     ]);
 });

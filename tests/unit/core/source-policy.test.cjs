@@ -61,29 +61,29 @@ test("EXIF orientation ownership is shared by source validation and backend pars
     assert.deepEqual(orientedSize(400, 200, 9), { width: 400, height: 200 });
 });
 
-test("stamp fidelity refuses unsupported colour spaces and impossible band layouts", () => {
+test("stamp fidelity refuses unsupported color spaces and impossible band layouts", () => {
     for (const patch of [{ interpretation: "cmyk", bands: 4 }, { interpretation: "srgb", bands: 5 }, { interpretation: "b-w", bands: 3 }]) {
-        assert.equal(sourceIssues({ ...image, ...patch })[0].code, "unsupported-colour");
+        assert.equal(sourceIssues({ ...image, ...patch })[0].code, "unsupported-color");
     }
     for (const interpretation of ["b-w", "grey16"]) {
         for (const bands of [1, 2]) { assert.deepEqual(sourceIssues({ ...image, interpretation, bands }), []); }
     }
 });
 
-test("RGB and RGB16 permit exactly colour or colour plus alpha bands", () => {
+test("RGB and RGB16 permit exactly color or color plus alpha bands", () => {
     for (const interpretation of ["rgb", "rgb16"]) {
         assert.deepEqual(sourceIssues({ ...image, interpretation, bands: 3 }), []);
         assert.deepEqual(sourceIssues({ ...image, interpretation, bands: 4 }), []);
-        assert.equal(sourceIssues({ ...image, interpretation, bands: 2 })[0].code, "unsupported-colour");
+        assert.equal(sourceIssues({ ...image, interpretation, bands: 2 })[0].code, "unsupported-color");
     }
     assert.equal(sourceIssues({ ...image, format: undefined, loader: "svgload" })[0].message, "This file is not a supported still raster image.");
     assert.equal(matchesAdmission({ identity: "1:2", version: "v1" }, image), false);
 });
 
-test("field regression: colour-layout refusal gives a meaningful conversion instruction", () => {
+test("field regression: color-layout refusal gives a meaningful conversion instruction", () => {
     const [issue] = sourceIssues({ ...image, interpretation: "cmyk", bands: 4 });
-    assert.equal(issue.code, "unsupported-colour");
-    assert.match(issue.message, /convert.*RGB or greyscale/iu);
+    assert.equal(issue.code, "unsupported-color");
+    assert.match(issue.message, /convert.*RGB or grayscale/iu);
     assert.equal(sourceIssues({ ...image, format: undefined, loader: "gifload" })[0].code, "unsupported-content");
 });
 

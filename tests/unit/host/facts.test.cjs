@@ -66,7 +66,7 @@ test("a tool that will not run is a question that could not be put", () => {
 
     assert.throws(
         () => factsFor(job, "/a/one.jpg"),
-        /Command failed while reading the photograph's metadata/u
+        /Command failed while reading the image's metadata/u
     );
 });
 
@@ -102,7 +102,7 @@ test("every shape that is not one record is not an answer", () => {
 
         assert.throws(
             () => factsFor(job, "/a/one.jpg"),
-            /answered with nothing about this photograph/u,
+            /answered with nothing about this image/u,
             answered
         );
     }

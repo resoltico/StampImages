@@ -102,7 +102,7 @@ jobs:
         with:
           name: release-dist
           path: dist
-      # The artifact travelled through the runner's storage, so its checksums
+      # The artifact traveled through the runner's storage, so its checksums
       # are checked again on arrival rather than trusted. The manifest names
       # its files without a directory, so it verifies from beside them.
       - name: Reverify the downloaded artifact

@@ -2,7 +2,7 @@
 const { formSpec } = require("./form.js");
 const { readAnswers } = require("./answers.js");
 const { contentProblem } = require("../core/stamp-content.js");
-const { UserCancelled } = require("../core/errors.js");
+const { UserCanceled } = require("../core/errors.js");
 const { resolved } = require("../core/typeface-refusal.js");
 const { presentForm } = require("./appkit.js");
 const { appkitBridge } = require("./appkit-bridge.js");
@@ -54,8 +54,8 @@ function formRound(bridge, present, state) {
         return { unavailable: true };
     }
 
-    if (outcome.cancelled) {
-        throw new UserCancelled();
+    if (outcome.canceled) {
+        throw new UserCanceled();
     }
 
     const read = readAnswers(outcome.answers, state.context.fonts);

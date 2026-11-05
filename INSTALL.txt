@@ -1,4 +1,4 @@
-STAMP IMAGES 1.2.1 - SHORTCUTS INSTALLATION
+STAMP IMAGES 2.0.0 - SHORTCUTS INSTALLATION
 
 Source, releases and build attestation:
 
@@ -7,86 +7,79 @@ Source, releases and build attestation:
 Requirements
 ============
 
-macOS 12.3 or later, Shortcuts, and Homebrew runtime tools:
+macOS 12.3 or later, with Shortcuts. The Quick Action needs no Node.js runtime.
+Install its command-line tools in Terminal:
 
     brew install exiftool vips
 
-Node is not a runtime dependency. Typefaces come from the macOS font system.
+vipsheader comes with vips. Typefaces come from the macOS font system.
 
-Download and verify
-===================
+Verify a download
+=================
 
-Download Stamp-Images.jxa, SHA256SUMS, INSTALL.txt and LICENSE from the release.
-With the GitHub CLI installed, run these commands in the download folder:
+The release workflow attests the JXA, checksum manifest, installation
+instructions and license. With GitHub CLI installed, from the download folder:
 
     gh attestation verify Stamp-Images.jxa --repo resoltico/StampImages
-    gh attestation verify SHA256SUMS --repo resoltico/StampImages
-    gh attestation verify INSTALL.txt --repo resoltico/StampImages
-    gh attestation verify LICENSE --repo resoltico/StampImages
     shasum --check SHA256SUMS
-
-The checksum manifest covers the JXA artifact; each downloaded file has its own
-build attestation. A local source build has no GitHub release attestation.
 
 Install the Quick Action
 ========================
 
-1. Open Shortcuts and create a shortcut.
-2. Open its details, enable "Use as Quick Action", and enable Finder.
+1. Open Shortcuts and create a new shortcut.
+2. In its details, enable "Use as Quick Action" and Finder.
 3. Configure it to receive Files from Finder.
 4. Add "Run JavaScript for Mac Automation".
-5. Replace the example code with the complete contents of Stamp-Images.jxa.
-   From a source checkout, use dist/Stamp-Images.jxa.
+5. Replace the example code with the COMPLETE contents of the downloaded
+   Stamp-Images.jxa. In a repository checkout, that file is at
+   dist/Stamp-Images.jxa.
 6. Name the shortcut "Stamp Images".
+
+To install a newer build, replace the complete pasted script. Download
+checksums do not verify an installed pasted copy.
 
 Use it
 ======
 
-Select image files or folders in Finder and run Stamp Images. Selected folders
-are searched recursively; copies go into the selected folder, including copies
-of images in its subfolders. Directly selected images get copies beside them.
-Overlapping selections process each source once. Originals are not modified.
+Select images or folders in Finder and run Stamp Images. Review any items that
+cannot be included, choose the settings, then click Create. Copies of images
+found in a selected folder are saved in that folder; copies of images selected
+directly are saved beside them, as name_stamped.jpg. Originals are never
+modified.
 
-Review selection problems, choose settings, and click Create. The date is on
-by default and GPS is off. Appearance settings, including GPS, are remembered;
-custom text is not. Turning GPS off changes only the visible stamp: embedded
-location metadata remains in the copy.
+Turning GPS off changes only what the stamp shows: every copy keeps the
+location metadata its original carries.
 
-The progress panel offers Stop, which acts at the next safe checkpoint. Saved
-copies are kept. A finished unpublished copy is retained in its workspace and
-its path reported, without starting a Downloads access request. Completion
-reports saved and recovered paths, unfinished work and metadata omissions.
+If a copy cannot be saved where it belongs, it is saved to Downloads, or
+failing that to a temporary copy, and completion shows where. Move recovered
+work somewhere permanent promptly: macOS can clear temporary storage.
 
-Failed saves attempt recovery to Downloads, then a confirmed temporary copy.
-If recovery fails, the workspace is retained. Copy retained work somewhere
-permanent promptly: system temporary storage can be cleared by macOS.
-
-For supported formats and selection rules, see README.md in the source
-repository. HEADLESS.md specifies noninteractive settings and JSON receipts.
+README.md in the repository describes the settings, supported images and
+output in full. HEADLESS.md describes command-line use.
 
 Remove it
 =========
 
-1. Delete the Stamp Images shortcut in Shortcuts.
-2. To forget its remembered appearance settings, run:
+1. Delete the "Stamp Images" shortcut in Shortcuts.
+2. To forget the remembered appearance settings, run:
 
        defaults delete com.resoltico.StampImages
 
-The preferences domain holds appearance settings, never custom text or photo
-records. A message that the domain does not exist means there are no settings
-to remove. Normal working files are removed when a run ends. Finished retained
-copies and uncertain workspaces require attention at their reported locations;
-inspect and save needed work before removing those files. Saved outputs and
-Downloads recovery copies remain until you remove them yourself.
+The preference domain stores appearance settings only, never custom text. A
+message that the domain does not exist means there is nothing to remove.
+Working files are normally cleaned up; inspect any recovery or workspace
+location a run reported before removing it. Your images and their stamped
+copies stay until you remove them.
 
-exiftool and vips are independently installed tools. If nothing else needs them,
-you can remove them with:
+exiftool and vips may be used by other software. If nothing needs them, remove:
 
     brew uninstall exiftool vips
 
 License terms
 =============
 
-First-party files use Mozilla Public License 2.0 (MPL-2.0); see LICENSE and
-https://mozilla.org/MPL/2.0/. Preserve the script's license and source notices
-when sharing it. Dependencies retain their own licenses.
+First-party project files use Mozilla Public License 2.0 (MPL-2.0).
+The complete terms are in LICENSE and at https://mozilla.org/MPL/2.0/.
+Preserve license/source notices and provide covered source as required by the
+license when distributing covered files or modifications. The JXA header
+identifies its corresponding source. Dependencies retain their own licenses.

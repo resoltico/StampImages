@@ -14,9 +14,9 @@ function choicesFor(field, labels) {
 }
 const POSITIONS = choicesFor("position", {
     "bottom-right": "Bottom right", "bottom-left": "Bottom left", "top-right": "Top right", "top-left": "Top left",
-    "bottom-centre": "Bottom centre", "top-centre": "Top centre"
+    "bottom-center": "Bottom center", "top-center": "Top center"
 });
-const DATE_FORMATS = choicesFor("dateFormat", { "iso-minutes": "2026-09-09 14:30", "iso-date": "2026-09-09", "long-date": "9 September 2026", none: "Do not stamp the date" });
+const DATE_FORMATS = choicesFor("dateFormat", { "iso-minutes": "2026-09-09 14:30", "iso-date": "2026-09-09", "long-date": "September 9, 2026", none: "Do not stamp the date" });
 const COORDINATE_FORMATS = choicesFor("coordinateFormat", { none: "Do not stamp the coordinates", decimal: "56.9496, 24.1052", sexagesimal: "56°56'58.6\"N 24°6'18.7\"E" });
 
 const POSITION = {
@@ -69,7 +69,7 @@ function valueOfLabel(control, label) {
     const chosen = control.choices.find((choice) => choice.label === label);
 
     if (!chosen) {
-        throw new Error(`Unrecognised choice: ${label}`);
+        throw new Error(`Unrecognized choice: ${label}`);
     }
 
     return chosen.value;
@@ -84,7 +84,7 @@ function labelOfValue(control, value) {
     const chosen = control.choices.find((choice) => choice.value === value);
 
     if (!chosen) {
-        throw new Error(`Unrecognised value: ${value}`);
+        throw new Error(`Unrecognized value: ${value}`);
     }
 
     return chosen.label;

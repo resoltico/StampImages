@@ -65,8 +65,8 @@ test("valid answers accompanying native cancellation do not fall back", () => {
     const app = createFakeApp();
 
     assert.throws(() => collectSettings(app, opening(), {
-        bridge: BRIDGE, present: () => ({ cancelled: true, answers: defaultAnswers(FONTS) })
-    }), /cancelled/iu);
+        bridge: BRIDGE, present: () => ({ canceled: true, answers: defaultAnswers(FONTS) })
+    }), /canceled/iu);
     assert.equal(app.dialogs.length, 0);
     assert.equal(app.listPrompts.length, 0);
 });
@@ -103,7 +103,7 @@ test("fallback asks about inclusion first and only asks for format after opt-in"
 test("a returned Cancel wins over usable text in an individual fallback field", () => {
     assert.throws(() => askUntil({ displayDialog: () => ({ buttonReturned: "Cancel", textReturned: "36" }) }, {
         prompt: "Text size", defaultAnswer: "36"
-    }, () => { throw new Error("the reader must not be reached"); }), /cancelled/iu);
+    }, () => { throw new Error("the reader must not be reached"); }), /canceled/iu);
 });
 
 test("fallback preserves an enabled submitted coordinate format rather than reopening Off", () => {

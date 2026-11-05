@@ -39,7 +39,7 @@ test("selection cancellation stops before settings, preferences or output", () =
     assert.throws(() => settingsFor(app, {}, CONTEXT, {
         openMemory: memory(events), bridge: BRIDGE,
         present: () => { throw new Error("form must not open"); }
-    }), /cancelled/iu);
+    }), /canceled/iu);
     assert.deepEqual(events, ["review"]);
 });
 
@@ -77,7 +77,7 @@ test("headless settings bypass selection consent and all interactive memory", ()
     assert.deepEqual(app.dialogs, []);
 });
 
-test("cancelled fallback approval never remembers settings", () => {
+test("canceled fallback approval never remembers settings", () => {
     const events = [];
     const app = createFakeApp();
     const display = app.displayDialog;
@@ -87,7 +87,7 @@ test("cancelled fallback approval never remembers settings", () => {
         : display(message, options);
     assert.throws(() => settingsFor(app, {}, askingContext(FONTS), {
         bridge: null, openMemory: memory(events)
-    }), /cancelled/iu);
+    }), /canceled/iu);
     assert.deepEqual(events, ["open memory", "recall"]);
 });
 
@@ -98,11 +98,11 @@ test("selection review retains every refusal, with the exact count still visible
         count: 1,
         rejected: Array.from({ length: 14 }, (unused, index) => ({ name: `${index}.jpg`, reason: "Unreadable" }))
     });
-    assert.match(app.dialogs[0].message, /^14 items in your selection cannot be included:\n\n0\.jpg: Unreadable\n/u);
+    assert.match(app.dialogs[0].message, /^14 items in your selection cannot be included\.\n\nNot included:\n0\.jpg: Unreadable\n/u);
     const all = app.dialogs.map((dialog) => dialog.message).join("\n");
     assert.match(all, /13\.jpg: Unreadable/u);
     assert.match(all, /Continue with 1 image/u);
-    assert.throws(() => approve({ displayDialog: () => ({}) }, "Question", "Create"), /cancelled/iu);
+    assert.throws(() => approve({ displayDialog: () => ({}) }, "Question", "Create"), /canceled/iu);
 });
 
 test("fallback empty content asks for correction rather than approving a no-op", () => {

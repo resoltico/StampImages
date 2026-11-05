@@ -9,7 +9,7 @@ const HOMEBREW = "/opt/homebrew/bin/vips";
 
 test("every tool the pipeline needs is named", () => {
     // Three, and fc-match is not among them: it was asked which family a name
-    // resolves to, which is a question about fontconfig's catalogue while the
+    // resolves to, which is a question about fontconfig's catalog while the
     // renderer draws from the system's own. The font system is asked directly
     // now, and nothing has to be installed for it.
     assert.deepEqual(TOOL_NAMES, ["vips", "vipsheader", "exiftool"]);

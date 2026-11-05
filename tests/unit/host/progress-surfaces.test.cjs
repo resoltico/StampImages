@@ -20,7 +20,7 @@ function recorder(name, said) {
 }
 
 function cancellation() {
-    const error = new Error("User cancelled.");
+    const error = new Error("User canceled.");
 
     error.errorNumber = -128;
 
@@ -91,7 +91,7 @@ test("a surface can report that the person asked to stop", () => {
 
     // The report that discovers it is the one being made, so that report is
     // where the run stops: checking before saying anything would miss it.
-    assert.throws(() => progress.phase("Working"), /User cancelled/u);
+    assert.throws(() => progress.phase("Working"), /User canceled/u);
     assert.equal(progress.stopped(), true);
 });
 

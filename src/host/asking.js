@@ -3,13 +3,13 @@ const { OperationError } = require("../core/errors.js");
 
 const { TEST, CMP } = require("../core/executables.js");
 const { shellJoin } = require("../core/shell.js");
-const { isUserCancelled } = require("../core/errors.js");
+const { isUserCanceled } = require("../core/errors.js");
 
 /*
  * Questions put to the filesystem, answered by whether a command succeeded.
  *
  * These do not go through runArgv, and that is the point of keeping them
- * apart: runArgv builds a described Error with a summarised command for
+ * apart: runArgv builds a described Error with a summarized command for
  * anything that fails, which is right for a command that was meant to do
  * something and wrong for one that was only ever a question. A test that
  * fails has answered.
@@ -87,7 +87,7 @@ function isRegularNonEmpty(app, path) {
 
         return true;
     } catch (error) {
-        if (isUserCancelled(error)) {
+        if (isUserCanceled(error)) {
             throw error;
         }
 

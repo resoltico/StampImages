@@ -57,10 +57,10 @@ function formatDuration(milliseconds) {
     const seconds = totalSeconds % SECONDS_PER_MINUTE;
 
     if (minutes <= 0) {
-        return `${seconds} second(s)`;
+        return plural(seconds, "second");
     }
 
-    return `${minutes} minute(s), ${seconds} second(s)`;
+    return `${plural(minutes, "minute")}, ${plural(seconds, "second")}`;
 }
 
 /*

@@ -1,7 +1,7 @@
 "use strict";
 const { extensionFor } = require("../core/formats.js");
 const { hostError } = require("./cancellation.js");
-const { OperationError, isUserCancelled, errorMessage, commandOf } = require("../core/errors.js");
+const { OperationError, isUserCanceled, errorMessage, commandOf } = require("../core/errors.js");
 const { issuesOf, ISSUE } = require("../core/outcomes.js");
 const { sourceIssues } = require("../core/source-policy.js");
 const { REQUIRED_FIELDS, OPTIONAL_FIELDS, readMetadata, readMetadataBatch, rawMetadata, finishMetadata,
@@ -13,7 +13,7 @@ const { HEADER_ARGV_BUDGET, runHeaderArgv } = require("./shell.js");
 function expectedHeaderFailure(caught) {
     const error = hostError(caught);
     const [issue] = issuesOf(error, "inspection");
-    if (isUserCancelled(error) || issue.code === ISSUE.fault) { throw error; }
+    if (isUserCanceled(error) || issue.code === ISSUE.fault) { throw error; }
     return { error, issue };
 }
 
@@ -109,7 +109,7 @@ function inspectCandidates(app, selection, context) {
     const inspected = inspectSelection({
         begin: (count) => progress.expect(count),
         accessed: (done, count) => progress.phase(`Checking image access: ${done} of ${count}`),
-        checked: (done) => progress.phase(`Checking photographs: ${done} of ${total}`),
+        checked: (done) => progress.phase(`Checking images: ${done} of ${total}`),
         fileFacts: (entry) => ({ ...sources.facts(entry.path), readable: sources.readable(entry.path) }),
         batches: (candidates) => batchesFor(tools, candidates),
         inspect: (entries) => inspectBatch(app, tools, sources, entries),

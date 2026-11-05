@@ -16,10 +16,10 @@ const { pathCandidates } = require("./input.js");
  * is. Kept apart from the filtering so that a rejection is a stated reason
  * rather than the absence of an entry in a list.
  */
-const FOLDER = "a folder; select the images inside it";
-const UNSUPPORTED = `not a supported format (${supportedFormatList()})`;
-const NOT_A_FILE = "not a readable file";
-const NOT_A_PATH = "not an absolute path to a file";
+const FOLDER = "This is a folder; select the images inside it.";
+const UNSUPPORTED = `This file is not a supported format; use ${supportedFormatList()}.`;
+const NOT_A_FILE = "This file cannot be read; check that it still exists and that you have access.";
+const NOT_A_PATH = "This is not an absolute path to a file.";
 
 function rejectionReason(app, path) {
     // Asked first, because a folder that happens to be called album.png would

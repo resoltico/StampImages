@@ -3,7 +3,7 @@
 /*
  * What this program will and will not copy.
  *
- * A stamped copy is a copy: the same picture, in the same colours, with one
+ * A stamped copy is a copy: the same picture, in the same colors, with one
  * block of text on it. A file this cannot say that about is refused with the
  * reason, which is a better outcome than a copy that is quietly something
  * else.
@@ -30,17 +30,17 @@ function checking(settings) {
     return () => refuseUnfaithful(job, "/a/one.jpg", "/w/oriented-1.v");
 }
 
-test("a colour photograph and a grey one are both copied faithfully", () => {
-    for (const stored of ["colour", "grey", "deep"]) {
+test("a color photograph and a gray one are both copied faithfully", () => {
+    for (const stored of ["color", "gray", "deep"]) {
         assert.doesNotThrow(checking({ stored }), stored);
     }
 });
 
 test("a photograph stored as ink is refused, and the reason names it", () => {
-    // The four bands of a CMYK photograph are not three colours and an alpha,
-    // and compositing onto them would produce a copy in different colours.
+    // The four bands of a CMYK photograph are not three colors and an alpha,
+    // and compositing onto them would produce a copy in different colors.
     assert.throws(checking({ stored: "print" }), (error) => {
-        assert.match(error.message, /not stored as colour or grey/u);
+        assert.match(error.message, /not stored as color or gray/u);
         assert.match(error.message, /CMYK/u);
 
         return true;
@@ -63,12 +63,12 @@ test("a file with no page count at all is one image", () => {
 
 test("what a file says it is is read out of the enum vips prints", () => {
     assert.equal(kindOf(jobOn(), "/a/one.jpg"), "sRGB");
-    assert.equal(kindOf(jobOn({ stored: "grey" }), "/a/one.jpg"), "B_W");
+    assert.equal(kindOf(jobOn({ stored: "gray" }), "/a/one.jpg"), "B_W");
 });
 
 test("an answer that is not an interpretation at all is not one", () => {
     assert.equal(kindOf(jobOn({ stored: "" }), "/a/one.jpg"), "");
-    assert.throws(checking({ stored: "" }), /not stored as colour or grey/u);
+    assert.throws(checking({ stored: "" }), /not stored as color or gray/u);
 });
 
 test("an even band count is the alpha, once ink is out of the question", () => {
@@ -90,6 +90,6 @@ test("the reason a file is refused says which file it is about", () => {
     assert.throws(checking({ pages: 3 }), /a stamped copy of it would hold only the first/u);
     assert.throws(
         checking({ stored: "print" }),
-        /would not be the colours it is/u
+        /would not be the colors it is/u
     );
 });

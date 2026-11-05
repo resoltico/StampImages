@@ -5,7 +5,7 @@
  *
  * The runtime reaches the filesystem only through /bin/test, /bin/mv,
  * /bin/cp, /usr/bin/stat and /bin/rm, and produces files only through vips
- * and exiftool. Modelling those
+ * and exiftool. Modeling those
  * few commands is enough to drive the publication logic — including the
  * non-clobbering move, which a stateless stub cannot exercise.
  */

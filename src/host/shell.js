@@ -80,7 +80,7 @@ function cleanupArgv(app, argv) {
     catch (error) {
         const { issuesOf, ISSUE } = require("../core/outcomes.js");
         const [issue] = issuesOf(error, "cleanup");
-        return { state: "failed", issue: { ...issue, code: issue.code === ISSUE.cancelled ? issue.code : ISSUE.cleanup } };
+        return { state: "failed", issue: { ...issue, code: issue.code === ISSUE.canceled ? issue.code : ISSUE.cleanup } };
     }
 }
 function removeFile(app, path) { return path ? cleanupArgv(app, [RM, "-f", path]) : { state: "skipped" }; }

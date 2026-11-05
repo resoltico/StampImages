@@ -26,7 +26,7 @@ test("a stamp larger than the photograph is refused, not cropped", () => {
             margin: 20
         }),
         (error) => {
-            assert.match(error.message, /does not fit on this photograph/u);
+            assert.match(error.message, /does not fit on this image/u);
             assert.match(error.message, /1200 by 900 pixels/u);
             assert.match(error.message, /1000 by 800 pixels/u);
             assert.match(error.message, /smaller text size/u);

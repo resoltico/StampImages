@@ -24,9 +24,9 @@ function record(path, folder) {
 }
 
 const KIND_REASONS = {
-    package: "a package, not a folder of images",
-    link: "a link; select the file it points to",
-    other: "not a regular file (a pipe, socket or device)"
+    package: "This is a package, not a folder of images.",
+    link: "This is a link; select the file it points to.",
+    other: "This is not a regular file (a pipe, socket or device)."
 };
 
 /*

@@ -77,7 +77,7 @@ test("selection text distinguishes selected files from folder discovery", () => 
     assert.equal(selectionSummary({ count: 2 }), "You have selected 2 images.");
     assert.equal(selectionSummary({ count: 2, selectedFolders: 1 }),
         "Found 2 images in your selection, including subfolders.");
-    assert.match(invitation(2, 1), /^Found 2 images/u);
+    assert.match(invitation({ count: 2, selectedFolders: 1 }), /^Found 2 images/u);
 });
 
 test("validation retains the selection, copy rules and metadata warning", () => {

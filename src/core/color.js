@@ -3,10 +3,10 @@
 const { plural } = require("./numbers.js");
 
 /*
- * A colour, as the one kind of thing it is.
+ * A color, as the one kind of thing it is.
  *
- * More than one setting is a colour -- the text and its outline -- so what a
- * colour *is* is said once, here, and each setting says which of them it is.
+ * More than one setting is a color -- the text and its outline -- so what a
+ * color *is* is said once, here, and each setting says which of them it is.
  * A parser per setting is how two of them come to disagree: one accepting a
  * value the other silently makes nothing of.
  *
@@ -24,10 +24,10 @@ const { plural } = require("./numbers.js");
  *
  * A value that is not a string is refused too, rather than converted: a
  * headless configuration is JSON, and a bare number there is a mistake to be
- * reported, not a colour to be inferred.
+ * reported, not a color to be inferred.
  */
 
-const HEX_COLOUR =
+const HEX_COLOR =
     /^#?(?<red>[\da-f]{2})(?<green>[\da-f]{2})(?<blue>[\da-f]{2})$/iu;
 const HEX_RADIX = 16;
 
@@ -36,11 +36,11 @@ const HEX_RADIX = 16;
  * message that names the setting is the difference between "wrong" and
  * "which one".
  */
-const COLOUR_RULE = "must be six hexadecimal digits, for example #C7DAE8. " +
+const COLOR_RULE = "must be six hexadecimal digits, for example #C7DAE8. " +
     "The # is optional, and transparency is not supported.";
 
 function refuse(subject) {
-    return new Error(`${subject} ${COLOUR_RULE}`);
+    return new Error(`${subject} ${COLOR_RULE}`);
 }
 
 function groupsOf(value) {
@@ -48,12 +48,12 @@ function groupsOf(value) {
         return null;
     }
 
-    const match = HEX_COLOUR.exec(value.trim());
+    const match = HEX_COLOR.exec(value.trim());
 
     return match ? match.groups : null;
 }
 
-function normalizeColour(value, subject = "A colour") {
+function normalizeColor(value, subject = "A color") {
     const groups = groupsOf(value);
 
     if (!groups) {
@@ -63,7 +63,7 @@ function normalizeColour(value, subject = "A colour") {
     return `#${groups.red}${groups.green}${groups.blue}`.toUpperCase();
 }
 
-function rgbOf(value, subject = "A colour") {
+function rgbOf(value, subject = "A color") {
     const groups = groupsOf(value);
 
     if (!groups) {
@@ -78,52 +78,52 @@ function rgbOf(value, subject = "A colour") {
 }
 
 /*
- * Whether a colour is a grey, which decides whether a grey photograph can
- * hold it. White, black and the default outline are greys, so the ordinary
+ * Whether a color is a gray, which decides whether a gray photograph can
+ * hold it. White, black and the default outline are grays, so the ordinary
  * run is unaffected by the question.
  */
-function isGrey(value) {
+function isGray(value) {
     const { red, green, blue } = rgbOf(value);
 
     return red === green && green === blue;
 }
 
 /*
- * What a run asks a photograph's space to hold: the text's colour, and the
+ * What a run asks a photograph's space to hold: the text's color, and the
  * outline's when there is an outline to draw.
  */
-function wantsColour(settings) {
-    return !isGrey(settings.textColour) ||
-        (settings.outlineWidth > 0 && !isGrey(settings.outlineColour));
+function wantsColor(settings) {
+    return !isGray(settings.textColor) ||
+        (settings.outlineWidth > 0 && !isGray(settings.outlineColor));
 }
 
 /*
- * A grey photograph cannot hold a colour, so the copy is made in sRGB and
+ * A gray photograph cannot hold a color, so the copy is made in sRGB and
  * says so. Counted rather than mentioned per photograph: a folder of scans
  * would say it two hundred times.
  */
 function describeExpanded(count) {
-    return `${plural(count, "photograph")} stored its greys only, so the ` +
-        "copy is in colour and the caption keeps the colour you chose.";
+    return `${plural(count, "image")} stored its grays only, so the ` +
+        "copy is in color and the caption keeps the color you chose.";
 }
 
 /*
- * A colour that could not be moved into a photograph's own space is painted
+ * A color that could not be moved into a photograph's own space is painted
  * as the numbers it is, which is what every copy was before the move existed.
  * Said once for the run: what it affects is how closely the stamp matches the
- * colour that was chosen, and only on a photograph that carries a profile.
+ * color that was chosen, and only on a photograph that carries a profile.
  */
 function describeUnconverted(count) {
-    return `${plural(count, "photograph")} carried a colour profile this ` +
+    return `${plural(count, "image")} carried a color profile this ` +
         "could not read, so the stamp was drawn in plain sRGB.";
 }
 
 module.exports = {
-    COLOUR_RULE,
-    normalizeColour,
+    COLOR_RULE,
+    normalizeColor,
     rgbOf,
-    isGrey,
-    wantsColour,
+    isGray,
+    wantsColor,
     describeExpanded,
     describeUnconverted
 };

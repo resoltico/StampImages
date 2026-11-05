@@ -30,9 +30,9 @@ function makeField(ns, text, rect) {
  * field to reconcile with a menu, and no "Custom..." step that makes a row
  * appear.
  *
- * What it costs is the colour swatch the four presets carried in their menu.
+ * What it costs is the color swatch the four presets carried in their menu.
  * A combo box list holds strings, and a swatch beside the field instead would
- * be telling the truth only until the next keystroke -- so the colours
+ * be telling the truth only until the next keystroke -- so the colors
  * themselves are the whole of what the list shows now, and what they are
  * called is said in the form around it.
  *

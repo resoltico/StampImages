@@ -50,7 +50,7 @@ test("a row named in the problems is marked, and the others are not", () => {
         "a tint, not a fill: the value must stay readable"
     );
 
-    for (const key of ["margin", "position", "textColour"]) {
+    for (const key of ["margin", "position", "textColor"]) {
         assert.notEqual(
             controls[key].drawsBackground,
             true,
@@ -64,7 +64,7 @@ test("the rule a value breaks is marked along with the value", () => {
     const bridge = createFakeObjC();
     const { view } = buildForm(bridge, spec, WIDGETS);
     const hints = view.subviews.filter((child) => child.editable === false
-        && String(child.stringValue).includes("-"));
+        && String(child.stringValue).includes("–"));
     const marginHint = hints.find((hint) => hint.stringValue.includes("2000 px"));
     const sizeHint = hints.find((hint) => hint.stringValue.includes("pt"));
 
@@ -82,7 +82,7 @@ test("a choice row can be marked too, not only a typed one", () => {
 });
 
 test("a hint that offers is not marked with the value it did not rule out", () => {
-    // "8-400 pt" in red says what the number had to be. "or type a name" in
+    // "8–400 pt" in red says what the number had to be. "or type a name" in
     // red said, to somebody who had just typed one, that they had not --
     // reported from use, and the loudest thing on the row.
     const { view } = build(specFor(undefined, [
@@ -90,17 +90,17 @@ test("a hint that offers is not marked with the value it did not rule out", () =
         { key: "size", message: "out of range" }
     ]));
     const { hints } = columnsOf(view);
-    const colourOf = (text) => hints.find(
+    const colorOf = (text) => hints.find(
         (hint) => hint.stringValue === text
     ).textColor.name;
 
     assert.equal(
-        colourOf("8-400 pt"),
+        colorOf("8–400 pt"),
         "systemRed",
         "the rule a number broke is marked with it"
     );
     assert.equal(
-        colourOf("or type a name"),
+        colorOf("or type a name"),
         "secondaryLabel",
         "and an offer is left alone, however wrong the value beside it"
     );

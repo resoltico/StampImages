@@ -135,3 +135,8 @@ test("a failing Homebrew check is treated as Homebrew being absent", () => {
 
     assert.throws(() => checkTools(app), /Install Homebrew first/u);
 });
+
+test("a missing tool is something to install, reported as an operation issue rather than a fault", () => {
+    const { issuesOf } = require("../../../src/core/outcomes.js");
+    assert.throws(() => checkTools(machineWith([])), (error) => issuesOf(error, "setup")[0].code === "operation");
+});

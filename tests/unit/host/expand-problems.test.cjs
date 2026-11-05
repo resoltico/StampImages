@@ -27,7 +27,7 @@ test("a subfolder that cannot be read comes back with the images", () => {
 
     assert.deepEqual(outcome.found, ["/t/a.png", "/t/sub/b.png"]);
     assert.deepEqual(outcome.problems, [
-        { path: "/t/locked", reason: "could not be read" }
+        { path: "/t/locked", reason: "This item could not be read." }
     ]);
 });
 
@@ -44,8 +44,8 @@ test("an entry the walk cannot look at comes back too", () => {
 
     assert.deepEqual(outcome.found, ["/t/a.png"]);
     assert.deepEqual(outcome.problems, [
-        { path: "/t/b.png", reason: "could not be examined", excluded: false },
-        { path: "/t/sub", reason: "could not be examined", excluded: false }
+        { path: "/t/b.png", reason: "This item could not be examined.", excluded: false },
+        { path: "/t/sub", reason: "This item could not be examined.", excluded: false }
     ]);
 });
 
@@ -64,9 +64,9 @@ test("a folder whose only images are unreadable says both things", () => {
     const tree = treeOf({ "/t": ["locked"] }, { "/t/locked": "directory" });
     const outcome = imagesInFolder(tree, "/t", new Set());
 
-    assert.equal(outcome.reason, "contains no supported images");
+    assert.equal(outcome.reason, "This folder contains no supported images.");
     assert.deepEqual(outcome.problems, [
-        { path: "/t/locked", reason: "could not be read" }
+        { path: "/t/locked", reason: "This item could not be read." }
     ]);
 });
 
@@ -75,7 +75,7 @@ test("the folder that was selected is reported as itself, once", () => {
     // unreadable inside it.
     const outcome = imagesInFolder(treeOf({}), "/nope", new Set());
 
-    assert.equal(outcome.reason, "could not be read");
+    assert.equal(outcome.reason, "This item could not be read.");
     assert.deepEqual(outcome.problems, []);
 });
 

@@ -32,8 +32,9 @@ function isoDate(moment) {
 const MOMENT_WRITERS = {
     "iso-minutes": (moment) => `${isoDate(moment)} ${moment.hour}:${moment.minute}`,
     "iso-date": isoDate,
+    // US English: month, day, year.
     "long-date": (moment) =>
-        `${Number(moment.day)} ${MONTHS[Number(moment.month) - 1]} ${moment.year}`
+        `${MONTHS[Number(moment.month) - 1]} ${Number(moment.day)}, ${moment.year}`
 };
 
 const PLACE_WRITERS = {
@@ -55,7 +56,7 @@ function wrote(facts, format, read, writers) {
  * line there in the first place.
  *
  * Blank lines at the end are the exception: a trailing newline is an accident
- * of typing, and honouring it would stamp a photograph with an inch of empty
+ * of typing, and honoring it would stamp a photograph with an inch of empty
  * space under the caption.
  */
 function customLines(text) {

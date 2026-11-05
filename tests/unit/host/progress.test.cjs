@@ -44,9 +44,9 @@ test("nothing is complete until something has finished", () => {
 
     assert.deepEqual(sink.said, [
         "start 3",
-        "Reading the photograph 0 | 1 of 3 — one.png",
+        "Reading the image 0 | 1 of 3 — one.png",
         "Saved 1 | 1 of 3 — one.png",
-        "Reading the photograph 1 | 2 of 3 — two.png"
+        "Reading the image 1 | 2 of 3 — two.png"
     ]);
 });
 
@@ -62,7 +62,7 @@ test("the label says which photograph, the count says how much is done", () => {
     progress.finished("Saved");
     progress.beginning(3, "c.png");
 
-    assert.equal(sink.said.at(-1), "Reading the photograph 2 | 3 of 20 — c.png");
+    assert.equal(sink.said.at(-1), "Reading the image 2 | 3 of 20 — c.png");
 });
 
 test("one photograph is one unit, so the two numbers are one number", () => {
@@ -104,7 +104,7 @@ test("a name that spans lines is kept to one", () => {
     opened(sink, 1).beginning(1, "two\nwide\t\tlines .png");
     assert.equal(
         sink.said.at(-1),
-        "Reading the photograph 0 | 1 of 1 — two wide lines .png"
+        "Reading the image 0 | 1 of 1 — two wide lines .png"
     );
 });
 

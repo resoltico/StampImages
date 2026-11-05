@@ -1,4 +1,5 @@
 "use strict";
+const { OperationError } = require("../core/errors.js");
 const { shellJoin, shellQuote } = require("../core/shell.js");
 const {
     buildVipsProbeArgv,
@@ -80,7 +81,8 @@ function checkTools(app) {
     const problems = results.filter((result) => result.kind !== "ok");
 
     if (problems.length > 0) {
-        throw new Error(describeSetupProblems(problems, hasHomebrew(app)));
+        // A missing or unusable tool is something to install, not a fault in the program.
+        throw new OperationError(describeSetupProblems(problems, hasHomebrew(app)));
     }
 
     const tools = {};

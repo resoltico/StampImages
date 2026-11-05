@@ -58,7 +58,7 @@ function suggestionsFor(known, name) {
  * all is an answer rather than a failure. A Mac with none of these ten and
  * hundreds of others must not be stopped at the door; the field takes a name.
  *
- * A host with no catalogue is offered the candidates unfiltered, because the
+ * A host with no catalog is offered the candidates unfiltered, because the
  * alternative is offering nothing at all on a machine that has them.
  */
 function availableFonts(known) {

@@ -26,16 +26,16 @@ source "$ROOT/tests/integration/lib/fixtures.sh"
 require_tools
 test -f "$SCRIPT" || fail "no built artifact at $SCRIPT"
 
-GREY="#6e6e6e"
+GRAY="#6e6e6e"
 
 stamp() {
     osascript -l JavaScript "$SCRIPT" -- --headless "$@"
 }
 
-solid "$WORK/first.png" 300 200 "$GREY"
-solid "$WORK/second.jpg" 300 200 "$GREY"
+solid "$WORK/first.png" 300 200 "$GRAY"
+solid "$WORK/second.jpg" 300 200 "$GRAY"
 mkdir -p "$WORK/folder"
-solid "$WORK/folder/inside.png" 300 200 "$GREY"
+solid "$WORK/folder/inside.png" 300 200 "$GRAY"
 printf 'not a photograph' > "$WORK/notes.txt"
 settings_file "$WORK/settings.json" "Riga"
 
@@ -50,7 +50,7 @@ RECEIPT=$(stamp "$WORK/settings.json" \
 STATUS=$?
 set -e
 
-test "$STATUS" -ne 0 || fail "a run that could not honour everything must fail"
+test "$STATUS" -ne 0 || fail "a run that could not honor everything must fail"
 
 assert_contains "$RECEIPT" "first_stamped.png" "the file that was selected"
 assert_contains "$RECEIPT" "second_stamped.jpg" "and the other one"
@@ -73,7 +73,7 @@ if stamp "$WORK/settings.json" "$WORK/notes.txt" \
     fail "a selection with no photographs should not succeed"
 fi
 
-grep -q "No stamped copy was created" "$WORK/err.txt" ||
+grep -q "^Nothing to stamp\.$" "$WORK/err.txt" ||
     fail "the refusal does not say why: $(cat "$WORK/receipt.json" "$WORK/err.txt" 2>/dev/null)"
 grep -q "notes.txt" "$WORK/err.txt" ||
     fail "and does not say which file it is about"
@@ -99,7 +99,7 @@ grep -q "nothing to stamp" "$WORK/err.txt" ||
 # ---------------------------------------------------------------------------
 
 mkdir -p "$WORK/album"
-solid "$WORK/album/holiday.png" 300 200 "$GREY"
+solid "$WORK/album/holiday.png" 300 200 "$GRAY"
 stamp "$WORK/settings.json" "$WORK/album" > /dev/null
 test -f "$WORK/album/holiday_stamped.png" || fail "the first run stamped nothing"
 

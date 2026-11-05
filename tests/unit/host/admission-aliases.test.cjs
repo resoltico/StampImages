@@ -45,7 +45,7 @@ test("a name this action cannot convert does not silence another that it can", (
 
         assert.deepEqual(images, ["/a/extra.jpg", "/a/image.jpg"], selection.join(" then "));
         assert.deepEqual(rejected, [
-            "image.backup: not a supported format (JPEG, PNG, HEIC, TIFF, WebP or AVIF)"
+            "image.backup: This file is not a supported format; use JPEG, PNG, HEIC, TIFF, WebP or AVIF."
         ], selection.join(" then "));
     }
 });
@@ -74,7 +74,7 @@ test("a link is refused rather than followed", () => {
     const { images, rejected } = collect(["/a/image.jpg", "/a/link.jpg"], tree);
 
     assert.deepEqual(images, ["/a/image.jpg"]);
-    assert.deepEqual(rejected, ["link.jpg: a link; select the file it points to"]);
+    assert.deepEqual(rejected, ["link.jpg: This is a link; select the file it points to."]);
 });
 
 test("a link inside a selected folder is refused when it is selected too", () => {
@@ -94,7 +94,7 @@ test("a link inside a selected folder is refused when it is selected too", () =>
     assert.deepEqual(images.map((image) => image.path), ["/a/image.jpg"]);
     assert.deepEqual(
         rejected.map((entry) => entry.reason),
-        ["a link; select the file it points to"]
+        ["This is a link; select the file it points to."]
     );
 });
 
@@ -105,5 +105,5 @@ test("a pipe or device is refused as what it is, not as a link", () => {
     const { images, rejected } = collect(["/a/fifo.jpg"], tree);
 
     assert.deepEqual(images, []);
-    assert.deepEqual(rejected, ["fifo.jpg: not a regular file (a pipe, socket or device)"]);
+    assert.deepEqual(rejected, ["fifo.jpg: This is not a regular file (a pipe, socket or device)."]);
 });

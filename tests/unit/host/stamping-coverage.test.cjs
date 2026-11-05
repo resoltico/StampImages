@@ -11,7 +11,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const { substituted } = require("../../../src/host/stamping.js");
-const { catalogue } = require("../../../src/host/typefaces.js");
+const { catalog } = require("../../../src/host/typefaces.js");
 
 const ASCII = (codePoint) => codePoint < 0x80;
 
@@ -22,7 +22,7 @@ test("a character outside the face is noticed; spacing and controls are not char
     assert.equal(substituted({ covers: null }, ["東京"]), false, "a face that cannot be asked claims nothing");
 });
 
-test("the catalogue asks the chosen face, not the family's first", () => {
+test("the catalog asks the chosen face, not the family's first", () => {
     const ns = (value) => ({ boxed: value });
     const row = (postScript, face) => ({ js: [{ js: postScript }, { js: face }, { js: 5 }, { js: 0 }] });
     const asked = [];
@@ -36,7 +36,7 @@ test("the catalogue asks the chosen face, not the family's first", () => {
 
         return { isNil: () => false, coveredCharacterSet: { longCharacterIsMember: (codePoint) => codePoint === 65 } };
     } };
-    const known = catalogue({ ns, objc: { import: () => true } });
+    const known = catalog({ ns, objc: { import: () => true } });
     const covers = known.coverageOf({ family: "Face", face: "Bold" });
 
     assert.deepEqual([covers(65), covers(66)], [true, false]);

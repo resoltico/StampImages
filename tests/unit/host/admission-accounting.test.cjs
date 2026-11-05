@@ -27,14 +27,14 @@ test("an input that named itself and did not resolve is reported", () => {
         {
             path: "",
             name: "./second.jpg",
-            reason: "not an absolute path to a file",
+            reason: "This is not an absolute path to a file.",
             code: "not-a-path",
             stage: "selection"
         },
         {
             path: "",
             name: "~/Pictures/third.png",
-            reason: "not an absolute path to a file",
+            reason: "This is not an absolute path to a file.",
             code: "not-a-path",
             stage: "selection"
         }
@@ -80,7 +80,7 @@ test("a folder is reported as a folder, whatever it is called", () => {
 
     assert.deepEqual(images.map((image) => image.originalName), ["photo.png"]);
     assert.deepEqual(rejected.map((entry) => `${entry.name}: ${entry.reason}`), [
-        "album: a folder; select the images inside it",
-        "album.png: a folder; select the images inside it"
+        "album: This is a folder; select the images inside it.",
+        "album.png: This is a folder; select the images inside it."
     ]);
 });

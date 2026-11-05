@@ -4,13 +4,13 @@
  * What is said when a typeface cannot be found, and why it is said here.
  *
  * There are two different mistakes and they need two different sentences. A
- * name nothing recognises is somebody who does not know how to name a face;
+ * name nothing recognizes is somebody who does not know how to name a face;
  * a family this Mac has, asked for in a style it has not, is somebody who
  * knows exactly what they want and asked for a face the family does not come
  * in. Telling the second one how to name a font would be answering a question
  * they did not ask.
  *
- * The second sentence is the reason for reading a catalogue at all: only a
+ * The second sentence is the reason for reading a catalog at all: only a
  * program that knows what the family does come in can say so. What this
  * replaced could report that a name had failed and nothing more -- and what
  * that replaced gave advice about where font files have to live, which was
@@ -56,12 +56,12 @@ function unknownTypeface(known, name) {
  * The one question both front ends ask: what a name names, or what to say
  * about it.
  *
- * A catalogue is required. An unchecked name must never reach the renderer,
+ * A catalog is required. An unchecked name must never reach the renderer,
  * where silent font substitution would change the requested stamp.
  */
 function resolved(known, name) {
     if (!known) {
-        throw new Error("A typeface catalogue is required before choosing a face.");
+        throw new Error("A typeface catalog is required before choosing a face.");
     }
 
     const found = faceOf(known, name);

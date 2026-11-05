@@ -32,8 +32,8 @@ CMYK_BEFORE=$(shasum -a 256 < "$WORK/cmyk.jpg")
 if osascript -l JavaScript "$SCRIPT" -- --headless "$WORK/settings.json" "$WORK/cmyk.jpg" > "$WORK/receipt" 2> "$WORK/error"; then
     fail 'unsupported CMYK input was published'
 fi
-assert_contains "$(cat "$WORK/receipt")" 'unsupported-colour' 'the actual colour-model refusal is classified'
-assert_contains "$(cat "$WORK/receipt")" 'RGB or greyscale' 'the operator gets the appropriate conversion instruction'
+assert_contains "$(cat "$WORK/receipt")" 'unsupported-color' 'the actual color-model refusal is classified'
+assert_contains "$(cat "$WORK/receipt")" 'RGB or grayscale' 'the operator gets the appropriate conversion instruction'
 test "$CMYK_BEFORE" = "$(shasum -a 256 < "$WORK/cmyk.jpg")"
 node "$ROOT/tests/integration/animated-png.mjs" "$WORK/animated.png"
 solid "$WORK/second.png" 600 400 '#dedede'

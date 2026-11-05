@@ -1,6 +1,6 @@
 "use strict";
 
-const { catalogueFor } = require("./fake-typefaces.cjs");
+const { catalogFor } = require("./fake-typefaces.cjs");
 
 /*
  * What a run has gathered by the time it can be assembled: a host to ask, the
@@ -52,10 +52,10 @@ function place(progress, unpublished = new Set()) {
 /*
  * What the front ends need in order to ask a person anything: how many
  * photographs were found, which faces to suggest, and what this Mac has. The
- * catalogue here holds the faces it was given and nothing else, which is a Mac
+ * catalog here holds the faces it was given and nothing else, which is a Mac
  * with exactly those and no others.
  */
-function askingContext(fonts, count = 1, known = catalogueFor(fonts)) {
+function askingContext(fonts, count = 1, known = catalogFor(fonts)) {
     return { count, fonts, known };
 }
 

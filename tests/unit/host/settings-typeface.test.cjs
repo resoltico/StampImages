@@ -5,7 +5,7 @@
  *
  * Every other setting is decided by what it says -- a number is in range or it
  * is not -- and a typeface is decided by what this Mac has. The list the form
- * offers comes from the same catalogue, so anything on it resolves; a name
+ * offers comes from the same catalog, so anything on it resolves; a name
  * typed instead is resolved the same way, and one that names nothing comes
  * back as a number out of range does.
  */
@@ -15,11 +15,11 @@ const test = require("node:test");
 const { collectViaForm } = require("../../../src/host/settings-form.js");
 const { defaultAnswers } = require("../../../src/host/form-defaults.js");
 const { askingContext } = require("./fake-assembly.cjs");
-const { catalogueOf } = require("./fake-typefaces.cjs");
+const { catalogOf } = require("./fake-typefaces.cjs");
 
 const BRIDGE = { objc: {}, ns: {} };
 const FONTS = ["Menlo", "Menlo Bold"];
-const KNOWN = catalogueOf({
+const KNOWN = catalogOf({
     Menlo: ["Regular", "Italic", "Bold"],
     Zapfino: ["Regular"]
 });
@@ -104,7 +104,7 @@ test("a family with the wrong style is told what the family comes in", () => {
     );
 });
 
-test("a typeface left empty is refused before the catalogue is consulted", () => {
+test("a typeface left empty is refused before the catalog is consulted", () => {
     const present = scripted([
         { answers: typing("   ") },
         { answers: typing("Menlo") }
@@ -114,6 +114,6 @@ test("a typeface left empty is refused before the catalogue is consulted", () =>
     assert.match(present.seen[1].fullDetail, /name a face to draw with/u);
 });
 
-test("unavailable catalogue is diagnosed instead of accepting an unchecked face", () => {
-    assert.throws(() => collectViaForm(BRIDGE, scripted([{ answers: typing("Whatever It Is") }]), opening(null)), /catalogue is required/u);
+test("unavailable catalog is diagnosed instead of accepting an unchecked face", () => {
+    assert.throws(() => collectViaForm(BRIDGE, scripted([{ answers: typing("Whatever It Is") }]), opening(null)), /catalog is required/u);
 });

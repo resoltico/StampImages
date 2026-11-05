@@ -13,14 +13,14 @@
  * that answered a bare word would be answering a question nothing asks.
  */
 const INTERPRETATIONS = {
-    colour: "sRGB",
-    grey: "B_W",
+    color: "sRGB",
+    gray: "B_W",
     deep: "RGB16",
     print: "CMYK"
 };
 
 function interpretationOf(host) {
-    const kind = INTERPRETATIONS[host.stored ?? "colour"] ?? host.stored;
+    const kind = INTERPRETATIONS[host.stored ?? "color"] ?? host.stored;
 
     return `((VipsInterpretation) VIPS_INTERPRETATION_${kind})`;
 }

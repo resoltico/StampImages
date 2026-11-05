@@ -1,5 +1,5 @@
 "use strict";
-const { isUserCancelled } = require("../core/errors.js");
+const { isUserCanceled } = require("../core/errors.js");
 
 /*
  * Saying one thing to every surface there is.
@@ -28,7 +28,7 @@ function broadcast(sinks, state) {
                  * copy and a name it has claimed. The loop asks between
                  * photographs, where stopping is safe.
                  */
-                if (isUserCancelled(error)) { state.stopped = true; }
+                if (isUserCanceled(error)) { state.stopped = true; }
                 else { failed.add(sink); state.diagnostics?.push({ code: "observer-fault", message: String(error), stack: error?.stack ?? "" }); }
             }
         }

@@ -3,7 +3,7 @@
 /*
  * Which drawings a run keeps, and what makes two of them different.
  *
- * A drawing is the words and the colour space together: the same caption
+ * A drawing is the words and the color space together: the same caption
  * painted for a Display P3 photograph is different numbers from the same
  * caption painted for an sRGB one. And the cache is for photographs that say
  * the same thing, which is a burst taken in one minute -- so it is bounded,
@@ -29,7 +29,7 @@ function operations(host) {
         .map((command) => command.split("' '")[1]);
 }
 
-test("the colour is moved into the photograph's space before it is painted", () => {
+test("the color is moved into the photograph's space before it is painted", () => {
     const { host, job } = jobOn();
 
     stampFor(job, { text: "Riga", profile: { path: "/w/profile-1.icc", failed: false } });
@@ -39,7 +39,7 @@ test("the colour is moved into the photograph's space before it is painted", () 
     ));
 });
 
-test("a colour that could not be moved is painted as it is, and said so", () => {
+test("a color that could not be moved is painted as it is, and said so", () => {
     const host = createFakeHost({
         failures: [["icc_transform", new Error("vips: bad profile")]]
     });
@@ -50,7 +50,7 @@ test("a colour that could not be moved is painted as it is, and said so", () => 
     assert.ok(stamp.path.length > 0, "and the stamp is still drawn");
 });
 
-test("the same words for two colour spaces are two drawings", () => {
+test("the same words for two color spaces are two drawings", () => {
     const { job } = jobOn();
     const plain = stampFor(job, { text: "Riga", profile: { path: "", failed: false } });
     const wide = stampFor(job, { text: "Riga", profile: "/w/p3.icc" });
@@ -64,8 +64,8 @@ test("a profile that could not be read is not a photograph without one", () => {
     // drawn in sRGB and reported as handled, an unreadable one is drawn in
     // sRGB and counted as unconverted. Keyed on the path alone the second took
     // the first's drawing and with it the first's verdict, so a photograph
-    // this program could not read the colours of was reported as one whose
-    // colours were fine.
+    // this program could not read the colors of was reported as one whose
+    // colors were fine.
     const { job } = jobOn();
     const none = stampFor(job, { text: "Riga", profile: { path: "", failed: false } });
     const unreadable = stampFor(job, { text: "Riga", profile: { path: "", failed: true } });

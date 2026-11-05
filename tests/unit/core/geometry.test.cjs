@@ -29,9 +29,9 @@ test("a position names two edges, and is read as two decisions", () => {
         vertical: "bottom",
         horizontal: "right"
     });
-    assert.deepEqual(edgesOf("top-centre"), {
+    assert.deepEqual(edgesOf("top-center"), {
         vertical: "top",
-        horizontal: "centre"
+        horizontal: "center"
     });
 });
 
@@ -42,10 +42,10 @@ test("each corner is the margin in from its own two edges", () => {
     assert.deepEqual(place("bottom-right"), { left: 780, top: 680 });
 });
 
-test("centred is centred across, and still margined down", () => {
-    // The margin is about the edge the position names, and centre names none.
-    assert.deepEqual(place("bottom-centre"), { left: 400, top: 680 });
-    assert.deepEqual(place("top-centre"), { left: 400, top: 20 });
+test("centered is centered across, and still margined down", () => {
+    // The margin is about the edge the position names, and center names none.
+    assert.deepEqual(place("bottom-center"), { left: 400, top: 680 });
+    assert.deepEqual(place("top-center"), { left: 400, top: 20 });
 });
 
 
@@ -85,7 +85,7 @@ test("a margin larger than the room there is stops at the edge", () => {
 test("an odd number of pixels to share is a whole pixel", () => {
     // Compositing takes integers; half a pixel is not an offset.
     const placed = placeStamp({ width: 1001, height: 800 }, STAMP, {
-        position: "bottom-centre",
+        position: "bottom-center",
         margin: 20
     });
 
@@ -93,7 +93,7 @@ test("an odd number of pixels to share is a whole pixel", () => {
     assert.equal(Number.isInteger(placed.top), true);
 });
 
-test("the margin is honoured when there is room for it at the named edges", () => {
+test("the margin is honored when there is room for it at the named edges", () => {
     const stamp = { width: 800, height: 600 };
     const crowdedAt = (margin) =>
         placeStamp(IMAGE, stamp, { position: "bottom-right", margin }).crowded;

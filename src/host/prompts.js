@@ -1,5 +1,5 @@
 "use strict";
-const { UserCancelled, errorMessage } = require("../core/errors.js");
+const { UserCanceled, errorMessage } = require("../core/errors.js");
 const { APP_NAME } = require("../core/version.js");
 const { labelsOf, valueOfLabel } = require("./choices.js");
 
@@ -31,7 +31,7 @@ function chooseRequired(app, control, opening) {
     });
 
     if (!choice) {
-        throw new UserCancelled();
+        throw new UserCanceled();
     }
 
     valueOfLabel(control, choice[0]);
@@ -71,7 +71,7 @@ function askUntil(app, question, read) {
         );
 
         if (response.buttonReturned === "Cancel") {
-            throw new UserCancelled();
+            throw new UserCanceled();
         }
 
         answer = String(response.textReturned);

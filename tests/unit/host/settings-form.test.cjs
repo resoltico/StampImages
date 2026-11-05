@@ -5,7 +5,7 @@
  * problems does with them.
  *
  * The AppKit form is preferred and the stepwise dialogs are the fallback. A
- * cancellation is an answer and must be honoured; anything else the form
+ * cancellation is an answer and must be honored; anything else the form
  * throws is the form being unusable, because falling back to dialogs that work
  * is better than failing a run over a widget.
  */
@@ -72,7 +72,7 @@ test("a form with something wrong comes back with everything filled in", () => {
 });
 
 test("every problem is shown at once, marked on the rows they are about", () => {
-    const typed = { ...defaultAnswers(FONTS), size: "huge", textColour: "sky" };
+    const typed = { ...defaultAnswers(FONTS), size: "huge", textColor: "sky" };
     const present = scripted([
         { answers: typed },
         { answers: defaultAnswers(FONTS) }
@@ -83,9 +83,9 @@ test("every problem is shown at once, marked on the rows they are about", () => 
     const [, second] = present.seen;
     const marked = second.rows.filter((row) => row.invalid).map((row) => row.key);
 
-    assert.deepEqual(marked, ["size", "textColour"]);
+    assert.deepEqual(marked, ["size", "textColor"]);
     assert.match(second.fullDetail, /Text size/u);
-    assert.match(second.fullDetail, /Text colour/u);
+    assert.match(second.fullDetail, /Text color/u);
 });
 
 test("the count travels with the form, so Cancel is a decision", () => {
@@ -107,8 +107,8 @@ test("a form that cannot be presented is not an answer", () => {
 
 test("cancelling the form ends the run rather than falling back", () => {
     assert.throws(
-        () => collectViaForm(BRIDGE, scripted([{ cancelled: true }]), opening()),
-        /cancelled/iu
+        () => collectViaForm(BRIDGE, scripted([{ canceled: true }]), opening()),
+        /canceled/iu
     );
 });
 
@@ -126,21 +126,21 @@ test("a programming fault is diagnosed rather than changing interfaces", () => {
     assert.equal(app.listPrompts.length, 0);
 });
 
-test("a cancelled form is honoured even though dialogs would work", () => {
+test("a canceled form is honored even though dialogs would work", () => {
     assert.throws(
         () => collectSettings(createFakeApp(), opening(), {
             bridge: BRIDGE,
-            present: scripted([{ cancelled: true }])
+            present: scripted([{ canceled: true }])
         }),
-        /cancelled/iu
+        /canceled/iu
     );
 });
 
 test("field regression: independent field and font errors appear in the same correction round", () => {
-    const bad = { ...defaultAnswers(FONTS), font: "Definitely Missing 2026", size: "0", textColour: "purple", outlineWidth: "21", margin: "-1", customText: "Retained caption" };
+    const bad = { ...defaultAnswers(FONTS), font: "Definitely Missing 2026", size: "0", textColor: "purple", outlineWidth: "21", margin: "-1", customText: "Retained caption" };
     const present = scripted([{ answers: bad }, { answers: defaultAnswers(FONTS) }]);
     collectViaForm(BRIDGE, present, opening());
-    assert.deepEqual(present.seen[1].rows.filter((row) => row.invalid).map((row) => row.key).sort(), ["font", "margin", "outlineWidth", "size", "textColour"]);
+    assert.deepEqual(present.seen[1].rows.filter((row) => row.invalid).map((row) => row.key).sort(), ["font", "margin", "outlineWidth", "size", "textColor"]);
     assert.match(present.seen[1].fullDetail, /no typeface called/u);
     assert.equal(present.seen[1].rows.find((row) => row.key === "customText").value, "Retained caption");
 });

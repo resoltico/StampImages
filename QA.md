@@ -38,7 +38,7 @@ live in package.json, package-lock.json, .node-version and mise.toml; clean rest
 
 The integration scripts under `tests/integration/` exercise real stamp pixels,
 placement, supported formats, source hashes, date/GPS content, alpha, profiles,
-greyscale colour expansion, fonts, damaged/multi-image refusal, selection,
+grayscale color expansion, fonts, damaged/multi-image refusal, selection,
 publication collisions, cross-volume/card behavior, measurement failures and
 native form geometry/accessibility in both appearances. `resources.sh` checks
 confirmed temporary recovery and dead/live/retained/unreadable workspace ownership;
@@ -72,10 +72,11 @@ variable detail must be selectable and scrollable.
 
 Use an isolated test Shortcut containing the complete current artifact and
 synthetic inputs. Preserve the production Shortcut and restore only preferences
-changed by the test. Check Finder selection, all ten settings, keyboard navigation, multiple
-simultaneous validation errors, corrected draft retention, Create/Cancel, remembered
-appearance without custom text, visible progress/Stop, selectable details and
-Show in Finder. Confirm no text-result files are returned to Shortcuts.
+changed by the test. Check Finder selection, all ten settings, keyboard navigation including Tab out
+of the custom text, multiple simultaneous validation errors, corrected draft
+retention, the form note opening at its first line, Create/Cancel, remembered
+appearance without custom text, visible progress/Stop, selectable details,
+Details then Back, and Show in Finder. Confirm no text-result files are returned to Shortcuts.
 
 Force an unwritable destination inside the actual Shortcuts helper and independently
 inspect the reported recovery bytes. Test fallback where native form capability is

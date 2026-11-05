@@ -21,7 +21,7 @@ const { OperationError } = require("./errors.js");
  * nothing this program can do to it would be what was asked for.
  */
 
-const CENTRE_HALVES = 2;
+const CENTER_HALVES = 2;
 
 function clamp(value, limit) {
     return Math.max(0, Math.min(Math.round(value), limit));
@@ -30,7 +30,7 @@ function clamp(value, limit) {
 const HORIZONTAL = {
     left: (room, margin) => margin,
     right: (room, margin) => room - margin,
-    centre: (room) => room / CENTRE_HALVES
+    center: (room) => room / CENTER_HALVES
 };
 
 const VERTICAL = {
@@ -57,8 +57,8 @@ function describeSize(size) {
  */
 function refuseSize(image, stamp) {
     return new OperationError(
-        `The stamp does not fit on this photograph.\n\nThe text is ` +
-            `${describeSize(stamp)} and the photograph is ${describeSize(image)}. ` +
+        `The stamp does not fit on this image.\n\nThe text is ` +
+            `${describeSize(stamp)} and the image is ${describeSize(image)}. ` +
             "Choose a smaller text size, or write less."
     );
 }

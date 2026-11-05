@@ -26,7 +26,7 @@ function asked(app) {
 test("every row is asked, and the choices are chosen from a list", () => {
     const app = createFakeApp();
     const settings = collectDialogSettings(app, defaultAnswers(FONTS), askingContext(FONTS));
-    // The typeface is typed here, like a colour: a dialog cannot offer a list
+    // The typeface is typed here, like a color: a dialog cannot offer a list
     // and a field at once, and a name nothing checked was the worse half.
     const chosen = ORDER.filter((row) => row.kind === "choice").length;
 
@@ -62,7 +62,7 @@ test("each question opens on the answer it was given", () => {
 });
 
 test("what may be typed is decided by the reader the form uses", () => {
-    // So a colour refused in one front end is refused in the other, in the
+    // So a color refused in one front end is refused in the other, in the
     // same words.
     const app = createFakeApp();
 

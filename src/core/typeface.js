@@ -89,7 +89,7 @@ function faceOf(known, name) {
 /*
  * How far a name that did not resolve did get: the family it named, and what
  * was left over. A name whose family is right and whose style is wrong is a
- * different mistake from a name nothing recognises, and the person who made it
+ * different mistake from a name nothing recognizes, and the person who made it
  * needs a different sentence.
  */
 function nearestFamily(known, name) {

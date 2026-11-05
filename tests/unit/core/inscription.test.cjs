@@ -60,7 +60,7 @@ test("each date format writes the date its own way", () => {
 
     assert.equal(written("iso-minutes"), "2026-09-09 14:30");
     assert.equal(written("iso-date"), "2026-09-09");
-    assert.equal(written("long-date"), "9 September 2026");
+    assert.equal(written("long-date"), "September 9, 2026");
 });
 
 test("a line nobody asked for is not a line", () => {
@@ -107,7 +107,7 @@ test("the reason names only what was asked for", () => {
 
 
 
-test("an unrecognised format writes nothing rather than something wrong", () => {
+test("an unrecognized format writes nothing rather than something wrong", () => {
     // The formats are a closed list; anything else is a caller's mistake and
     // must not become a line of somebody's photograph.
     assert.equal(

@@ -2,20 +2,20 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { runOutcome, ledgerOf, issuesOf } = require("../../../src/core/outcomes.js");
-const { OperationError, UserCancelled } = require("../../../src/core/errors.js");
+const { OperationError, UserCanceled } = require("../../../src/core/errors.js");
 test("outcomes account for states without reconstructing missing sources from counts", () => {
-    const states = ["saved", "recovered", "failed", "nothing-to-stamp", "cancelled", "not-started"];
+    const states = ["saved", "recovered", "failed", "nothing-to-stamp", "canceled", "not-started"];
     const result = runOutcome(states.map((state) => ({ source: state, state, issues: [] })), [{ path: "/refused" }]);
-    assert.deepEqual(ledgerOf(result), { saved: 1, recovered: 1, failed: 1, nothing: 1, cancelled: 1, notStarted: 1, rejected: 1 });
-    assert.equal(result.state, "cancelled"); assert.equal(runOutcome().state, "incomplete");
+    assert.deepEqual(ledgerOf(result), { saved: 1, recovered: 1, failed: 1, nothing: 1, canceled: 1, notStarted: 1, rejected: 1 });
+    assert.equal(result.state, "canceled"); assert.equal(runOutcome().state, "incomplete");
     assert.equal(runOutcome([{ state: "saved", issues: [] }]).state, "complete");
-    assert.equal(runOutcome([], [], [], [{ code: "cancelled" }]).state, "cancelled");
+    assert.equal(runOutcome([], [], [], [{ code: "canceled" }]).state, "canceled");
 });
 test("expected operational errors differ from software faults, including wrapped faults", () => {
     assert.equal(issuesOf(new OperationError("image"), "decode")[0].code, "operation");
     assert.equal(issuesOf(new OperationError("wrapped", { cause: new TypeError("bug") }), "decode")[0].code, "fault");
     assert.equal(issuesOf(new ReferenceError("bug"), "decode")[0].code, "fault");
-    assert.equal(issuesOf(new UserCancelled(), "decode")[0].code, "cancelled");
+    assert.equal(issuesOf(new UserCanceled(), "decode")[0].code, "canceled");
     assert.equal(issuesOf(null, "decode")[0].message, "Unknown error");
     const issues = [{ code: "cleanup" }]; assert.equal(issuesOf({ issues }, "decode"), issues);
 });

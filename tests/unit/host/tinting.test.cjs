@@ -1,11 +1,11 @@
 "use strict";
 
 /*
- * Giving a coverage mask a colour.
+ * Giving a coverage mask a color.
  *
  * A mask says how much of each pixel a glyph covers and nothing about what
- * colour it is, which is what lets one drawing serve both the text and its
- * outline. Colour is a solid image with the mask for its alpha: the edge of a
+ * color it is, which is what lets one drawing serve both the text and its
+ * outline. Color is a solid image with the mask for its alpha: the edge of a
  * glyph keeps the softness the renderer gave it, where painting the mask
  * directly would cut it to a hard shape.
  */
@@ -34,7 +34,7 @@ test("every file a stage writes is named for that stage and this drawing", () =>
         raw: "/w/stamp-2-edge-raw.png",
         mask: "/w/stamp-2-edge-mask.png",
         solid: "/w/stamp-2-edge-solid.v",
-        colour: "/w/stamp-2-edge-colour.v",
+        color: "/w/stamp-2-edge-color.v",
         moved: "/w/stamp-2-edge-moved.v",
         out: "/w/stamp-2-edge.png"
     });
@@ -74,7 +74,7 @@ test("a measurement that cannot be taken says what was being measured", () => {
     );
 });
 
-test("the colour is a solid the size of the drawing, with the mask for alpha", () => {
+test("the color is a solid the size of the drawing, with the mask for alpha", () => {
     const { host, job } = jobOn();
     const paths = pathsFor(WORKSPACE, "1", "face");
     const out = tinted(job, paths, "#FF8000", {
@@ -91,5 +91,5 @@ test("the colour is a solid the size of the drawing, with the mask for alpha", (
     ]);
     assert.ok(host.commands[0].includes("'180' '64' '--bands' '3'"));
     assert.ok(host.commands[1].includes("'255 128 0'"));
-    assert.ok(host.commands[2].includes(`'${paths.colour} ${paths.mask}'`));
+    assert.ok(host.commands[2].includes(`'${paths.color} ${paths.mask}'`));
 });

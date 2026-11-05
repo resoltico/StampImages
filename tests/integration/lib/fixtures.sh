@@ -9,9 +9,9 @@
 
 # solid <path> <width> <height> <fill>
 #
-# A plain rectangle of one colour, saved as whatever the path's extension
-# says. The colour is uniform on purpose: a stamped pixel is then any pixel
-# that is not that colour.
+# A plain rectangle of one color, saved as whatever the path's extension
+# says. The color is uniform on purpose: a stamped pixel is then any pixel
+# that is not that color.
 solid() {
     cat > "$1.svg" <<SVG
 <svg xmlns="http://www.w3.org/2000/svg" width="$2" height="$3">
@@ -51,8 +51,8 @@ settings_file() {
 {
   "font": "Helvetica Neue Bold",
   "size": 28,
-  "textColour": "#FFFFFF",
-  "outlineColour": "#000000",
+  "textColor": "#FFFFFF",
+  "outlineColor": "#000000",
   "outlineWidth": 2,
   "position": "${3:-bottom-right}",
   "margin": 24,

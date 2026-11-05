@@ -1,20 +1,20 @@
 "use strict";
 const {
     buildSolidArgv,
-    buildColourArgv,
+    buildColorArgv,
     buildBandjoinArgv,
     buildIccArgv
-} = require("../backend/colouring.js");
+} = require("../backend/coloring.js");
 const { positiveHeaderField } = require("./fidelity.js");
 const { succeeds } = require("./asking.js");
 const { runArgv } = require("./shell.js");
 
 /*
- * Giving a coverage mask a colour.
+ * Giving a coverage mask a color.
  *
  * A mask says how much of each pixel a glyph covers and nothing about what
- * colour it is, which is what lets one drawing serve both the text and its
- * outline. Colour is a solid image with the mask for its alpha: the edge of a
+ * color it is, which is what lets one drawing serve both the text and its
+ * outline. Color is a solid image with the mask for its alpha: the edge of a
  * glyph keeps the softness the renderer gave it, where painting the mask
  * directly would cut it to a hard shape.
  */
@@ -26,43 +26,43 @@ function sizeOf(job, path) {
 }
 
 /*
- * The colour as the photograph will read it.
+ * The color as the photograph will read it.
  *
  * Three cases, because a profile that could not be read is not a photograph
- * without one: that used to take the no-profile path, which reports the colour
+ * without one: that used to take the no-profile path, which reports the color
  * as handled, so an extraction that failed was a stamp in unconverted numbers
  * and a run that said everything went well. A transform that fails leaves the
  * sRGB numbers too, and either way the run counts it.
  */
 function inSpaceOf(job, paths, profile) {
     if (profile.failed) {
-        return { path: paths.colour, moved: false };
+        return { path: paths.color, moved: false };
     }
 
     if (!profile.path) {
-        return { path: paths.colour, moved: true };
+        return { path: paths.color, moved: true };
     }
 
     const moved = succeeds(
         job.app,
-        buildIccArgv(job.tools.vips, paths.colour, paths.moved, profile.path)
+        buildIccArgv(job.tools.vips, paths.color, paths.moved, profile.path)
     );
 
     return moved
         ? { path: paths.moved, moved: true }
-        : { path: paths.colour, moved: false };
+        : { path: paths.color, moved: false };
 }
 
-function tinted(job, paths, colour, drawing) {
+function tinted(job, paths, color, drawing) {
     runArgv(
         job.app,
         buildSolidArgv(job.tools.vips, paths.solid, drawing.size),
-        "colouring the stamp"
+        "coloring the stamp"
     );
     runArgv(
         job.app,
-        buildColourArgv(job.tools.vips, paths.solid, paths.colour, colour),
-        "colouring the stamp"
+        buildColorArgv(job.tools.vips, paths.solid, paths.color, color),
+        "coloring the stamp"
     );
 
     const read = inSpaceOf(job, paths, drawing.profile);
@@ -70,7 +70,7 @@ function tinted(job, paths, colour, drawing) {
     runArgv(
         job.app,
         buildBandjoinArgv(job.tools.vips, read.path, paths.mask, paths.out),
-        "colouring the stamp"
+        "coloring the stamp"
     );
 
     return { path: paths.out, moved: read.moved };
@@ -89,14 +89,14 @@ function pathsFor(workspace, token, stage) {
         raw: `${stem}-raw.png`,
         mask: `${stem}-mask.png`,
         solid: `${stem}-solid.v`,
-        colour: `${stem}-colour.v`,
+        color: `${stem}-color.v`,
         moved: `${stem}-moved.v`,
         out: `${stem}.png`
     };
 }
 
 function filesOf(paths) {
-    return [paths.raw, paths.mask, paths.solid, paths.colour, paths.moved, paths.out];
+    return [paths.raw, paths.mask, paths.solid, paths.color, paths.moved, paths.out];
 }
 
 module.exports = { sizeOf, inSpaceOf, tinted, pathsFor, filesOf };

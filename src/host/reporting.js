@@ -14,7 +14,7 @@ function reportNothing(app, headless, rejected) {
     // The rejections are listed with the receipt already; the issue says only
     // what they add up to, so a terminal does not print each one twice.
     if (headless) { return runOutcome([], rejected, [], [{ code: "no-images", stage: "selection", message: rejected.length ? "None of the selected items can be stamped." : message }]); }
-    showDetails(app, { title: APP_NAME, summary: rejected.length ? "Nothing to stamp." : "No photographs selected.", detail: message, buttons: ["OK"] });
+    showDetails(app, { title: APP_NAME, summary: rejected.length ? "Nothing to stamp." : "No images selected.", detail: message, buttons: ["OK"] });
     return undefined;
 }
 const INVALID_EXIT = 2;
@@ -26,7 +26,8 @@ function exitCode(result) {
 }
 function reportHeadless(result, write = writeReceipt, exit = exitCli) {
     write(`${JSON.stringify(result)}\n`);
-    write(`${describe(result)}\n${detailOf(result)}\n`, undefined, true);
+    const detail = detailOf(result, { commandLine: true });
+    write(`${describe(result)}\n${detail ? `\n${detail}\n` : ""}`, undefined, true);
     return exit(exitCode(result));
 }
 function report(app, result, headless) {

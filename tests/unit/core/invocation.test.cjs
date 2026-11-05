@@ -41,7 +41,7 @@ test("a malformed escape is refused rather than guessed at", () => {
 
 test("a NUL is not a character a path can hold", () => {
     // It decodes without complaint and used to travel as far as the first
-    // shell command, where it was reported as "not a readable file" -- true,
+    // shell command, where it was reported as "This file cannot be read; check that it still exists and that you have access." -- true,
     // for the wrong reason.
     assert.equal(decodeFileUrl("file:///a/b%00c.png"), "");
 });

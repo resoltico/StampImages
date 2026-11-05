@@ -1,7 +1,7 @@
 "use strict";
 
 /*
- * What exiftool answers: what a photograph says about itself, and its colour
+ * What exiftool answers: what a photograph says about itself, and its color
  * profile written out to a file.
  */
 
@@ -25,7 +25,7 @@ function describe(state, argv) {
 }
 
 /*
- * exiftool writing a photograph's colour profile to standard output, which is
+ * exiftool writing a photograph's color profile to standard output, which is
  * also how the question "does this photograph carry one" is asked: a
  * photograph with none succeeds and writes nothing at all, so the redirection
  * leaves an empty file rather than no file. The contents token is the profile

@@ -17,8 +17,8 @@ const {
     perform
 } = require("../../../src/host/appkit-bridge.js");
 
-function objcThat(behaviour) {
-    return { import: behaviour, unwrap: (value) => value };
+function objcThat(behavior) {
+    return { import: behavior, unwrap: (value) => value };
 }
 
 test("a bridge that takes the framework is one to build widgets with", () => {

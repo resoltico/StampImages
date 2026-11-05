@@ -17,9 +17,9 @@ const {
     resolved,
     inWords
 } = require("../../../src/core/typeface-refusal.js");
-const { catalogueOf } = require("./fake-typefaces.cjs");
+const { catalogOf } = require("./fake-typefaces.cjs");
 
-const KNOWN = catalogueOf({
+const KNOWN = catalogOf({
     Avenir: ["Book", "Light", "Black", "Black Oblique"],
     "Avenir Next": ["Regular", "Bold"],
     "Arial Hebrew": ["Regular"],
@@ -75,7 +75,7 @@ test("a name nothing matches is no face at all", () => {
     assert.equal(faceOf(KNOWN, "   "), null);
 });
 
-test("a name nothing recognises is told how to name one", () => {
+test("a name nothing recognizes is told how to name one", () => {
     const said = resolved(KNOWN, "Comic Sans MS").problem;
 
     assert.match(said, /This Mac has no typeface called "Comic Sans MS"/u);
@@ -88,7 +88,7 @@ test("a name nothing recognises is told how to name one", () => {
 });
 
 test("a family with the wrong style is told what the family comes in", () => {
-    // A sentence only a real catalogue can write, and the reason for reading
+    // A sentence only a real catalog can write, and the reason for reading
     // one: the refusal this replaces could say the name failed and no more.
     const said = resolved(KNOWN, "Avenir Ultrablack").problem;
 
@@ -99,7 +99,7 @@ test("a family with the wrong style is told what the family comes in", () => {
 test("the family is the longest prefix that is one, and the rest is the style", () => {
     // "Avenir Ultra" is not a family, so the family is "Avenir" and the style
     // asked for is both remaining words. Reading the first failure as the
-    // answer would report a name nothing recognises, about a family this Mac
+    // answer would report a name nothing recognizes, about a family this Mac
     // has; keeping only the last word would quote a style nobody typed.
     assert.equal(
         resolved(KNOWN, "Avenir Ultra Heavy").problem,
@@ -115,8 +115,8 @@ test("a name that resolves is no problem, and carries both halves", () => {
     );
 });
 
-test("font resolution requires a catalogue and cannot hand unchecked names to pango", () => {
-    assert.throws(() => resolved(null, "Helvetica Neue Bold"), /catalogue is required/u);
+test("font resolution requires a catalog and cannot hand unchecked names to pango", () => {
+    assert.throws(() => resolved(null, "Helvetica Neue Bold"), /catalog is required/u);
 });
 
 test("a list of faces reads as a person would say it", () => {
@@ -133,7 +133,7 @@ test("a PostScript name is answered with the name this takes, not a claim the Ma
     // Field regression: "HelveticaNeue-Bold" was refused with "This Mac has no
     // typeface called", and the Mac has it.
     const known = {
-        ...catalogueOf(),
+        ...catalogOf(),
         postScriptNamed: (name) => (name === "HelveticaNeue-Bold" ? { family: "Helvetica Neue", face: "Bold" } : null)
     };
 

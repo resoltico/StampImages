@@ -2,7 +2,7 @@
 const { APP_NAME } = require("../core/version.js");
 const { formSpec, CREATE_BUTTON, CANCEL_BUTTON } = require("./form.js");
 const { answersFromSettings } = require("./answers.js");
-const { UserCancelled } = require("../core/errors.js");
+const { UserCanceled } = require("../core/errors.js");
 const { plural } = require("../core/numbers.js");
 const { COPY_NOTE } = require("./stamp-description.js");
 const { basename, dirname } = require("../core/paths.js");
@@ -30,9 +30,14 @@ function refusalLines(entry) {
 
 const { showDetails } = require("./details-dialog.js");
 
-function approve(app, message, button) {
-    const response = showDetails(app, { title: APP_NAME, summary: "Review the request", detail: message, buttons: [button, CANCEL_BUTTON] });
-    if (response !== 0) { throw new UserCancelled(); }
+const REVIEW_SUMMARY = "Review the settings before creating stamped copies.";
+
+// A summary that carries a fact leads the text where there is no native alert
+// to show it; the settings review's summary only names the step, so it does not.
+function approve(app, message, button, summary = REVIEW_SUMMARY) {
+    const fallbackDetail = summary === REVIEW_SUMMARY ? message : `${summary}\n\n${message}`;
+    const response = showDetails(app, { title: APP_NAME, summary, detail: message, fallbackDetail, buttons: [button, CANCEL_BUTTON] });
+    if (response !== 0) { throw new UserCanceled(); }
 }
 
 /*
@@ -50,10 +55,9 @@ function confirmSelection(app, context) {
     const shown = rejected.map(refusalLines);
 
     approve(app, [
-        `${plural(rejected.length, "item")} in your selection cannot be ` +
-            `included:\n\n${shown.join("\n\n")}`,
+        `Not included:\n${shown.join("\n\n")}`,
         `Continue with ${plural(context.count, "image")}?`
-    ].join("\n\n"), "Continue");
+    ].join("\n\n"), "Continue", `${plural(rejected.length, "item")} in your selection cannot be included.`);
 }
 
 /*

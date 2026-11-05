@@ -3,7 +3,7 @@ const { OperationError } = require("../core/errors.js");
 const { hasRetainedArtifacts } = require("../core/artifacts.js");
 const { createWorkspace, removeWorkspace } = require("./workspace.js");
 const { availableFonts } = require("./fonts.js");
-const { catalogue } = require("./typefaces.js");
+const { catalog } = require("./typefaces.js");
 const { settingsFor } = require("./settings-run.js");
 
 /*
@@ -65,11 +65,11 @@ function jobFor(prepared, settings, place) {
         tools: prepared.tools,
         settings,
         workspace: place.workspace,
-        // One drawing per distinct text and colour space, bounded.
+        // One drawing per distinct text and color space, bounded.
         stamps: new Map(),
         // How many drawings this run has made, which names their files.
         drawn: 0,
-        // The colour profiles this run has seen, one file each.
+        // The color profiles this run has seen, one file each.
         profiles: [],
         // Finished copies this run has produced and not yet published.
         artifacts: place.artifacts,
@@ -87,7 +87,7 @@ function jobFor(prepared, settings, place) {
  * window level would otherwise sit over the form, and re-arming it means a run
  * quick enough to need no window still does not get one.
  */
-function assemble(prepared, place, known = catalogue()) {
+function assemble(prepared, place, known = catalog()) {
     if (!known) { throw new OperationError("Installed typefaces could not be verified on this Mac."); }
     // What this Mac has, read once. It goes in the context beside the count
     // and the suggestions because it is the same sort of thing: what the front
@@ -96,6 +96,8 @@ function assemble(prepared, place, known = catalogue()) {
     const context = {
         count: prepared.selection.images.length,
         selectedFolders: prepared.selection.selectedFolders ?? 0,
+        // Where the copies go, once each, in the order the images were taken.
+        folders: [...new Set(prepared.selection.images.map((image) => image.folder).filter(Boolean))],
         rejected: prepared.selection.rejected,
         fonts: fontsFor(known, prepared.invocation.headless),
         known

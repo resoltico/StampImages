@@ -5,7 +5,7 @@
  * remembered run is given back as.
  *
  * The exact inverse of reading them, and only for a closed choice: a label is
- * looked up, and a number, a colour or a typeface is already what the control
+ * looked up, and a number, a color or a typeface is already what the control
  * holds. Which is why a remembered typeface that has gone since is no longer a
  * problem -- it used to be read back through the list of faces this Mac drew
  * with today, where an absent one has no label at all.
@@ -42,7 +42,7 @@ test("the two directions are each other's inverse", () => {
         size: "72",
         margin: "0",
         outlineWidth: "0",
-        textColour: "#FF8000"
+        textColor: "#FF8000"
     });
     const { settings } = readAnswers(given, FONTS);
 
@@ -54,6 +54,6 @@ test("a value nothing offers cannot be turned back into a label", () => {
     // shown as an empty menu.
     assert.throws(
         () => answersFromSettings({ ...readAnswers(answers(), FONTS).settings, position: "middle" }, FONTS),
-        /Unrecognised value: middle/u
+        /Unrecognized value: middle/u
     );
 });

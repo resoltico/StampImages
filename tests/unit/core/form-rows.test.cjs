@@ -30,9 +30,9 @@ test("the rows read in the order somebody fills them in", () => {
         "customText",
         "font",
         "size",
-        "textColour",
+        "textColor",
         "outlineWidth",
-        "outlineColour",
+        "outlineColor",
         "position",
         "margin"
     ]);
@@ -49,8 +49,8 @@ test("each kind of row carries what its widget needs and no more", () => {
     assert.equal(byKey("size").kind, "number");
     assert.equal(byKey("size").minimum, 8);
     assert.equal(byKey("size").maximum, 400);
-    assert.equal(byKey("textColour").kind, "colour");
-    assert.match(byKey("textColour").hint, /#RRGGBB/u);
+    assert.equal(byKey("textColor").kind, "color");
+    assert.match(byKey("textColor").hint, /#RRGGBB/u);
     assert.equal(byKey("customText").kind, "text");
     assert.equal(byKey("customText").hint, undefined);
     assert.equal(byKey("position").kind, "choice");
@@ -68,10 +68,10 @@ test("a value is a string whatever it was, because a control holds text", () => 
 });
 
 test("what is wrong is marked on the row it is wrong about", () => {
-    const rows = rowsFor(defaultAnswers(FONTS), new Set(["size", "textColour"]));
+    const rows = rowsFor(defaultAnswers(FONTS), new Set(["size", "textColor"]));
     const marked = rows.filter((row) => row.invalid).map((row) => row.key);
 
-    assert.deepEqual(marked, ["size", "textColour"]);
+    assert.deepEqual(marked, ["size", "textColor"]);
 });
 
 test("every row says what it is asking, twice over", () => {

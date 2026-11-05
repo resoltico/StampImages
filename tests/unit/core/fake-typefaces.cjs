@@ -1,7 +1,7 @@
 "use strict";
 
 /*
- * What a Mac has, as the font catalogue the resolver reads: families, and the
+ * What a Mac has, as the font catalog the resolver reads: families, and the
  * faces each of them comes in.
  *
  * Two shapes, because the tests ask two kinds of question. A map of families
@@ -17,15 +17,15 @@ const STOCK = {
     Avenir: ["Book", "Light", "Medium", "Heavy", "Black"]
 };
 
-function catalogueOf(families = STOCK) {
+function catalogOf(families = STOCK) {
     return {
         families: Object.keys(families),
         facesOf: (family) => families[family] ?? []
     };
 }
 
-function catalogueFor(names) {
+function catalogFor(names) {
     return { families: [...names], facesOf: () => [] };
 }
 
-module.exports = { STOCK, catalogueOf, catalogueFor };
+module.exports = { STOCK, catalogOf, catalogFor };

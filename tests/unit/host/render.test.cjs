@@ -5,7 +5,7 @@
  * composited onto a photograph.
  *
  * The text is drawn as a coverage mask -- one band saying how much of each
- * pixel the glyphs cover -- which is what makes the colour a separate
+ * pixel the glyphs cover -- which is what makes the color a separate
  * decision. The same mask, grown by a maximum filter, is the outline.
  */
 
@@ -27,7 +27,7 @@ function operations(host) {
         .map((command) => command.split("' '")[1]);
 }
 
-test("the glyphs are drawn once and coloured, and the outline grown from them", () => {
+test("the glyphs are drawn once and colored, and the outline grown from them", () => {
     const { host, job } = jobOn();
     const stamp = stampFor(job, { text: "Riga", profile: { path: "", failed: false } });
 

@@ -63,7 +63,7 @@ test("the extension is the last one, not the first one found", () => {
 });
 
 
-test("a stamped copy is recognised by its mark, and by nothing else", () => {
+test("a stamped copy is recognized by its mark, and by nothing else", () => {
     for (const name of [
         "holiday_stamped.jpg",
         "holiday_stamped 2.png",

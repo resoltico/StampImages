@@ -75,14 +75,14 @@ test("a cancellation is not an answer about a file", () => {
     // anything in it", which is a wrong diagnosis rather than a late stop.
     // The stage it was checking has produced nothing worth keeping, and
     // everything above already knows what a cancellation means.
-    const stopped = new Error("User cancelled.");
+    const stopped = new Error("User canceled.");
 
     stopped.errorNumber = -128;
 
     const app = createFakeApp([["/bin/test", stopped]]);
 
     assert.throws(
-        () => verifyFileWritten(app, "/tmp/stamped.jpg", "the stamped photograph"),
+        () => verifyFileWritten(app, "/tmp/stamped.jpg", "the stamped image"),
         (error) => error === stopped
     );
 });
@@ -92,7 +92,7 @@ test("every other question still answers no when it cannot be put", () => {
     // staging place left in somebody's folder, a copy nobody is told the
     // whereabouts of, a name chosen after the copy exists. What that costs is
     // a stop landing exactly on a sub-millisecond test going unnoticed.
-    const stopped = new Error("User cancelled.");
+    const stopped = new Error("User canceled.");
 
     stopped.errorNumber = -128;
 

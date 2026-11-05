@@ -24,7 +24,7 @@ const { invitation } = require("./form.js");
 
 /*
  * A choice is a list; everything else is typed, and what may be typed is
- * decided by the same reader the form uses -- so a colour refused in one is
+ * decided by the same reader the form uses -- so a color refused in one is
  * refused in the other, in the same words. Each answer is read on its own:
  * reading it alongside the rest let a bad later answer, still at its old
  * value, refuse a good typeface.
@@ -102,7 +102,7 @@ function withInvitation(row, context) {
         ...row,
         control: {
             ...row.control,
-            prompt: `${invitation(context.count, context.selectedFolders)}` +
+            prompt: `${invitation(context)}` +
                 `\n\n${row.control.prompt}`
         }
     };

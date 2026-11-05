@@ -8,10 +8,10 @@ const LABEL_WIDTH = 190;
 const CONTROL_WIDTH = 300;
 const NUMBER_WIDTH = 70;
 
-// Room for a colour and the button that opens the list beside it. Wider than
+// Room for a color and the button that opens the list beside it. Wider than
 // a number and far narrower than a menu of names, which is what the list held
-// before its items became the colours themselves.
-const COLOUR_WIDTH = 100;
+// before its items became the colors themselves.
+const COLOR_WIDTH = 100;
 
 // A family name and the button that opens the suggestions, with the rest of
 // the column left for the hint that says a name may be typed instead.
@@ -31,7 +31,7 @@ const GAP = 10;
 const HINT_GAP = 8;
 const PADDING = 6;
 
-// Padding sits above and below; a hint is centred against its field.
+// Padding sits above and below; a hint is centered against its field.
 const BOTH_EDGES = 2;
 const HALVES = 2;
 
@@ -98,7 +98,7 @@ function controlRect(at) {
 module.exports = {
     ROW_HEIGHT,
     PADDING,
-    COLOUR_WIDTH,
+    COLOR_WIDTH,
     FONT_WIDTH,
     TEXT_WIDTH,
     CAPTION_HEIGHT,

@@ -3,12 +3,12 @@
 /*
  * What a photograph has to be before a stamp can go on it.
  *
- * Turned the way it is meant to be seen, and in a colour space that can hold
- * the caption's colour. The second only sometimes: a photograph that stores
- * only greys cannot hold a red, and the stamp's colour used to be moved into
- * the photograph's space regardless -- measured, #FF3B30 moved into a grey
- * profile is one band with the value 138, so the caption came out grey and
- * the run reported that the colour had been handled.
+ * Turned the way it is meant to be seen, and in a color space that can hold
+ * the caption's color. The second only sometimes: a photograph that stores
+ * only grays cannot hold a red, and the stamp's color used to be moved into
+ * the photograph's space regardless -- measured, #FF3B30 moved into a gray
+ * profile is one band with the value 138, so the caption came out gray and
+ * the run reported that the color had been handled.
  */
 
 const assert = require("node:assert/strict");
@@ -16,66 +16,66 @@ const test = require("node:test");
 const { meeting, prepared } = require("../../../src/host/preparing.js");
 const { runJob } = require("../../../src/application/job.js");
 const { inSpaceOf } = require("../../../src/host/tinting.js");
-const { describeExpanded } = require("../../../src/core/colour.js");
+const { describeExpanded } = require("../../../src/core/color.js");
 const { createFakeHost, WORKSPACE } = require("./fake-host.cjs");
 const { makeJob, imageOf, reporter } = require("./fake-job.cjs");
 
-const GREY = { path: "/w/profile-1.icc", failed: false };
+const GRAY = { path: "/w/profile-1.icc", failed: false };
 
 function jobOn(settings = {}, host = createFakeHost({ files: ["/a/one.jpg"] })) {
     return { host, job: { ...makeJob(host, settings), workspace: WORKSPACE } };
 }
 
-function greyPhotograph(host, settings) {
+function grayPhotograph(host, settings) {
     host.bands = 1;
 
     return { ...makeJob(host, settings), workspace: WORKSPACE };
 }
 
-test("a grey photograph and a grey caption meet where they already are", () => {
-    // White, black and the default outline are greys, so the ordinary run
-    // over a grey photograph is untouched and the copy stays as grey as the
+test("a gray photograph and a gray caption meet where they already are", () => {
+    // White, black and the default outline are grays, so the ordinary run
+    // over a gray photograph is untouched and the copy stays as gray as the
     // photograph was.
     const host = createFakeHost({ files: ["/a/one.jpg"] });
-    const job = greyPhotograph(host, { textColour: "#FFFFFF", outlineColour: "#202020" });
-    const met = meeting(job, { path: `${WORKSPACE}/oriented-1.v` }, GREY, "1");
+    const job = grayPhotograph(host, { textColor: "#FFFFFF", outlineColor: "#202020" });
+    const met = meeting(job, { path: `${WORKSPACE}/oriented-1.v` }, GRAY, "1");
 
     assert.equal(met.expanded, false);
-    assert.equal(met.profile, GREY, "and the colour is still moved into its space");
+    assert.equal(met.profile, GRAY, "and the color is still moved into its space");
     assert.equal(
         host.commands.filter((command) => command.includes("icc_transform")).length,
         0
     );
 });
 
-test("a grey photograph and a coloured caption meet in sRGB", () => {
+test("a gray photograph and a colored caption meet in sRGB", () => {
     const host = createFakeHost({ files: ["/a/one.jpg"] });
-    const job = greyPhotograph(host, { textColour: "#FF3B30", outlineWidth: 0 });
-    const met = meeting(job, { path: `${WORKSPACE}/oriented-1.v` }, GREY, "1");
+    const job = grayPhotograph(host, { textColor: "#FF3B30", outlineWidth: 0 });
+    const met = meeting(job, { path: `${WORKSPACE}/oriented-1.v` }, GRAY, "1");
 
     assert.equal(met.expanded, true);
-    assert.equal(met.photograph.path, `${WORKSPACE}/colour-1.v`);
+    assert.equal(met.photograph.path, `${WORKSPACE}/color-1.v`);
     assert.deepEqual(
         met.profile,
         { path: "", failed: false },
         "and the stamp stays in sRGB with it, which is what the profile was for"
     );
     assert.ok(host.commands.some((command) => command.includes("icc_transform") &&
-        command.includes("'srgb'") && command.includes(GREY.path)));
+        command.includes("'srgb'") && command.includes(GRAY.path)));
 });
 
 test("a photograph with no profile is read into sRGB by its numbers", () => {
     const host = createFakeHost({ files: ["/a/one.jpg"] });
-    const job = greyPhotograph(host, { textColour: "#FF3B30", outlineWidth: 0 });
+    const job = grayPhotograph(host, { textColor: "#FF3B30", outlineWidth: 0 });
 
     meeting(job, { path: `${WORKSPACE}/oriented-1.v` }, { path: "", failed: false }, "1");
 
     assert.ok(host.commands.some((command) => command.includes("'colourspace'")));
 });
 
-test("a colour photograph is left exactly as it is", () => {
-    const { host, job } = jobOn({ textColour: "#FF3B30" });
-    const met = meeting(job, { path: `${WORKSPACE}/oriented-1.v` }, GREY, "1");
+test("a color photograph is left exactly as it is", () => {
+    const { host, job } = jobOn({ textColor: "#FF3B30" });
+    const met = meeting(job, { path: `${WORKSPACE}/oriented-1.v` }, GRAY, "1");
 
     assert.equal(met.expanded, false);
     assert.equal(
@@ -101,7 +101,7 @@ test("the reader is told how many, in the run's own words", () => {
     host.bands = 1;
 
     const job = {
-        ...makeJob(host, { textColour: "#FF3B30", outlineWidth: 0 }),
+        ...makeJob(host, { textColor: "#FF3B30", outlineWidth: 0 }),
         workspace: WORKSPACE,
         progress: reporter()
     };
@@ -110,24 +110,24 @@ test("the reader is told how many, in the run's own words", () => {
 
     assert.match(
         describeExpanded(1),
-        /stored its greys only, so the copy is in colour/u
+        /stored its grays only, so the copy is in color/u
     );
 });
 
 test("a profile that could not be read is not a photograph without one", () => {
     // They used to be the same empty string, and the empty string takes the
-    // no-profile path -- which reports the colour as handled.
+    // no-profile path -- which reports the color as handled.
     const { job } = jobOn();
-    const paths = { colour: "/w/colour.v", moved: "/w/moved.v" };
+    const paths = { color: "/w/color.v", moved: "/w/moved.v" };
 
     assert.deepEqual(
         inSpaceOf(job, paths, { path: "", failed: true }),
-        { path: paths.colour, moved: false },
+        { path: paths.color, moved: false },
         "so it is counted rather than assumed away"
     );
     assert.deepEqual(
         inSpaceOf(job, paths, { path: "", failed: false }),
-        { path: paths.colour, moved: true }
+        { path: paths.color, moved: true }
     );
 });
 

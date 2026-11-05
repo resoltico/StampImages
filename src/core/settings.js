@@ -1,5 +1,5 @@
 "use strict";
-const { normalizeColour } = require("./colour.js");
+const { normalizeColor } = require("./color.js");
 const CUSTOM_TEXT_LIMIT = 500;
 // A NUL cannot cross argv; unpaired surrogates are incomplete Unicode, not caption text.
 // eslint-disable-next-line no-control-regex
@@ -10,33 +10,52 @@ const SETTINGS_SCHEMA = Object.freeze({
     coordinateFormat: choiceRule("Coordinate format", ["none", "decimal", "sexagesimal"]),
     customText: { name: "Custom text", maximumLength: CUSTOM_TEXT_LIMIT, default: "" },
     font: { name: "Typeface", nonempty: true },
-    size: { name: "Text size", minimum: 8, maximum: 400, default: 36 },
-    textColour: { name: "Text colour", kind: "colour", default: "#FFFFFF" },
-    outlineWidth: { name: "Outline", minimum: 0, maximum: 20, default: 2 },
-    outlineColour: { name: "Outline colour", kind: "colour", default: "#202020" },
-    position: choiceRule("Position", ["bottom-right", "bottom-left", "top-right", "top-left", "bottom-centre", "top-centre"]),
-    margin: { name: "Margin", minimum: 0, maximum: 2000, default: 24 }
+    size: { name: "Text size", minimum: 8, maximum: 400, unit: "pt", default: 36 },
+    textColor: { name: "Text color", kind: "color", default: "#FFFFFF" },
+    outlineWidth: { name: "Outline", minimum: 0, maximum: 20, unit: "px", default: 2 },
+    outlineColor: { name: "Outline color", kind: "color", default: "#202020" },
+    position: choiceRule("Position", ["bottom-right", "bottom-left", "top-right", "top-left", "bottom-center", "top-center"]),
+    margin: { name: "Margin", minimum: 0, maximum: 2000, unit: "px", default: 24 }
 });
 const SETTINGS_FIELDS = Object.keys(SETTINGS_SCHEMA);
 function isSettingsRecord(value) { return Boolean(value) && typeof value === "object" && !Array.isArray(value); }
+// Each refusal carries the shared receipt code for the kind of value that was wrong.
+function refusal(code, message) {
+    const error = new Error(message);
+    error.code = code;
+    return error;
+}
+function readChoice(rule, value) {
+    if (typeof value !== "string" || !rule.choices.some((choice) => choice.value === value)) {
+        throw refusal("choice", `${rule.name} must be one of: ${rule.choices.map((choice) => choice.value).join(", ")}.`);
+    }
+    return value;
+}
+function readColor(rule, value) {
+    try { return normalizeColor(value, rule.name); }
+    catch (error) { throw refusal("color", error.message); }
+}
+function readText(field, rule, value) {
+    if (typeof value !== "string") { throw refusal("text", `${rule.name} must be text.`); }
+    if (field === "customText" && UNRENDERABLE_TEXT.test(value)) {
+        throw refusal("text", "Custom text contains a null character or incomplete Unicode text. Remove it or paste the text again.");
+    }
+    if (rule.nonempty && value.trim() === "") { throw refusal("text", `${rule.name}: name a face to draw with.`); }
+    if (rule.maximumLength !== undefined && value.length > rule.maximumLength) { throw refusal("text", `${rule.name} must be ${rule.maximumLength} characters or fewer.`); }
+    return rule.nonempty ? value.trim() : value;
+}
 function readSetting(field, value) {
     const rule = SETTINGS_SCHEMA[field];
-    if (!rule) { throw new Error(`Unknown setting: ${field}.`); }
+    if (!rule) { throw refusal("unknown", `Unknown setting: ${field}.`); }
     if (rule.minimum !== undefined) {
         if (!Number.isInteger(value) || value < rule.minimum || value > rule.maximum) {
-            throw new Error(`${rule.name} must be a whole number from ${rule.minimum} to ${rule.maximum}.`);
+            throw refusal("integer", `${rule.name} must be a whole number from ${rule.minimum} to ${rule.maximum}.`);
         }
         return value;
     }
-    if (typeof value !== "string") { throw new Error(`${rule.name} must be text.`); }
-    if (rule.choices && !rule.choices.some((choice) => choice.value === value)) { throw new Error(`Unsupported ${rule.name.toLowerCase()}: ${value}`); }
-    if (field === "customText" && UNRENDERABLE_TEXT.test(value)) {
-        throw new Error("Custom text contains a null character or incomplete Unicode text. Remove it or paste the text again.");
-    }
-    if (rule.kind === "colour") { return normalizeColour(value, rule.name); }
-    if (rule.nonempty && value.trim() === "") { throw new Error(`${rule.name}: name a face to draw with.`); }
-    if (rule.maximumLength !== undefined && value.length > rule.maximumLength) { throw new Error(`${rule.name} must be ${rule.maximumLength} characters or fewer.`); }
-    return rule.nonempty ? value.trim() : value;
+    if (rule.choices) { return readChoice(rule, value); }
+    if (rule.kind === "color") { return readColor(rule, value); }
+    return readText(field, rule, value);
 }
 function validateSettings(input) {
     if (!isSettingsRecord(input)) { return { issues: [{ code: "object", stage: "settings", message: "Settings must be a JSON object." }] }; }
@@ -45,7 +64,7 @@ function validateSettings(input) {
     const settings = {};
     for (const field of SETTINGS_FIELDS) {
         try { settings[field] = readSetting(field, input[field]); }
-        catch (error) { issues.push({ field, code: "setting", stage: "settings", message: error.message }); }
+        catch (error) { issues.push({ field, code: error.code, stage: "settings", message: error.message }); }
     }
     return issues.length ? { issues } : { issues, settings };
 }

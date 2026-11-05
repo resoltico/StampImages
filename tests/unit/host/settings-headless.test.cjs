@@ -21,8 +21,8 @@ const CONTEXT = askingContext(FONTS);
 const HEADLESS = {
     font: "Menlo",
     size: 24,
-    textColour: "#FFFFFF",
-    outlineColour: "#000000",
+    textColor: "#FFFFFF",
+    outlineColor: "#000000",
     outlineWidth: 1,
     position: "top-left",
     margin: 12,
@@ -102,7 +102,7 @@ test("a configuration naming a face this Mac does not draw with is refused", () 
     );
 });
 
-test("missing configured faces are invalid settings and unavailable catalogues are setup failures", () => {
+test("missing configured faces are invalid settings and unavailable catalogs are setup failures", () => {
     assert.throws(() => settingsFor(createFakeApp(), { headless: true, settings: { ...HEADLESS, font: "Absent" } }, CONTEXT),
         (error) => error.issues[0].code === "typeface" && error.issues[0].field === "font" && error.issues[0].stage === "settings");
     assert.throws(() => settingsFor(createFakeApp(), { headless: true, settings: HEADLESS }, { ...CONTEXT, known: null }), /could not be verified/u);

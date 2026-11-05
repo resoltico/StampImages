@@ -29,6 +29,21 @@ const COPY_NOTE = "Each image gets a stamped copy, saved in each folder you " +
     "changed.";
 
 /*
+ * The outcome in one line, as Image Files to PDF states it: how many images,
+ * what they become, and where that goes. One folder is named; several are
+ * counted, and listed under Save locations.
+ */
+function outcomeSummary({ count = 0, folders = [] } = {}) {
+    const destination = folders.length === 1
+        ? `${folders[0].replace(/\/$/u, "").split("/").pop()}/`
+        : plural(folders.length, "folder");
+
+    return `${plural(count, "image")} → ${plural(count, "stamped copy", "stamped copies")}, saved in ${destination}`;
+}
+
+const ORIGINALS_NOTE = "The original files are not changed.";
+
+/*
  * Two of the rows choose how something is written rather than what it says,
  * and a form whose first control offers "2026-09-09 14:30" reads as though it
  * were asking which date to stamp. The photograph answers that.
@@ -42,6 +57,8 @@ const LOCATION_NOTE = "Leaving GPS coordinates off does not remove location " +
 
 module.exports = {
     selectionSummary,
+    outcomeSummary,
+    ORIGINALS_NOTE,
     COPY_NOTE,
     SOURCE_NOTE,
     LOCATION_NOTE

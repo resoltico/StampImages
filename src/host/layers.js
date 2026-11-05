@@ -69,7 +69,7 @@ function drawOutline(job, token, drawing) {
         "drawing the outline"
     );
 
-    return { paths: edge, ...tinted(job, edge, job.settings.outlineColour, drawing) };
+    return { paths: edge, ...tinted(job, edge, job.settings.outlineColor, drawing) };
 }
 
 /*
@@ -83,7 +83,7 @@ function drawLayers(job, token, drawn) {
     const glyphs = tinted(
         job,
         { ...face, mask: drawing.mask },
-        job.settings.textColour,
+        job.settings.textColor,
         drawing
     );
 

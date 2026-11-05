@@ -1,6 +1,6 @@
 "use strict";
 const {
-    COLOUR_WIDTH,
+    COLOR_WIDTH,
     FONT_WIDTH,
     TEXT_WIDTH,
     CAPTION_HEIGHT,
@@ -39,7 +39,7 @@ function makeChoice(context, row, rect) {
  * A row that is typed into: the control, only as wide as what it holds, and
  * the space that would have been wasted carrying the rule it accepts.
  *
- * The colour row and the number rows differ in the control and in how wide it
+ * The color row and the number rows differ in the control and in how wide it
  * is, and in nothing else -- so they differ here in the control and in how
  * wide it is, and in nothing else.
  */
@@ -82,7 +82,7 @@ function addTyped(context, row, rect, control) {
 /*
  * A list and a field at once, so what is worth having at hand stays available
  * without a second control to keep in step with it -- and what is not on the
- * list can still be said. A colour and the typeface are both this, and they
+ * list can still be said. A color and the typeface are both this, and they
  * differ in how wide the field has to be and in nothing else.
  */
 function addCombo(width) {
@@ -134,7 +134,7 @@ function addNumber(context, row, rect) {
 const ADD_ROW = {
     choice: addChoice,
     font: addCombo(FONT_WIDTH),
-    colour: addCombo(COLOUR_WIDTH),
+    color: addCombo(COLOR_WIDTH),
     text: addText,
     number: addNumber
 };

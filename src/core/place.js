@@ -34,7 +34,7 @@ const TENTHS_PER_DEGREE = MINUTES_PER_DEGREE * TENTHS_PER_MINUTE;
  * disagree. Half of the smallest displayed unit south of the equator rounds
  * to a magnitude of one unit and, rounded again as a signed number, to
  * negative zero: a place shown as a tenth of a second south of the equator,
- * labelled north of it. The sign is read off the value itself, and only a
+ * labeled north of it. The sign is read off the value itself, and only a
  * magnitude that displays as nothing takes the positive letter.
  */
 function hemisphere(value, displayed, positive, negative) {

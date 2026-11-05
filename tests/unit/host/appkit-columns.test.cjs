@@ -60,7 +60,7 @@ test("a hint sits past the control it belongs to, whatever its width", () => {
     assert.equal(
         hints.length,
         6,
-        "the typeface, the two colours and the three numbers"
+        "the typeface, the two colors and the three numbers"
     );
 
     for (const row of spec.rows.filter((candidate) => candidate.hint)) {
@@ -87,18 +87,18 @@ test("no control runs off the edge of the form", () => {
     }
 });
 
-test("a hint is centred against the field it describes", () => {
-    // Off-centre by a few points reads as a misalignment rather than as a
+test("a hint is centered against the field it describes", () => {
+    // Off-center by a few points reads as a misalignment rather than as a
     // caption, and the sign of the offset decides whether it sits above or
     // below the value it qualifies.
     const { view, controls } = buildForm(createFakeObjC(), specFor(), WIDGETS);
     const hints = view.subviews.filter((child) => child.editable === false
-        && child.stringValue === "8-400 pt");
+        && child.stringValue === "8–400 pt");
     const [hint] = hints;
     const field = controls.size;
 
-    const centreOf = (rect) => rect.bottom + (rect.height / 2);
+    const centerOf = (rect) => rect.bottom + (rect.height / 2);
 
-    assert.equal(centreOf(hint.rect), centreOf(field.rect));
+    assert.equal(centerOf(hint.rect), centerOf(field.rect));
     assert.ok(hint.rect.height < field.rect.height, "the hint is the smaller of the two");
 });

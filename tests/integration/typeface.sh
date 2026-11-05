@@ -4,7 +4,7 @@
 #
 # pango answers every name: asked for one it cannot place it draws in a default
 # face and says nothing. So a name nobody checked is a stamp in a face nobody
-# chose. Every name is checked against the machine's own font catalogue -- the
+# chose. Every name is checked against the machine's own font catalog -- the
 # one the renderer draws through -- before a run starts, and a typed name goes
 # through exactly the same door a configuration file does. Only the second half
 # can be exercised without a person.
@@ -24,7 +24,7 @@ require_tools
 test -f "$SCRIPT" || fail "no built artifact at $SCRIPT"
 
 BACKGROUND=110
-GREY="#6e6e6e"
+GRAY="#6e6e6e"
 
 stamp() {
     osascript -l JavaScript "$SCRIPT" -- --headless "$@"
@@ -58,7 +58,7 @@ refused() {
     cat "$WORK/err.txt"
 }
 
-solid "$WORK/photo.jpg" 900 600 "$GREY"
+solid "$WORK/photo.jpg" 900 600 "$GRAY"
 
 # ---------------------------------------------------------------------------
 # A family this Mac has is stamped, and the copy carries it.
@@ -77,7 +77,7 @@ assert_contains "$(refused "Definitely Not A Font 12345")" \
 
 # ---------------------------------------------------------------------------
 # A family the machine has, asked for in a style it has not, is told which
-# styles it does come in. A sentence only a real catalogue can write.
+# styles it does come in. A sentence only a real catalog can write.
 # ---------------------------------------------------------------------------
 
 SAID=$(refused "Georgia Ultrablack")
@@ -137,7 +137,7 @@ cmp -s "$WORK/light.jpg" "$WORK/photo_stamped.jpg" &&
 # with the same photograph stamped without a caption; at top-left both start
 # at the margin, so only a reordering can make them differ. The crop stops
 # above the caption line.
-solid "$WORK/bidi.png" 900 600 "$GREY"
+solid "$WORK/bidi.png" 900 600 "$GRAY"
 taken_at "$WORK/bidi.png" "2026:09:09 14:30:05"
 cp "$WORK/bidi.png" "$WORK/bidi-plain.png"
 settings_file "$WORK/rtl.json" "שלום עולם" top-left iso-minutes none

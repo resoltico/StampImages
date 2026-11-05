@@ -28,7 +28,7 @@ function errorMessage(error) {
  *
  * This used to be read out of the message text, and every per-image failure
  * carries the name of the image it happened to -- so a file called
- * "User cancelled.jpg" that genuinely failed to convert looked exactly like
+ * "User canceled.jpg" that genuinely failed to convert looked exactly like
  * somebody pressing Cancel, and the run ended silently with no dialog at all.
  *
  * The host's own cancellation still arrives as a number, because that is how
@@ -62,10 +62,10 @@ class OperationError extends Error {
     constructor(message, options) { super(message, options); this.name = "OperationError"; }
 }
 
-class UserCancelled extends Error {
+class UserCanceled extends Error {
     constructor() {
-        super("User cancelled.");
-        this.name = "UserCancelled";
+        super("User canceled.");
+        this.name = "UserCanceled";
     }
 }
 
@@ -75,10 +75,10 @@ class UserCancelled extends Error {
  * Asked of the whole chain, because a cancellation that passes through a
  * layer which adds context arrives wrapped -- and read off the outermost
  * error alone it is not a cancellation at all, so the run reports "the person
- * cancelled" in a dialog as though something had gone wrong.
+ * canceled" in a dialog as though something had gone wrong.
  */
-function isUserCancelled(error) {
-    return causes(error).some((each) => each instanceof UserCancelled ||
+function isUserCanceled(error) {
+    return causes(error).some((each) => each instanceof UserCanceled ||
         each.errorNumber === CANCEL_ERROR_NUMBER);
 }
 
@@ -130,10 +130,10 @@ function describeForLog(error) {
 module.exports = {
     OperationError,
     causes,
-    UserCancelled,
+    UserCanceled,
     errorMessage,
     commandOf,
-    isUserCancelled,
+    isUserCanceled,
     summarizeCommand,
     describeForLog
 };

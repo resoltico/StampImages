@@ -1,5 +1,5 @@
 "use strict";
-const { UserCancelled } = require("../core/errors.js");
+const { UserCanceled } = require("../core/errors.js");
 
 /*
  * What the run says about the photograph in hand, and where saying it may
@@ -26,7 +26,7 @@ function reporting(state, say, stopped) {
         say();
 
         if (stopped()) {
-            throw new UserCancelled();
+            throw new UserCanceled();
         }
     };
 
@@ -36,7 +36,7 @@ function reporting(state, say, stopped) {
             const name = String(originalName).replace(/\s+/gu, " ");
 
             state.detail = `${index} of ${state.images} — ${name}`;
-            announce("Reading the photograph");
+            announce("Reading the image");
         },
 
         phase: announce,

@@ -41,7 +41,7 @@ test("an answer that was never offered is refused at the question", () => {
     app.nextChoice = ["Sideways"];
     assert.throws(
         () => chooseRequired(app, POSITION, "Bottom right"),
-        /Unrecognised choice: Sideways/u
+        /Unrecognized choice: Sideways/u
     );
 });
 
@@ -57,8 +57,8 @@ test("the list opens on what it was told to open on", () => {
         "Bottom left",
         "Top right",
         "Top left",
-        "Bottom centre",
-        "Top centre"
+        "Bottom center",
+        "Top center"
     ]);
     assert.deepEqual(asked.settings.defaultItems, ["Top right"]);
     assert.equal(asked.settings.withTitle, "Stamp Images");
@@ -69,7 +69,7 @@ test("dismissing the list is a cancellation, not an empty answer", () => {
     const app = createFakeApp();
 
     app.nextChoice = false;
-    assert.throws(() => chooseRequired(app, POSITION, "Bottom right"), /cancelled/iu);
+    assert.throws(() => chooseRequired(app, POSITION, "Bottom right"), /canceled/iu);
 });
 
 test("an answer that can be read is the answer", () => {
@@ -122,7 +122,7 @@ test("cancelling is a decision, not an unusable answer", () => {
     // caught: asking again would be refusing to take no for an answer.
     const app = createFakeApp();
 
-    app.nextAnswer = [new Error("User cancelled.")];
-    assert.throws(() => askUntil(app, question(), digits), /User cancelled/u);
+    app.nextAnswer = [new Error("User canceled.")];
+    assert.throws(() => askUntil(app, question(), digits), /User canceled/u);
     assert.equal(app.dialogs.length, 1);
 });

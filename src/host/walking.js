@@ -12,9 +12,9 @@ const { looksStamped } = require("../core/naming.js");
  */
 
 const HIDDEN = ".";
-const UNREADABLE = "could not be read";
-const UNEXAMINABLE = "could not be examined";
-const ALREADY_STAMPED = "already a stamped copy, so it was left alone";
+const UNREADABLE = "This item could not be read.";
+const UNEXAMINABLE = "This item could not be examined.";
+const ALREADY_STAMPED = "This is already a stamped copy, so it was left alone.";
 
 function isHidden(name) {
     return name.startsWith(HIDDEN);

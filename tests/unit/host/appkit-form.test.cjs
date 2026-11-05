@@ -85,13 +85,13 @@ test("a choice row offers every option, in order", () => {
         "Bottom left",
         "Top right",
         "Top left",
-        "Bottom centre",
-        "Top centre"
+        "Bottom center",
+        "Top center"
     ]);
 });
 
 test("a menu item is a title and nothing else", () => {
-    // The colours used to carry a swatch in a menu. They are in a combo box
+    // The colors used to carry a swatch in a menu. They are in a combo box
     // now, whose list holds strings, so nothing builds an image and no option
     // carries one.
     const { controls } = build();
@@ -117,9 +117,9 @@ test("each numeric field is told the bounds it accepts", () => {
         .filter((child) => child.editable === false)
         .map((child) => child.stringValue);
 
-    assert.ok(hints.includes("8-400 pt"), hints.join(" | "));
-    assert.ok(hints.includes("0-2000 px"), hints.join(" | "));
-    assert.ok(hints.includes("0-20 px, 0 for none"), hints.join(" | "));
+    assert.ok(hints.includes("8–400 pt"), hints.join(" | "));
+    assert.ok(hints.includes("0–2000 px"), hints.join(" | "));
+    assert.ok(hints.includes("0–20 px, 0 for none"), hints.join(" | "));
 });
 
 test("the form is as tall as it has rows, plus the caption's extra depth", () => {

@@ -28,17 +28,17 @@ const { makeCheckbox } = require("./fake-controls.cjs");
  * The classes the widget layer reaches for, and nothing else: a fake that
  * grew past what is used would stop being evidence about the real code.
  */
-function colourClass() {
+function colorClass() {
     return {
-        labelColor: { kind: "colour", name: "label" },
-        separatorColor: { kind: "colour", name: "separator" },
-        controlAccentColor: { kind: "colour", name: "controlAccent" },
-        secondaryLabelColor: { kind: "colour", name: "secondaryLabel" },
+        labelColor: { kind: "color", name: "label" },
+        separatorColor: { kind: "color", name: "separator" },
+        controlAccentColor: { kind: "color", name: "controlAccent" },
+        secondaryLabelColor: { kind: "color", name: "secondaryLabel" },
         systemRedColor: {
-            kind: "colour",
+            kind: "color",
             name: "systemRed",
             colorWithAlphaComponent: (alpha) => ({
-                kind: "colour",
+                kind: "color",
                 name: "systemRed",
                 alpha
             })
@@ -50,6 +50,7 @@ function installClasses(ns, state, application) {
     Object.assign(ns, {
         NSMakeRect: (left, bottom, width, height) => ({ left, bottom, width, height }),
         NSMakeSize: (width, height) => ({ width, height }),
+        NSMakePoint: (left, top) => ({ left, top }),
         NSSelectorFromString: (name) => `sel:${name}`,
         NSModalPanelRunLoopMode: "NSModalPanelRunLoopMode",
         NSView: { alloc: { initWithFrame: makeView } },
@@ -60,7 +61,7 @@ function installClasses(ns, state, application) {
         NSComboBox: { alloc: { initWithFrame: makeCombo } },
         NSTextView: { alloc: { initWithFrame: makeTextView } },
         NSScrollView: { alloc: { initWithFrame: makeScrollView } },
-        NSColor: colourClass(),
+        NSColor: colorClass(),
         NSFont: {
             systemFontOfSize: (size) => ({ kind: "font", size }),
             boldSystemFontOfSize: (size) => ({ kind: "font", size, bold: true })

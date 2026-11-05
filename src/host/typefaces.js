@@ -9,7 +9,7 @@ const { appkitBridge } = require("./appkit-bridge.js");
  * CoreText and fontconfig, and the two answer differently -- fontconfig lists
  * 671 families here of which the renderer draws 147, CoreText lists 217 of
  * which it draws 188, and neither list contains the other. Asking fontconfig
- * was asking a catalogue the renderer was not reading from, which is how a
+ * was asking a catalog the renderer was not reading from, which is how a
  * font every other app on this Mac could use was refused: a face switched on
  * by a font manager is in CoreText and not in fontconfig.
  *
@@ -84,16 +84,16 @@ function coverageFrom(bridge, typeface) {
 }
 
 /*
- * One reading per run, and one per family asked about. The catalogue cannot
+ * One reading per run, and one per family asked about. The catalog cannot
  * change while a run is happening, and every question is a trip across the
  * bridge.
  *
- * Without a bridge there is no catalogue at all, which is not the same as an
+ * Without a bridge there is no catalog at all, which is not the same as an
  * empty one: nothing may read that as "this Mac has no fonts". Callers are
  * given `null`; setup refuses to render when installed typefaces cannot be
  * verified.
  */
-function catalogue(bridge = appkitBridge(globalThis.ObjC, globalThis.$)) {
+function catalog(bridge = appkitBridge(globalThis.ObjC, globalThis.$)) {
     if (!bridge) {
         return null;
     }
@@ -115,4 +115,4 @@ function catalogue(bridge = appkitBridge(globalThis.ObjC, globalThis.$)) {
     };
 }
 
-module.exports = { catalogue };
+module.exports = { catalog };

@@ -29,10 +29,10 @@ source "$ROOT/tests/integration/lib/fixtures.sh"
 require_tools
 test -f "$SCRIPT" || fail "no built artifact at $SCRIPT"
 
-# The photographs are one flat grey, so any pixel that is not 110 is a pixel
+# The photographs are one flat gray, so any pixel that is not 110 is a pixel
 # this program drew.
 BACKGROUND=110
-GREY="#6e6e6e"
+GRAY="#6e6e6e"
 
 stamp() {
     osascript -l JavaScript "$SCRIPT" -- --headless "$@"
@@ -43,7 +43,7 @@ stamp() {
 # original is untouched, and the stamp is where the settings said.
 # ---------------------------------------------------------------------------
 
-solid "$WORK/holiday.jpg" 900 600 "$GREY"
+solid "$WORK/holiday.jpg" 900 600 "$GRAY"
 taken_at "$WORK/holiday.jpg" "2024:07:14 18:32:05" 56.9496 24.1052
 BEFORE=$(shasum -a 256 < "$WORK/holiday.jpg")
 settings_file "$WORK/settings.json" "Riga" "bottom-right" "iso-minutes" "decimal"
@@ -68,7 +68,7 @@ test "$EMPTY" -eq 0 || fail "something was drawn in the top left: $EMPTY"
 # The position is obeyed: the same photograph, stamped in the other corner.
 # ---------------------------------------------------------------------------
 
-solid "$WORK/corner.jpg" 900 600 "$GREY"
+solid "$WORK/corner.jpg" 900 600 "$GRAY"
 taken_at "$WORK/corner.jpg" "2024:07:14 18:32:05" 56.9496 24.1052
 settings_file "$WORK/top-left.json" "Riga" "top-left" "iso-minutes" "decimal"
 
@@ -84,7 +84,7 @@ test "$BOTTOM" -eq 0 || fail "something was drawn in the bottom right: $BOTTOM"
 # typed, and nothing standing in for what is missing.
 # ---------------------------------------------------------------------------
 
-solid "$WORK/anonymous.png" 600 400 "$GREY"
+solid "$WORK/anonymous.png" 600 400 "$GRAY"
 settings_file "$WORK/text-only.json" "Riga"
 
 stamp "$WORK/text-only.json" "$WORK/anonymous.png" > /dev/null

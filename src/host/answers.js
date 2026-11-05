@@ -1,7 +1,7 @@
 "use strict";
 const { ORDER, controlFor } = require("./form-rows.js");
 const { valueOfLabel, labelOfValue } = require("./choices.js");
-const { normalizeColour } = require("../core/colour.js");
+const { normalizeColor } = require("../core/color.js");
 const { errorMessage } = require("../core/errors.js");
 const { readSetting } = require("../core/settings.js");
 
@@ -29,9 +29,9 @@ function readNumber(answer, control) {
     if (!DECIMAL_INTEGER.test(text)) { throw new Error(`${control.label} enter a whole number.`); }
     return Number(text);
 }
-function readColour(answer, control) { return normalizeColour(answer, control.label.replace(/:$/u, "")); }
+function readColor(answer, control) { return normalizeColor(answer, control.label.replace(/:$/u, "")); }
 function readChoice(answer, control) { return valueOfLabel(control, answer); }
-const READERS = { choice: readChoice, font: String, colour: String, number: readNumber, text: String };
+const READERS = { choice: readChoice, font: String, color: String, number: readNumber, text: String };
 
 /*
  * Every problem at once. A form that reports the first bad field, and only
@@ -60,7 +60,7 @@ function readAnswers(answers, fonts) {
  * Settings the form could have produced, which is what a remembered run is
  * given back as. The exact inverse of reading it: a closed choice becomes the
  * label it is offered under, a number becomes the text of itself, and a
- * colour or a typeface is already what the control holds.
+ * color or a typeface is already what the control holds.
  *
  * Only a closed choice is looked up, which is the whole of why a remembered
  * typeface that has since gone is no longer a problem: it used to be read
@@ -87,5 +87,5 @@ module.exports = {
     readAnswers,
     answersFromSettings,
     readNumber,
-    readColour
+    readColor
 };

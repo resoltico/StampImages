@@ -1,10 +1,10 @@
 "use strict";
 
 /*
- * Reading the machine's font catalogue across the bridge.
+ * Reading the machine's font catalog across the bridge.
  *
  * It is the font system the renderer draws through, which is the whole point:
- * fontconfig was asked before, and fontconfig is a different catalogue -- 671
+ * fontconfig was asked before, and fontconfig is a different catalog -- 671
  * families here against CoreText's 217, with neither containing the other. A
  * face switched on by a font manager is in one and not the other, which is how
  * a typeface every other app could use was refused.
@@ -12,7 +12,7 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { catalogue } = require("../../../src/host/typefaces.js");
+const { catalog } = require("../../../src/host/typefaces.js");
 const { fontManager, STOCK } = require("./fake-typefaces.cjs");
 
 function bridge(families = STOCK) {
@@ -24,20 +24,20 @@ function bridge(families = STOCK) {
 }
 
 test("the families are the ones the font system lists", () => {
-    assert.deepEqual(catalogue(bridge()).families, Object.keys(STOCK));
+    assert.deepEqual(catalog(bridge()).families, Object.keys(STOCK));
 });
 
 test("a family's faces are the styles the font system names", () => {
     // Avenir answers Book, Light, Medium, Heavy and Black -- none of which a
     // Regular-or-Bold menu could ever have reached.
     assert.deepEqual(
-        catalogue(bridge()).facesOf("Avenir"),
+        catalog(bridge()).facesOf("Avenir"),
         ["Book", "Light", "Medium", "Heavy", "Black"]
     );
 });
 
 test("a family nothing has answers with no faces at all", () => {
-    assert.deepEqual(catalogue(bridge()).facesOf("Nothing"), []);
+    assert.deepEqual(catalog(bridge()).facesOf("Nothing"), []);
 });
 
 test("a font system that answers nothing at all is no faces either", () => {
@@ -53,7 +53,7 @@ test("a font system that answers nothing at all is no faces either", () => {
     };
 
     assert.deepEqual(
-        catalogue({ ns, objc: { import: () => true } }).facesOf("Nothing"),
+        catalog({ ns, objc: { import: () => true } }).facesOf("Nothing"),
         []
     );
 });
@@ -73,7 +73,7 @@ test("a family is asked about once, however often it is asked for", () => {
         }
     };
 
-    const known = catalogue({ ns, objc: { import: () => true } });
+    const known = catalog({ ns, objc: { import: () => true } });
 
     known.facesOf("Georgia");
     known.facesOf("Georgia");
@@ -84,14 +84,14 @@ test("a family is asked about once, however often it is asked for", () => {
 test("asked for without a bridge, it finds its own", () => {
     // Which is nothing at all here: there is no ObjC bridge in a test, and
     // that is the same answer a host without AppKit gives.
-    assert.equal(catalogue(), null);
+    assert.equal(catalog(), null);
 });
 
-test("a host that cannot reach AppKit has no catalogue, not an empty one", () => {
+test("a host that cannot reach AppKit has no catalog, not an empty one", () => {
     // Nothing may read that as "this Mac has no fonts": the run still has a
     // renderer, and refusing every typeface on a machine that has them all
     // would be the worse failure.
-    assert.equal(catalogue(null), null);
+    assert.equal(catalog(null), null);
 });
 
 test("a PostScript name is traced to the family and face Font Book names", () => {
@@ -105,7 +105,7 @@ test("a PostScript name is traced to the family and face Font Book names", () =>
     } };
     ns.NSFont = { fontWithNameSize: (name) => (["HelveticaNeue-Bold", "Orphan-Face"].includes(name.boxed)
         ? { isNil: () => false, familyName: { js: name.boxed === "Orphan-Face" ? "Elsewhere" : "Helvetica Neue" } } : nil) };
-    const known = catalogue({ ns, objc: { import: () => true } });
+    const known = catalog({ ns, objc: { import: () => true } });
 
     assert.deepEqual(known.postScriptNamed("HelveticaNeue-Bold"), { family: "Helvetica Neue", face: "Bold" });
     assert.equal(known.postScriptNamed("Nope-Bold"), null);

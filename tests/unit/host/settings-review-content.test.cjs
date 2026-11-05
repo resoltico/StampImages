@@ -51,12 +51,12 @@ test("a short selection review shows each refusal and no invented remainder", ()
         { name: "missing.jpg", reason: "Unreadable" }, { name: "missing.png", reason: "Gone" }
     ] });
     assert.equal(app.dialogs[0].message,
-        "2 items in your selection cannot be included:\n\nmissing.jpg: Unreadable\n\nmissing.png: Gone\n\nContinue with 2 images?");
+        "2 items in your selection cannot be included.\n\nNot included:\nmissing.jpg: Unreadable\n\nmissing.png: Gone\n\nContinue with 2 images?");
     const pathed = createFakeApp();
 
     pathed.nextButton = "Continue";
     confirmSelection(pathed, { count: 1, rejected: [{ path: "/Users/u/Trip/clip.gif", name: "clip.gif", reason: "not a supported format" }] });
-    assert.match(pathed.dialogs[0].message, /\n\nclip\.gif: not a supported format\nin \/Users\/u\/Trip\/\n\n/u, "the name first, its folder after");
+    assert.match(pathed.dialogs[0].message, /Not included:\nclip\.gif: not a supported format\nin \/Users\/u\/Trip\/\n\n/u, "the name first, its folder after");
     assert.deepEqual(app.dialogs[0].options.buttons, ["Cancel", "Continue"]);
 });
 

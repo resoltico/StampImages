@@ -1,10 +1,10 @@
 "use strict";
 
 /*
- * Which colours a photograph's numbers mean.
+ * Which colors a photograph's numbers mean.
  *
- * A colour chosen in the form is three sRGB numbers, and writing those
- * numbers into a photograph does not make them that colour: they are read
+ * A color chosen in the form is three sRGB numbers, and writing those
+ * numbers into a photograph does not make them that color: they are read
  * through whatever profile the photograph carries. Measured on this Mac, in
  * Lab, #FF3B30 written into a Display P3 photograph lands about 19 from the
  * red that was asked for -- and 2 is visible.
@@ -12,8 +12,8 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { profileFor } = require("../../../src/host/colour-space.js");
-const { isUserCancelled } = require("../../../src/core/errors.js");
+const { profileFor } = require("../../../src/host/color-space.js");
+const { isUserCanceled } = require("../../../src/core/errors.js");
 const { createFakeHost, WORKSPACE } = require("./fake-host.cjs");
 const { makeJob } = require("./fake-job.cjs");
 
@@ -95,7 +95,7 @@ test("the file is named for the attempt, never for the photograph", () => {
 
 test("a profile that could not be read is not a photograph without one", () => {
     // They used to be the same empty string, and the empty string takes the
-    // no-profile path -- which reports the colour as handled. So a failed
+    // no-profile path -- which reports the color as handled. So a failed
     // extraction was a stamp in unconverted numbers and a run that said
     // everything had gone well.
     const { job } = jobOn({
@@ -111,7 +111,7 @@ test("a cancellation while the profile is read is a stop, not a failure", () => 
     // Reported as a failed extraction it would be counted against the
     // photograph, and the run stops for a reason that has nothing to do
     // with it.
-    const stopped = new Error("User cancelled.");
+    const stopped = new Error("User canceled.");
 
     stopped.errorNumber = -128;
 
@@ -123,6 +123,6 @@ test("a cancellation while the profile is read is a stop, not a failure", () => 
     // Wrapped by the layer that caught it, and still a cancellation.
     assert.throws(
         () => profileFor(job, "/a/one.jpg", "1"),
-        (error) => isUserCancelled(error)
+        (error) => isUserCanceled(error)
     );
 });
