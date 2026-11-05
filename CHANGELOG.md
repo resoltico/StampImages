@@ -17,6 +17,15 @@
 - Retain missing-metadata and colour/placement notes when a finished copy requires recovery; completion shows aggregate unfinished-work and omission counts.
 - Report independent field, font and content errors together; focus the first invalid editor and report numeric ranges for signed integer input.
 - Reject null characters and incomplete Unicode captions before processing.
+- A photograph too small for its stamp fails on its own as an `operation` issue instead of stopping every later photograph.
+- Each stamp line is drawn as its own bidirectional isolate, so a right-to-left caption no longer reorders the date or coordinates.
+- Files whose decode fails after inspection, such as truncated JPEGs, are refused as `damaged`; decoder output stays in the diagnostic.
+- Selection refusals carry `code` and `stage`; pipes and devices are no longer described as links. See [HEADLESS.md](HEADLESS.md).
+- Receipts add `invalidMetadata` and the `substituted` note, and list `missingMetadata` on `nothing-to-stamp` records too.
+- Copies keep the Unicode form of their original's name; publication diagnostics report POSIX `errno` codes.
+- Completion counts copies kept elsewhere, says why a folder refused a copy, lists each refusal once, and Details returns to the summary.
+- The form announces corrections above its controls and Tab leaves the custom text; PostScript typeface names get their Font Book name.
+- Remembering settings removes the 1.2.0 `lastSettings.v1` preference entry, which nothing reads.
 - Diagnose UI programming faults instead of silently switching interfaces; preserve saved outputs when observers or cleanup fail and stop remaining work on fatal issues.
 - Replace shared-scope concatenation with scoped esbuild; enforce domain/application/backend/host boundaries and build explicit native probe entrypoints.
 - Update vendor-verified development dependencies and pin Node/npm; remove the blanket 150-line file limit and verify native adapters separately from portable coverage.

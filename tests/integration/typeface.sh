@@ -131,4 +131,24 @@ test "$BLACK" -gt 100 || fail "Avenir Black did not draw: $BLACK"
 cmp -s "$WORK/light.jpg" "$WORK/photo_stamped.jpg" &&
     fail "Avenir Light and Avenir Black drew the same picture"
 
+# A right-to-left caption must not reorder the date above it. Field
+# regression: drawn in one layout with a Hebrew caption, "2026-09-09 14:30"
+# came out "14:30 2026-09-09". The first line is compared pixel for pixel
+# with the same photograph stamped without a caption; at top-left both start
+# at the margin, so only a reordering can make them differ. The crop stops
+# above the caption line.
+solid "$WORK/bidi.png" 900 600 "$GREY"
+taken_at "$WORK/bidi.png" "2026:09:09 14:30:05"
+cp "$WORK/bidi.png" "$WORK/bidi-plain.png"
+settings_file "$WORK/rtl.json" "שלום עולם" top-left iso-minutes none
+settings_file "$WORK/ltr.json" "" top-left iso-minutes none
+stamp "$WORK/rtl.json" "$WORK/bidi.png" > /dev/null
+stamp "$WORK/ltr.json" "$WORK/bidi-plain.png" > /dev/null
+vips crop "$WORK/bidi_stamped.png" "$WORK/rtl-line.v" 0 0 450 50
+vips crop "$WORK/bidi-plain_stamped.png" "$WORK/ltr-line.v" 0 0 450 50
+vips subtract "$WORK/rtl-line.v" "$WORK/ltr-line.v" "$WORK/line-diff.v"
+vips abs "$WORK/line-diff.v" "$WORK/line-abs.v"
+test "$(vips max "$WORK/line-abs.v" | cut -d. -f1)" -le 1 ||
+    fail "a right-to-left caption changed how the date line is drawn"
+
 printf 'macOS typeface integration passed\n'

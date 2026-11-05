@@ -105,7 +105,7 @@ function assemble(prepared, place, known = catalogue()) {
 
     const settings = settingsFrom(prepared.app, prepared.invocation, context);
 
-    return jobFor(prepared, settings, place);
+    return { ...jobFor(prepared, settings, place), covers: known.coverageOf?.(settings.typeface) ?? null };
 }
 
 module.exports = { withWorkspace, assemble, settingsFrom, jobFor };

@@ -70,4 +70,22 @@ for scenario in bad-bands bad-size; do
     assert_contains "$(cat "$WORK/receipt.json")" '"code":"damaged"' "the measurement is refused"
 done
 test "$BEFORE" = "$(shasum -a 256 < "$WORK/alpha.png")"
+# A photograph too small for its stamp is refused on its own; the photographs
+# after it are still stamped. Field regression: the refusal was classed as a
+# software fault, which stops a run, and 61 of 63 photographs were not started.
+mkdir -p "$WORK/mixed"
+solid "$WORK/mixed/a-small.png" 40 30 '#6e6e6e'
+solid "$WORK/mixed/b-large.png" 900 600 '#6e6e6e'
+solid "$WORK/mixed/c-large.png" 900 600 '#6e6e6e'
+if osascript -l JavaScript "$SCRIPT" -- --headless "$WORK/settings.json" "$WORK/mixed" \
+    > "$WORK/mixed.json" 2> /dev/null; then
+    fail "a photograph too small for its stamp was reported as complete"
+fi
+MIXED=$(cat "$WORK/mixed.json")
+assert_contains "$MIXED" '"code":"operation"' "too small is an ordinary refusal"
+assert_not_contains "$MIXED" '"code":"fault"' "not a fault in the program"
+assert_not_contains "$MIXED" '"not-started"' "and it stops nothing after it"
+test -f "$WORK/mixed/b-large_stamped.png" && test -f "$WORK/mixed/c-large_stamped.png" ||
+    fail "the photographs after a small one were not stamped"
+
 printf 'macOS measurement integrity integration passed\n'

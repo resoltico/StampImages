@@ -11,7 +11,9 @@ function describeNothing(rejected) {
 }
 function reportNothing(app, headless, rejected) {
     const message = describeNothing(rejected);
-    if (headless) { return runOutcome([], rejected, [], [{ code: "no-images", stage: "selection", message }]); }
+    // The rejections are listed with the receipt already; the issue says only
+    // what they add up to, so a terminal does not print each one twice.
+    if (headless) { return runOutcome([], rejected, [], [{ code: "no-images", stage: "selection", message: rejected.length ? "None of the selected items can be stamped." : message }]); }
     showDetails(app, { title: APP_NAME, summary: rejected.length ? "Nothing to stamp." : "No photographs selected.", detail: message, buttons: ["OK"] });
     return undefined;
 }

@@ -5,6 +5,17 @@ const { answersFromSettings } = require("./answers.js");
 const { UserCancelled } = require("../core/errors.js");
 const { plural } = require("../core/numbers.js");
 const { COPY_NOTE } = require("./stamp-description.js");
+const { basename, dirname } = require("../core/paths.js");
+
+/*
+ * One refusal as a person scans for it: the name first, then why, then where.
+ * Full paths put the name last on a line that wraps, and a list of them read
+ * as one block.
+ */
+function refusalLines(entry) {
+    if (!entry.path) { return `${entry.name}: ${entry.reason}`; }
+    return `${basename(entry.path)}: ${entry.reason}\nin ${dirname(entry.path)}`;
+}
 
 /*
  * The two questions an interactive run asks besides its settings, worded as
@@ -36,11 +47,11 @@ function confirmSelection(app, context) {
         return;
     }
 
-    const shown = rejected.map((entry) => `${entry.path || entry.name}: ${entry.reason}`);
+    const shown = rejected.map(refusalLines);
 
     approve(app, [
         `${plural(rejected.length, "item")} in your selection cannot be ` +
-            `included:\n${shown.join("\n")}`,
+            `included:\n\n${shown.join("\n\n")}`,
         `Continue with ${plural(context.count, "image")}?`
     ].join("\n\n"), "Continue");
 }

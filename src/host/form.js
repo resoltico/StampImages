@@ -36,12 +36,21 @@ function invitation(count, selectedFolders = 0) {
  * the fonts left the row saying nothing while the control beside it showed a
  * face, so the answers are defaulted here, where the fonts are known.
  */
+// One line, so the form keeps its height: a wrapped sentence measured 750 points.
+function correction(count) {
+    return `Correct the ${count === 1 ? "highlighted setting" : `${count} highlighted settings`}, listed below.`;
+}
+
 function formSpec(answers, problems, context) {
     const { count, fonts, selectedFolders } = context;
 
+    // That something needs correcting is said where the alert puts its
+    // message, above the controls; what it is leads the scrolling note. The
+    // messages themselves stay in the note because it has a fixed height:
+    // measured, ten of them in the message grew the form past 744 points.
     return {
         title: APP_NAME,
-        detail: "Choose the stamp for this selection.",
+        detail: problems.length > 0 ? correction(problems.length) : "Choose the stamp for this selection.",
         fullDetail: [
             ...problems.map((problem) => problem.message),
             invitation(count, selectedFolders)

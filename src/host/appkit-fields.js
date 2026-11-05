@@ -82,15 +82,50 @@ function plainTextView(ns, text, rect) {
     return view;
 }
 
-function makeCaption(ns, text, rect) {
+/*
+ * Tab moves on, as it does in every other field of the form. A text view
+ * inserts a tab character by default, so a person working by keyboard could
+ * not leave the caption except with Control-Tab -- measured, Tab and Shift-Tab
+ * both stayed inside it, and the tab characters typed were stamped as gaps.
+ * Return still starts a new line: that is what the caption is for.
+ *
+ * Registered once per process, and held by the caption that uses it because a
+ * text view does not keep its delegate alive.
+ */
+const NAVIGATION_CLASS = "StampImagesCaptionNavigation";
+const MOVES = { "insertTab:": "selectNextKeyView", "insertBacktab:": "selectPreviousKeyView" };
+
+function moveFocus(view, selector) {
+    const move = MOVES[String(selector)];
+    const { window } = view;
+    if (!move || !window || window.isNil()) { return false; }
+    window[move](view);
+    return true;
+}
+
+function tabNavigation(objc, ns) {
+    if (ns.NSClassFromString(NAVIGATION_CLASS).isNil()) {
+        objc.registerSubclass({
+            name: NAVIGATION_CLASS,
+            superclass: "NSObject",
+            protocols: ["NSTextViewDelegate"],
+            methods: { "textView:doCommandBySelector:": { types: ["bool", ["id", "SEL"]], implementation: moveFocus } }
+        });
+    }
+    return ns[NAVIGATION_CLASS].alloc.init;
+}
+
+function makeCaption(ns, text, rect, objc = null) {
     const scroll = ns.NSScrollView.alloc.initWithFrame(rectOf(ns, rect));
     const view = plainTextView(ns, text, rect);
 
     scroll.documentView = view;
     scroll.hasVerticalScroller = true;
     scroll.borderType = BEZEL_BORDER;
+    const navigation = objc ? tabNavigation(objc, ns) : null;
+    if (navigation) { view.delegate = navigation; }
 
-    return { control: scroll, text: view };
+    return { control: scroll, text: view, navigation };
 }
 
-module.exports = { makeField, makeCombo, makeCaption };
+module.exports = { makeField, makeCombo, makeCaption, moveFocus };

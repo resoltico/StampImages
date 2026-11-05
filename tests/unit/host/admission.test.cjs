@@ -96,3 +96,25 @@ test("an interactive invocation defers its settings", () => {
     assert.equal(invocation.settings, null);
     assert.deepEqual(invocation.inputItems, ["/a/1.png"]);
 });
+
+test("every reason a selection item is turned away carries its own stable code", () => {
+    // Field regression: inspection refusals carried a code and selection
+    // refusals did not, so a receipt reader had to match sentences.
+    const { SELECTION_CODES } = require("../../../src/host/admission.js");
+    const codes = [...SELECTION_CODES.values()];
+
+    assert.equal(new Set(codes).size, codes.length, "one code per reason");
+    assert.ok(codes.every((code) => /^[a-z]+(?:-[a-z]+)*$/u.test(code)));
+    assert.ok(!codes.includes("unknown"));
+});
+
+test("a refused selection item says why in a code as well as a sentence", () => {
+    const app = createFakeApp();
+
+    app.files = ["/a/clip.gif"];
+
+    const { rejected } = collectImageFiles(app, ["/a/clip.gif"]);
+
+    assert.equal(rejected[0].code, "unsupported-format");
+    assert.equal(rejected[0].stage, "selection");
+});

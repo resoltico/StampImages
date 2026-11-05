@@ -1,6 +1,6 @@
 "use strict";
 
-const { plural } = require("./numbers.js");
+const { OperationError } = require("./errors.js");
 
 /*
  * Where the block of text goes on the photograph.
@@ -51,8 +51,12 @@ function describeSize(size) {
     return `${size.width} by ${size.height} pixels`;
 }
 
+/*
+ * An ordinary refusal of this photograph, not a fault in the program: one
+ * small photograph in a batch must not stop the photographs after it.
+ */
 function refuseSize(image, stamp) {
-    return new Error(
+    return new OperationError(
         `The stamp does not fit on this photograph.\n\nThe text is ` +
             `${describeSize(stamp)} and the photograph is ${describeSize(image)}. ` +
             "Choose a smaller text size, or write less."
@@ -96,9 +100,4 @@ function placeStamp(image, stamp, settings) {
     };
 }
 
-function describeCrowding(count) {
-    return `${plural(count, "photograph")} had too little room for the ` +
-        "margin, so the stamp sits against the edge.";
-}
-
-module.exports = { placeStamp, edgesOf, describeCrowding };
+module.exports = { placeStamp, edgesOf };

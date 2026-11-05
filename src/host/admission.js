@@ -1,10 +1,11 @@
 "use strict";
 const { basename, dirname } = require("../core/paths.js");
 const { sortImageRecords } = require("../core/ordering.js");
-const { imagesInFolder } = require("./expand.js");
+const { imagesInFolder, NO_IMAGES } = require("./expand.js");
+const { UNREADABLE, UNEXAMINABLE, ALREADY_STAMPED } = require("./walking.js");
 const { selectedItems } = require("./selection.js");
 const { finderSelection } = require("./input.js");
-const { rejectionReason } = require("./reasons.js");
+const { rejectionReason, FOLDER, UNSUPPORTED, NOT_A_FILE } = require("./reasons.js");
 
 /*
  * Which of the requested files this action will convert, and why it will not
@@ -22,8 +23,26 @@ function record(path, folder) {
     return { path, originalName: basename(path), folder };
 }
 
+const KIND_REASONS = {
+    package: "a package, not a folder of images",
+    link: "a link; select the file it points to",
+    other: "not a regular file (a pipe, socket or device)"
+};
+
+/*
+ * A stable code for every reason a selection item is turned away, so a
+ * receipt can be read without matching sentences. Keyed by the producers' own
+ * reason constants: the wording stays where it is decided.
+ */
+const SELECTION_CODES = new Map([
+    [FOLDER, "folder"], [UNSUPPORTED, "unsupported-format"], [NOT_A_FILE, "not-a-file"],
+    [KIND_REASONS.package, "package"], [KIND_REASONS.link, "link"], [KIND_REASONS.other, "special-file"],
+    [UNREADABLE, "unreadable"], [UNEXAMINABLE, "unexaminable"], [ALREADY_STAMPED, "already-stamped"],
+    [NO_IMAGES, "empty-folder"]
+]);
+
 function rejection(path, reason) {
-    return { path, name: basename(path), reason };
+    return { path, name: basename(path), reason, code: SELECTION_CODES.get(reason) ?? "unknown", stage: "selection" };
 }
 
 function admitFolder(tree, path, outcome) {
@@ -60,11 +79,6 @@ function admitFolder(tree, path, outcome) {
  * twice. Asking the shell instead followed it -- test -f reports on the
  * target -- so a link and the file it points to were two images.
  */
-const KIND_REASONS = {
-    package: "a package, not a folder of images",
-    other: "a link; select the file it points to"
-};
-
 function reasonFor(app, root) {
     return KIND_REASONS[root.kind] ?? rejectionReason(app, root.path);
 }
@@ -140,4 +154,4 @@ function collectImageFiles(app, inputItems, tree = null) {
     };
 }
 
-module.exports = { collectImageFiles };
+module.exports = { collectImageFiles, SELECTION_CODES };

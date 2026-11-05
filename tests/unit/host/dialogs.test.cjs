@@ -44,7 +44,7 @@ test("the questions are asked in the order the form lays them out", () => {
     collectDialogSettings(app, defaultAnswers(FONTS), askingContext(FONTS));
 
     assert.match(app.listPrompts[0].settings.withPrompt, /Date\/time format/u);
-    assert.match(app.dialogs[0].message, /Custom text \(optional/u);
+    assert.match(app.dialogs[0].message, /Custom text \(the same text is added to every copy/u);
 });
 
 test("each question opens on the answer it was given", () => {

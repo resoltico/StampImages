@@ -1,6 +1,6 @@
 "use strict";
 
-const { MONTHS, captureMoment, coordinates } = require("./metadata.js");
+const { MONTHS, MOMENT_TAGS, captureMoment, coordinates } = require("./metadata.js");
 const { decimalPlace, sexagesimalPlace } = require("./place.js");
 
 /*
@@ -73,14 +73,36 @@ function customLines(text) {
  * rather than as a failure, because it is one: a scan has no shutter time and
  * no place, and neither has the program done anything wrong.
  */
-function describeAbsence(settings) {
+function describeAbsence(settings, invalid) {
     const missing = [
         settings.dateFormat === "none" ? "" : "when",
         settings.coordinateFormat === "none" ? "" : "where"
     ].filter(Boolean);
+    // A photograph whose date reads 0000:00:00 does say when it was taken --
+    // wrongly. Telling its owner it says nothing sends them looking for a tag
+    // that is there.
+    const unreadable = invalid.length > 0 ? ` (its ${invalid.join(" and ")} ${invalid.length === 1 ? "is" : "are"} recorded but not valid)` : "";
 
-    return `it does not say ${missing.join(" or ")} it was taken, ` +
+    return `it does not say ${missing.join(" or ")} it was taken${unreadable}, ` +
         "and there is no text of your own to put on it";
+}
+
+/*
+ * Present but unusable is not absent: a tag that is there and cannot be read
+ * as a date or a place on the globe.
+ */
+function isRecorded(value) {
+    return value !== undefined && value !== null && String(value).trim() !== "";
+}
+
+// Asked only of what was requested and is missing: what was not requested is not read.
+const RECORDED = {
+    "date/time": (facts) => MOMENT_TAGS.some((tag) => isRecorded(facts[tag])),
+    "GPS coordinates": (facts) => isRecorded(facts.GPSLatitude) || isRecorded(facts.GPSLongitude)
+};
+
+function invalidOf(facts, missing) {
+    return missing.filter((field) => RECORDED[field](facts));
 }
 
 /*
@@ -93,8 +115,26 @@ function wantsMetadata(settings) {
 }
 
 /*
+ * Every line is drawn as its own bidirectional isolate. All lines reach the
+ * renderer as one paragraph layout, and measured with vips 8.18 a Hebrew or
+ * Arabic caption set the direction of the neutral lines above it: the stamp
+ * read "18:42 2021-07-14" and "24.1052 ,56.9496" -- the place apparently
+ * swapped and its comma moved. Date and place are written left to right
+ * (LRI ... PDI), whatever else is on the photograph; a caption takes its own
+ * direction from its first strong character (FSI ... PDI), and an override
+ * typed into one caption line cannot reach past that line.
+ */
+const LEFT_TO_RIGHT = ["\u2066", "\u2069"];
+const OWN_DIRECTION = ["\u2068", "\u2069"];
+
+function isolated(line, [open, close]) {
+    return `${open}${line}${close}`;
+}
+
+/*
  * The lines, in the order they are read: when the photograph was taken, where
- * it was taken, and then whatever was added by hand.
+ * it was taken, and then whatever was added by hand. `lines` is what the stamp
+ * says; `text` is the same lines as the renderer is to draw them.
  */
 function inscriptionFor(facts, settings) {
     const date = wrote(facts, settings.dateFormat, captureMoment, MOMENT_WRITERS);
@@ -103,11 +143,23 @@ function inscriptionFor(facts, settings) {
         settings.dateFormat !== "none" && !date ? "date/time" : "",
         settings.coordinateFormat !== "none" && !place ? "GPS coordinates" : ""
     ].filter(Boolean);
-    const lines = [...[date, place].filter(Boolean), ...customLines(settings.customText)];
+    const written = [date, place].filter(Boolean);
+    const custom = customLines(settings.customText);
+    const lines = [...written, ...custom];
+    const text = [
+        ...written.map((line) => isolated(line, LEFT_TO_RIGHT)),
+        ...custom.map((line) => isolated(line, OWN_DIRECTION))
+    ].join("\n");
+
+    const invalid = invalidOf(facts, missing);
+    const omissions = {
+        ...missing.length > 0 ? { missing } : {},
+        ...invalid.length > 0 ? { invalid } : {}
+    };
 
     return lines.length > 0
-        ? { lines, text: lines.join("\n"), ...missing.length > 0 ? { missing } : {} }
-        : { nothing: describeAbsence(settings) };
+        ? { lines, text, ...omissions }
+        : { nothing: describeAbsence(settings, invalid), ...omissions };
 }
 
 module.exports = { inscriptionFor, wantsMetadata, customLines, describeAbsence };

@@ -24,7 +24,7 @@ function buildForm(bridge, spec, widgets) {
     const { width, height } = formSize(rowCount);
     const view = widgets.makeView(bridge.ns, width, height + DETAILS_HEIGHT + DETAILS_GAP);
     view.addSubview(widgets.makeDetails(bridge.ns, spec.fullDetail, { left: 0, bottom: height + DETAILS_GAP, width, height: DETAILS_HEIGHT }));
-    const context = { ns: bridge.ns, widgets, view };
+    const context = { ns: bridge.ns, objc: bridge.objc, widgets, view };
     const controls = {};
     // The one row that is taller than the others, which every row above it
     // has to be lifted over.

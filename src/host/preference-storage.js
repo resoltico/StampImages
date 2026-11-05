@@ -1,6 +1,9 @@
 "use strict";
 const { DOMAIN, KEY } = require("./preferences.js");
 
+// The 1.2.0 record's key. It is never read: that release's record opens defaults.
+const RETIRED_KEY = "lastSettings.v1";
+
 /*
  * Where the record is kept: a defaults domain of this action's own.
  *
@@ -58,6 +61,9 @@ function memoryOn(objc, ns, suite) {
         remember(text) {
             try {
                 suite.setObjectForKey(ns(text), ns(KEY));
+                // 1.2.0 kept its record under another key, which nothing reads
+                // now; it is removed rather than left in the domain for good.
+                suite.removeObjectForKey(ns(RETIRED_KEY));
             } catch {
                 // The next run opens on the defaults, which is what it did
                 // before there was anything to remember.

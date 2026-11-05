@@ -11,6 +11,8 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const { placeStamp } = require("../../../src/core/geometry.js");
+const { OperationError } = require("../../../src/core/errors.js");
+const { issuesOf } = require("../../../src/core/outcomes.js");
 
 const IMAGE = { width: 1000, height: 800 };
 
@@ -28,6 +30,9 @@ test("a stamp larger than the photograph is refused, not cropped", () => {
             assert.match(error.message, /1200 by 900 pixels/u);
             assert.match(error.message, /1000 by 800 pixels/u);
             assert.match(error.message, /smaller text size/u);
+            // A per-photograph refusal, so the run continues with the next one.
+            assert.ok(error instanceof OperationError);
+            assert.equal(issuesOf(error, "stamping")[0].code, "operation");
 
             return true;
         }

@@ -73,8 +73,13 @@ for whole in whole_stamped.jpg whole_stamped.png; do
         fail "$whole is not the photograph it came from"
 done
 
-assert_contains "$RECEIPT" "load error" "the tool's own words say what was wrong"
-assert_contains "$(cat "$WORK/stderr")" "load error" "and both are counted"
+# Refused as damaged in inspection's own words; the decoder's words stay in
+# the receipt's diagnostic for whoever investigates, not in what is read.
+assert_contains "$RECEIPT" '"code":"damaged"' "a truncated file is refused as damaged"
+assert_contains "$RECEIPT" "load error" "the tool's own words are kept as the diagnostic"
+assert_contains "$(cat "$WORK/stderr")" "This image is damaged or incomplete." "and the reader is told plainly"
+assert_not_contains "$(cat "$WORK/stderr")" "load error" "without the decoder's output"
+assert_not_contains "$(cat "$WORK/stderr")" $'\r' "and without carriage returns"
 
 # The name belongs to the record rather than to the message as well.
 assert_not_contains "$RECEIPT" '"message":"cut.jpg:' "the file is named once"

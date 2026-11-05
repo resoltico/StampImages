@@ -90,10 +90,10 @@ function walk(tree, folder, taken, outcome) {
  * new is not the same as nothing at all: what is in here may already be in
  * the run because a folder above it was selected too.
  */
+const NO_IMAGES = "contains no supported images";
+
 function emptiness(outcome) {
-    return outcome.found.length === 0 && !outcome.alreadyTaken
-        ? "contains no supported images"
-        : "";
+    return outcome.found.length === 0 && !outcome.alreadyTaken ? NO_IMAGES : "";
 }
 
 /*
@@ -117,4 +117,4 @@ function imagesInFolder(tree, folder, taken) {
     };
 }
 
-module.exports = { imagesInFolder, isHidden };
+module.exports = { imagesInFolder, isHidden, NO_IMAGES };

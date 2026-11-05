@@ -37,11 +37,19 @@ test("the lines read in the order somebody reads them", () => {
     );
 });
 
-test("the text is the lines, joined, and it is what gets drawn", () => {
+test("the text is the lines, joined, each isolated so one cannot reorder another", () => {
+    // Measured: a right-to-left caption drawn in one layout with the date and
+    // place reversed them to "18:42 2021-07-14" and "24.1052 ,56.9496".
     assert.equal(
-        inscriptionFor(TAKEN, settings({ customText: "Riga" })).text,
-        "2026-09-09 14:30\n56.9496, 24.1052\nRiga"
+        inscriptionFor(TAKEN, settings({ customText: "Riga\nשלום" })).text,
+        "\u20662026-09-09 14:30\u2069\n\u206656.9496, 24.1052\u2069\n\u2068Riga\u2069\n\u2068שלום\u2069"
     );
+});
+
+test("an override typed into a caption is closed at the end of its line", () => {
+    const { text } = inscriptionFor(TAKEN, settings({ customText: "\u202eevil\nnext" }));
+
+    assert.deepEqual(text.split("\n").slice(2), ["\u2068\u202eevil\u2069", "\u2068next\u2069"]);
 });
 
 test("each date format writes the date its own way", () => {

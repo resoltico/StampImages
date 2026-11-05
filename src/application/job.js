@@ -6,9 +6,11 @@ function executeImage(ports, image, index) {
     try {
         ports.begin(image, index);
         const made = ports.stamp(image, index);
-        if (made.nothing) { record.state = "nothing-to-stamp"; record.reason = made.nothing; }
+        // Requested fields that were recorded but unusable are named apart from those simply absent.
+        const omitted = { missingMetadata: made.missing ?? [], ...made.invalid?.length ? { invalidMetadata: made.invalid } : {} };
+        if (made.nothing) { Object.assign(record, { state: "nothing-to-stamp", reason: made.nothing }, omitted); }
         else {
-            Object.assign(record, { crowded: made.crowded, unconverted: made.unconverted, expanded: made.expanded, missingMetadata: made.missing });
+            Object.assign(record, { crowded: made.crowded, unconverted: made.unconverted, expanded: made.expanded, substituted: Boolean(made.substituted) }, omitted);
             const saved = ports.publish(made.staged, image);
             Object.assign(record, { state: "saved", output: saved.path });
             record.issues.push(...saved.issues);

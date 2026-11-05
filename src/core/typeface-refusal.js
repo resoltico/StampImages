@@ -37,6 +37,13 @@ const NAMING = "Name it as Font Book does -- the family, and the style after " +
  * Why a name was refused, in the one place every reader of it can reach.
  */
 function unknownTypeface(known, name) {
+    // A PostScript name names a face this Mac has, so saying it has no such
+    // typeface would be untrue; what is wrong is only how it was named.
+    const named = known.postScriptNamed?.(String(name).trim());
+    if (named) {
+        return `"${name}" is a PostScript name, which this does not take.\n\n` +
+            `Name it as Font Book does: "${named.family} ${named.face}".`;
+    }
     const near = nearestFamily(known, name);
 
     return near.family

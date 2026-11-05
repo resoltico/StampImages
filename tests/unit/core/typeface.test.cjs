@@ -128,3 +128,16 @@ test("a list of faces reads as a person would say it", () => {
         "Regular, Italic and Bold"
     );
 });
+
+test("a PostScript name is answered with the name this takes, not a claim the Mac lacks it", () => {
+    // Field regression: "HelveticaNeue-Bold" was refused with "This Mac has no
+    // typeface called", and the Mac has it.
+    const known = {
+        ...catalogueOf(),
+        postScriptNamed: (name) => (name === "HelveticaNeue-Bold" ? { family: "Helvetica Neue", face: "Bold" } : null)
+    };
+
+    assert.match(resolved(known, " HelveticaNeue-Bold ").problem,
+        /PostScript name[\s\S]*Name it as Font Book does: "Helvetica Neue Bold"\./u);
+    assert.match(resolved(known, "Nope Sans").problem, /This Mac has no typeface called "Nope Sans"/u);
+});

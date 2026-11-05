@@ -5,11 +5,16 @@ const RENAME_EXCL = 4;
 const POSIX = { 17: "exists", 18: "cross-device", 45: "unsupported", 78: "unsupported", 1: "denied", 13: "denied", 30: "denied" };
 
 function classify(code, domain) {
-    if (domain === "NSPOSIXErrorDomain") { return POSIX[code] ?? "unknown"; }
-    if (domain === "NSCocoaErrorDomain") {
-        return { 516: "exists", 513: "denied", 642: "denied" }[code] ?? "unknown";
-    }
-    return "unknown";
+    return domain === "NSPOSIXErrorDomain" ? POSIX[code] ?? "unknown" : "unknown";
+}
+
+// What a C call answered: created, or what errno says went wrong, read at once.
+function posixOutcome(ns, status) {
+    if (status === 0) { return { state: "created" }; }
+    // __error is the native thread-local errno function, whose spelling is fixed.
+    // eslint-disable-next-line no-underscore-dangle
+    const code = Number(ns.__error()[0]);
+    return { state: classify(code, "NSPOSIXErrorDomain"), diagnostic: { code, domain: "NSPOSIXErrorDomain", message: String(ns.strerror(code)) } };
 }
 
 function nativeFacts(objc, ns, manager, path) {
@@ -26,31 +31,16 @@ function nativePublication(objc, ns) {
     objc.import("stdio");
     objc.bindFunction("__error", ["int *", []]);
     objc.bindFunction("strerror", ["char *", ["int"]]);
+    objc.bindFunction("link", ["int", ["char *", "char *"]]);
     const manager = ns.NSFileManager.defaultManager;
     return {
         facts: (path) => nativeFacts(objc, ns, manager, path),
-        link(from, to) {
-            const error = ns();
-            if (manager.linkItemAtPathToPathError(ns(from), ns(to), error)) { return { state: "created" }; }
-            const code = Number(error.code);
-            const domain = String(objc.unwrap(error.domain));
-            let state = classify(code, domain);
-            const underlying = error.userInfo.objectForKey(ns.NSUnderlyingErrorKey);
-            if (state === "unknown" && underlying && !underlying.isNil()) {
-                state = classify(Number(underlying.code), String(objc.unwrap(underlying.domain)));
-            }
-            return { state, diagnostic: { code, domain,
-                message: String(objc.unwrap(error.localizedDescription)) } };
-        },
-        rename(from, to) {
-            const status = ns.renamex_np(from, to, RENAME_EXCL);
-            // __error is the native thread-local errno function, whose spelling is fixed.
-            // eslint-disable-next-line no-underscore-dangle
-            const code = status === 0 ? 0 : Number(ns.__error()[0]);
-            return status === 0 ? { state: "created" } : {
-                state: classify(code, "NSPOSIXErrorDomain"), diagnostic: { code, domain: "NSPOSIXErrorDomain", message: String(ns.strerror(code)) }
-            };
-        }
+        // link(2) rather than NSFileManager: measured, linkItemAtPath writes
+        // the name decomposed, so a photograph named "rīga.jpg" in NFC came
+        // back as a copy whose name no longer matched its original's bytes.
+        // The C call keeps the bytes it is given and fails with EEXIST alike.
+        link: (from, to) => posixOutcome(ns, ns.link(from, to)),
+        rename: (from, to) => posixOutcome(ns, ns.renamex_np(from, to, RENAME_EXCL))
     };
 }
 module.exports = { nativePublication, classify };

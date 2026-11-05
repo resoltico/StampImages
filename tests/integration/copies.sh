@@ -142,4 +142,17 @@ DIFFERENCE=$(awk -v l1="$WIDE_L" -v a1="$WIDE_A" -v b1="$WIDE_B" \
 test "$DIFFERENCE" -le 2 ||
     fail "the caption is a different colour in the two copies: $DIFFERENCE"
 
+# A copy's name keeps the Unicode form of its original's. Field regression:
+# NSFileManager wrote "rīga" decomposed, so a precomposed original and its
+# copy no longer matched byte for byte.
+PRECOMPOSED=$(printf 'r\xc4\xabga')
+settings_file "$WORK/name.json" "Riga"
+solid "$WORK/$PRECOMPOSED.png" 300 200 "$GREY"
+stamp "$WORK/name.json" "$WORK/$PRECOMPOSED.png" > /dev/null
+test -f "$WORK/${PRECOMPOSED}_stamped.png" ||
+    fail "the copy of a precomposed name was not written under that name"
+# shellcheck disable=SC2010 # the listing's own bytes are what is under test
+ls "$WORK" | grep -q "$(printf 'ri\xcc\x84ga')_stamped" &&
+    fail "the copy's name was decomposed"
+
 printf 'macOS copies passed\n'

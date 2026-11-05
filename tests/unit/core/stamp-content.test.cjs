@@ -85,11 +85,12 @@ test("validation retains the selection, copy rules and metadata warning", () => 
         count: 3, selectedFolders: 1, fonts: FONTS
     });
 
+    assert.equal(shown.detail, "Correct the highlighted setting, listed below.");
     assert.match(shown.fullDetail, /^Fix the size\./u);
     assert.match(shown.fullDetail, /Found 3 images/u);
     assert.match(shown.fullDetail, /The original files are not changed/u);
     assert.match(shown.fullDetail, /Leaving GPS coordinates off does not remove location data/u);
-    assert.equal(shown.rows.find((row) => row.key === "customText").label, "Custom text (optional):");
+    assert.equal(shown.rows.find((row) => row.key === "customText").label, "Custom text:");
     const coordinate = shown.rows.find((row) => row.key === "coordinateFormat");
 
     assert.deepEqual(coordinate.optional, {

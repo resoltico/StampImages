@@ -111,6 +111,7 @@ test("the alert carries the form's own title, detail and buttons", () => {
 
     assert.equal(alert.messageText, spec.title);
     assert.equal(alert.informativeText, spec.detail);
+    assert.match(alert.informativeText, /^Correct the highlighted setting, listed below\./u, "a correction is announced above the controls");
     assert.match(alert.accessoryView.subviews[0].documentView.string, /^something was wrong/u);
     assert.match(alert.accessoryView.subviews[0].documentView.string, /You have selected 1 image\./u);
     assert.deepEqual(alert.buttons, ["Create", "Cancel"]);

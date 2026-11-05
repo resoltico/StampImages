@@ -75,10 +75,14 @@ Each admitted source has exactly one image record with its full `source` path,
 | `cancelled` | Stop interrupted this photograph |
 | `not-started` | A previous cancellation or fatal issue stopped remaining work |
 
-Saved and recovered records may include `crowded`, `expanded` and `unconverted`
-appearance notes.
-`missingMetadata` lists requested absent fields, such as *date/time* or
-`GPS coordinates`. These omissions make the run incomplete while keeping the copy.
+Saved and recovered records may include `crowded`, `expanded`, `unconverted` and
+`substituted` appearance notes; `substituted` means some characters are not in the
+chosen typeface and were drawn in another one.
+`missingMetadata` lists requested fields the photograph cannot supply, such as
+*date/time* or `GPS coordinates`, on every record including `nothing-to-stamp`.
+`invalidMetadata`, present only when non-empty, names those of them that are recorded
+but not valid, such as a zero date or a latitude beyond 90°. These omissions make the
+run incomplete while keeping the copy.
 A recovery path may refer to Downloads, a temporary copy, or the retained workspace;
 follow its issues to distinguish confirmed external recovery from retained work.
 Unexpected validation faults retain an unconfirmed candidate in the workspace,
@@ -88,7 +92,13 @@ Issues carry `code`, `stage`, `message`, and optionally `source` and `diagnostic
 Codes include `operation`, `fault`, `cancelled`, `cleanup`, `publication`, `recovery`,
 `setting` and `unknown`. Inspection refusals include `unreadable`, `empty`,
 `not-an-image`, `unsupported-content`, `unsupported-colour`, `multiple-images` and
-`damaged`; unsupported colour models/layouts need conversion to RGB or greyscale. Optional observer problems
+`damaged`; unsupported colour models/layouts need conversion to RGB or greyscale. A file
+whose header passes but whose decode fails (for example a truncated JPEG) is refused as
+`damaged` at the `stamping` stage, with the decoder's output kept in its `diagnostic`.
+A stamp larger than its photograph is an `operation` failure for that photograph only.
+Selection refusals in `rejected` carry `stage` `selection` and a `code`: `folder`,
+`unsupported-format`, `not-a-file`, `not-a-path`, `package`, `link`, `special-file`,
+`unreadable`, `unexaminable`, `already-stamped` or `empty-folder`. Optional observer problems
 are diagnostics. Software and cleanup faults stop further photographs. The receipt
 retains confirmed outputs even if completion presentation fails.
 

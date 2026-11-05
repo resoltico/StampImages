@@ -8,6 +8,25 @@ const { verifyFileWritten } = require("./asking.js");
 const { sizeOf } = require("./tinting.js");
 const { refuseUnfaithful, hasAlpha, bandsOf } = require("./fidelity.js");
 const { profileFor } = require("./colour-space.js");
+const { OperationError, errorMessage, commandOf } = require("../core/errors.js");
+const { sourceIssue } = require("../core/source-policy.js");
+
+/*
+ * A photograph whose header passed inspection can still be cut short: the
+ * header of a truncated JPEG is intact and only decoding finds the end
+ * missing. That is a fact about the file, refused in the same words
+ * inspection uses, rather than the decoder's own output. Only a loader's
+ * complaint means this; any other failure keeps its own description.
+ */
+const LOADER_FAILURE = /\b(?:jpeg|png|heif|tiff|webp|vips)load\b|VipsForeignLoad/u;
+
+function damagedOr(error) {
+    if (!(error instanceof OperationError) || !LOADER_FAILURE.test(errorMessage(error))) { return error; }
+    const issue = sourceIssue("damaged", {}, { command: commandOf(error), message: errorMessage(error) });
+    const damaged = new OperationError(issue.message, { cause: error });
+    damaged.issues = [{ ...issue, stage: "stamping" }];
+    return damaged;
+}
 
 /*
  * What a photograph has to be before a stamp can go on it.
@@ -72,7 +91,8 @@ function readPhotograph(job, source, token) {
     const path = `${job.workspace}/oriented-${token}.v`;
 
     try {
-        orient(job, source, path);
+        try { orient(job, source, path); }
+        catch (error) { throw damagedOr(error); }
 
         return { path, size: sizeOf(job, path), hasAlpha: hasAlpha(job, path) };
     } catch (error) {

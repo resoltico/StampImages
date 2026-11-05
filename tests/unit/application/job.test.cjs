@@ -98,3 +98,17 @@ test("field regression: publication recovery retains prepared omissions and fide
     assert.deepEqual(result.missingMetadata, ["date/time"]);
     assert.equal(result.crowded, true); assert.equal(result.expanded, true);
 });
+test("requested metadata is accounted for on every record, and unusable fields are named apart", () => {
+    // Field regression: nothing-to-stamp records listed no missing fields
+    // although both had been requested.
+    const nothing = runJob(fixture({ stamp: () => ({ nothing: "why", missing: ["date/time"], invalid: ["date/time"] }) }).ports, [images[0]]);
+    assert.deepEqual(nothing.images[0].missingMetadata, ["date/time"]);
+    assert.deepEqual(nothing.images[0].invalidMetadata, ["date/time"]);
+    const saved = runJob(fixture().ports, [images[0]]);
+    assert.equal(Object.hasOwn(saved.images[0], "invalidMetadata"), false, "only when there is any");
+    assert.deepEqual(saved.images[0].missingMetadata, []);
+    const unsaid = runJob(fixture({ stamp: () => ({ nothing: "why" }) }).ports, [images[0]]);
+    assert.deepEqual(unsaid.images[0].missingMetadata, [], "a port that says nothing omits nothing");
+    const invalidSaved = runJob(fixture({ stamp: () => ({ staged: "/ready", missing: ["GPS coordinates"], invalid: ["GPS coordinates"] }) }).ports, [images[0]]);
+    assert.deepEqual(invalidSaved.images[0].invalidMetadata, ["GPS coordinates"]);
+});

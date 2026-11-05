@@ -30,12 +30,15 @@ function suiteFor(state, settings) {
             }
 
             state.wrote.push({ value: value.boxed, key: key.boxed });
+        },
+        removeObjectForKey(key) {
+            state.removed.push(key.boxed);
         }
     };
 }
 
 function bridge(settings = {}) {
-    const state = { suites: [], stored: settings.stored ?? null, wrote: [] };
+    const state = { suites: [], stored: settings.stored ?? null, wrote: [], removed: [] };
     const suite = suiteFor(state, settings);
     const ns = (value) => ({ boxed: value });
 
@@ -116,4 +119,17 @@ test("nothing remembered and nothing readable are one answer", () => {
         createMemory(...Object.values(bridge({ readThrows: true })).slice(0, 2)).recall(),
         ""
     );
+});
+
+test("remembering removes the record an earlier release left under its own key", () => {
+    // Field regression: the 1.2.0 key stayed in the domain forever after an
+    // upgrade, holding a record that nothing reads.
+    const { state, memory } = (() => {
+        const made = bridge();
+
+        return { state: made.state, memory: createMemory(made.objc, made.ns) };
+    })();
+
+    memory.remember("{}");
+    assert.deepEqual(state.removed, ["lastSettings.v1"]);
 });

@@ -111,7 +111,9 @@ test("a subfolder that could not be read is named, not passed over", () => {
     assert.deepEqual(rejected, [{
         path: "/Trip/Locked",
         name: "Locked",
-        reason: "could not be read"
+        reason: "could not be read",
+        code: "unreadable",
+        stage: "selection"
     }]);
 });
 

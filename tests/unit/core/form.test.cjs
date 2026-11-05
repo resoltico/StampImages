@@ -103,3 +103,10 @@ test("a form asked for with no answers shows the defaults, fonts and all", () =>
     assert.equal(shown.rows.find((row) => row.key === "size").value, "36");
     assert.equal(shown.rows.find((row) => row.key === "font").value, "Menlo");
 });
+
+test("several corrections are counted above the controls and listed in the note", () => {
+    const shown = formSpec(undefined, [{ key: "size", message: "A." }, { key: "margin", message: "B." }], { count: 1, fonts: [] });
+
+    assert.equal(shown.detail, "Correct the 2 highlighted settings, listed below.");
+    assert.match(shown.fullDetail, /^A\.\nB\.\n/u);
+});

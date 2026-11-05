@@ -21,6 +21,7 @@
 
 const DIRECTORY = "NSFileTypeDirectory";
 const REGULAR = "NSFileTypeRegular";
+const LINK = "NSFileTypeSymbolicLink";
 
 /*
  * Which file this is, as the filesystem knows it: the volume it is on and its
@@ -43,9 +44,11 @@ function kindFrom(attributes, workspace, path, ns) {
         return "missing";
     }
 
-    if (attributes.NSFileType !== DIRECTORY) {
-        return attributes.NSFileType === REGULAR ? "file" : "other";
-    }
+    // A link and a pipe or device are both passed over, for different
+    // reasons, and the person who selected one is told which.
+    if (attributes.NSFileType === REGULAR) { return "file"; }
+    if (attributes.NSFileType === LINK) { return "link"; }
+    if (attributes.NSFileType !== DIRECTORY) { return "other"; }
 
     return workspace.isFilePackageAtPath(ns(path)) ? "package" : "directory";
 }

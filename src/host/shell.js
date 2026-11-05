@@ -22,8 +22,11 @@ function runCommand(app, command, label) {
     } catch (error) {
         const context = label ? ` while ${label}` : "";
 
+        // doShellScript turns the command's newlines into carriage returns,
+        // which a terminal prints as lines written over one another.
+        const said = errorMessage(error).replace(/\r\n?/gu, "\n").trim();
         const failure = new OperationError(
-            `Command failed${context}.\n\n${errorMessage(error)}`,
+            `Command failed${context}.\n\n${said}`,
             { cause: error }
         );
 

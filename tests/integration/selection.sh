@@ -112,4 +112,14 @@ assert_contains "$AGAIN" "already a stamped copy" "and the copy is named, not pa
 test ! -f "$WORK/album/holiday_stamped_stamped.png" ||
     fail "a copy was stamped a second time"
 
+# A pipe is not a link. Field regression: a selected FIFO was told "a link;
+# select the file it points to", and there is no file it points to.
+mkfifo "$WORK/pipe.jpg"
+set +e
+PIPE=$(stamp "$WORK/settings.json" "$WORK/pipe.jpg" 2>/dev/null)
+set -e
+assert_contains "$PIPE" "not a regular file" "a pipe is refused as what it is"
+assert_contains "$PIPE" '"code":"special-file"' "with a code a receipt reader can use"
+assert_not_contains "$PIPE" "a link;" "and not as a link"
+
 printf 'macOS selection passed\n'

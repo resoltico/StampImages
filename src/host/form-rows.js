@@ -45,8 +45,8 @@ const FONT = {
  * heading in a dialog and left a branch nothing chose deliberately.
  */
 const TEXT = {
-    prompt: "Custom text (optional; the same text is added to every copy):",
-    label: "Custom text (optional):",
+    prompt: "Custom text (the same text is added to every copy; leave it empty for none):",
+    label: "Custom text:",
     defaultAnswer: ""
 };
 

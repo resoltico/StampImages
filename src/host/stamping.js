@@ -61,6 +61,18 @@ function stampOnto(job, photograph, drawn, token) {
     };
 }
 
+// Spaces, line breaks and invisible controls are not glyphs a face can lack.
+const UNDRAWN = /[\s\p{Cf}\p{Mn}]/u;
+
+/*
+ * Whether any character of the stamp is outside the chosen face, so that the
+ * renderer drew it in another one.
+ */
+function substituted(job, lines) {
+    if (!job.covers) { return false; }
+    return [...lines.join("")].some((character) => !UNDRAWN.test(character) && !job.covers(character.codePointAt(0)));
+}
+
 function produce(job, image, token, intermediates) {
     const met = prepared(job, image, token, intermediates);
     const { photograph } = met;
@@ -89,7 +101,9 @@ function produce(job, image, token, intermediates) {
         crowded: drawn.crowded,
         unconverted: drawn.unconverted,
         expanded: met.expanded,
-        missing: image.inscription.missing ?? []
+        missing: image.inscription.missing ?? [],
+        invalid: image.inscription.invalid ?? [],
+        substituted: substituted(job, image.inscription.lines)
     };
 }
 
@@ -113,7 +127,7 @@ function stampCaptured(job, image, token) {
     const inscription = inscribe(job, image);
 
     if (inscription.nothing) {
-        return { nothing: inscription.nothing };
+        return { nothing: inscription.nothing, missing: inscription.missing ?? [], invalid: inscription.invalid ?? [] };
     }
 
     const intermediates = [];
@@ -142,4 +156,4 @@ function stampOne(job, image, token) {
 }
 
 
-module.exports = { stampOne };
+module.exports = { stampOne, substituted };

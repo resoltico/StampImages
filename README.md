@@ -39,10 +39,13 @@ Name typefaces as Font Book does, such as `Georgia`, `Georgia Bold` or
 `Avenir Black`. An unavailable name is refused before stamping. Custom text may
 contain up to 500 UTF-16 code units; null characters and incomplete Unicode are
 refused. All glyphs use the chosen text colour, including monochrome silhouettes
-of colour emoji.
+of colour emoji. Characters the typeface lacks are drawn in another face, and the
+copy reports that. Each line keeps its own writing direction, so a right-to-left
+caption does not reorder the date or coordinates.
 
-Click **Create** to start. Independent setting errors appear together, and the
-form keeps your draft while you correct them. When native form capability is
+Click **Create** to start. Independent setting errors are announced above the
+controls and listed together, and the form keeps your draft while you correct them. Tab moves between
+controls, including out of the custom text; Return there starts a new line. When native form capability is
 unavailable, stepwise dialogs end with a Create confirmation. Appearance settings,
 including the GPS choice, are remembered in the preferences domain
 `com.resoltico.StampImages`; custom text is never remembered.
@@ -52,7 +55,8 @@ at the next safe checkpoint, keeps saved copies and retains any finished
 unpublished copy in its existing temporary workspace. It reports the retained
 path without starting a new Downloads access request. Completion reports saved,
 recovered and unfinished work, metadata omissions and appearance notes, with
-selectable details and **Show in Finder** for available copies.
+selectable details and **Show in Finder** for available copies; technical
+**Details** returns to that summary.
 
 ## Supported files and output
 
@@ -69,7 +73,8 @@ pixels. A coloured caption on a greyscale source expands the copy to RGB and is
 reported. Colour profiles are used when converting caption colours; conversion
 problems are reported.
 
-Copies use names such as `holiday_stamped.jpg`, then `holiday_stamped 2.jpg` on a
+Copies use names such as `holiday_stamped.jpg`, keeping the original name's Unicode
+form, then `holiday_stamped 2.jpg` on a
 collision. Nothing is overwritten. Folder walks skip dot-prefixed entries,
 packages, links and supported images whose stems end in `_stamped` or
 `_stamped <digits>`. Other supported names, including `holiday_stamped_2.jpg`, are

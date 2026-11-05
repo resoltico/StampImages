@@ -93,3 +93,23 @@ test("a host that cannot reach AppKit has no catalogue, not an empty one", () =>
     // would be the worse failure.
     assert.equal(catalogue(null), null);
 });
+
+test("a PostScript name is traced to the family and face Font Book names", () => {
+    const row = (postScript, face) => ({ js: [{ js: postScript }, { js: face }, { js: 5 }, { js: 0 }] });
+    const ns = (value) => ({ boxed: value });
+    const nil = { isNil: () => true };
+
+    ns.NSFontManager = { sharedFontManager: {
+        availableFontFamilies: { js: [{ js: "Helvetica Neue" }] },
+        availableMembersOfFontFamily: () => ({ js: [row("HelveticaNeue", "Regular"), row("HelveticaNeue-Bold", "Bold")] })
+    } };
+    ns.NSFont = { fontWithNameSize: (name) => (["HelveticaNeue-Bold", "Orphan-Face"].includes(name.boxed)
+        ? { isNil: () => false, familyName: { js: name.boxed === "Orphan-Face" ? "Elsewhere" : "Helvetica Neue" } } : nil) };
+    const known = catalogue({ ns, objc: { import: () => true } });
+
+    assert.deepEqual(known.postScriptNamed("HelveticaNeue-Bold"), { family: "Helvetica Neue", face: "Bold" });
+    assert.equal(known.postScriptNamed("Nope-Bold"), null);
+    assert.equal(known.postScriptNamed("Orphan-Face"), null, "a font whose family does not list it is not guessed at");
+    ns.NSFont.fontWithNameSize = () => null;
+    assert.equal(known.postScriptNamed("HelveticaNeue-Bold"), null);
+});

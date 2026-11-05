@@ -129,7 +129,19 @@ function createFakeObjC(settings = {}) {
 
     installClasses(ns, state, application);
 
-    return { ns, objc: { unwrap: (value) => value, import: () => true }, state };
+    // Classes a run registers, by name, as the runtime would answer for them.
+    state.registered = [];
+    ns.NSClassFromString = (name) => ({ isNil: () => !state.registered.some((each) => each.name === name) });
+    const objc = {
+        unwrap: (value) => value,
+        import: () => true,
+        registerSubclass(definition) {
+            state.registered.push(definition);
+            ns[definition.name] = { alloc: { get init() { return { kind: "delegate", of: definition.name }; } } };
+        }
+    };
+
+    return { ns, objc, state };
 }
 
 module.exports = { createFakeObjC };

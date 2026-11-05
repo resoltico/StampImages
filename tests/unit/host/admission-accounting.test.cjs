@@ -27,12 +27,16 @@ test("an input that named itself and did not resolve is reported", () => {
         {
             path: "",
             name: "./second.jpg",
-            reason: "not an absolute path to a file"
+            reason: "not an absolute path to a file",
+            code: "not-a-path",
+            stage: "selection"
         },
         {
             path: "",
             name: "~/Pictures/third.png",
-            reason: "not an absolute path to a file"
+            reason: "not an absolute path to a file",
+            code: "not-a-path",
+            stage: "selection"
         }
     ]);
 });

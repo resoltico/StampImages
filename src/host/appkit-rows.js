@@ -104,7 +104,7 @@ function addText(context, row, rect) {
         ...rect,
         width: TEXT_WIDTH,
         height: CAPTION_HEIGHT
-    });
+    }, context.objc);
 
     caption.text.setAccessibilityLabel(row.label);
     view.addSubview(caption.control);

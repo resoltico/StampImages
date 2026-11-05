@@ -98,7 +98,7 @@ test("selection review retains every refusal, with the exact count still visible
         count: 1,
         rejected: Array.from({ length: 14 }, (unused, index) => ({ name: `${index}.jpg`, reason: "Unreadable" }))
     });
-    assert.match(app.dialogs[0].message, /^14 items in your selection cannot be included:\n0\.jpg: Unreadable\n/u);
+    assert.match(app.dialogs[0].message, /^14 items in your selection cannot be included:\n\n0\.jpg: Unreadable\n/u);
     const all = app.dialogs.map((dialog) => dialog.message).join("\n");
     assert.match(all, /13\.jpg: Unreadable/u);
     assert.match(all, /Continue with 1 image/u);

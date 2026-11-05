@@ -90,3 +90,15 @@ test("tryArgv takes silence for an answer", () => {
     assert.deepEqual(app.commands, ["'/bin/stat' '-f%d:%i:%z' '/gone'"]);
     assert.equal(tryArgv(createFakeApp([["/bin/stat", "16:7:9"]]), ["/bin/stat"]), "16:7:9");
 });
+
+test("a command's carriage returns are given back as line breaks", () => {
+    // doShellScript hands back newlines as carriage returns, and a terminal
+    // prints those as lines written over one another.
+    const app = createFakeApp([["vips", failing("\rfirst\rsecond\r\nthird\r")]]);
+
+    assert.throws(() => runArgv(app, ["/bin/vips"], "reading"), (error) => {
+        assert.equal(error.message, "Command failed while reading.\n\nfirst\nsecond\nthird");
+
+        return true;
+    });
+});

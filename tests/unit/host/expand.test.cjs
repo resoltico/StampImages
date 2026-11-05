@@ -30,7 +30,7 @@ test("what nobody asked for is passed over without a word", () => {
     // A folder of documents would otherwise report a rejection for each one.
     const tree = treeOf(
         { "/t": ["a.png", "notes.txt", "clip.gif", ".hidden.png", "Photos.app", "link"] },
-        { "/t/Photos.app": "package", "/t/link": "other" }
+        { "/t/Photos.app": "package", "/t/link": "link" }
     );
 
     assert.deepEqual(imagesInFolder(tree, "/t", new Set()).found, ["/t/a.png"]);
@@ -41,7 +41,7 @@ test("a link with an image's name is still a link", () => {
     // folder it was given and how it finds the same file twice.
     const tree = treeOf(
         { "/t": ["photo.png"] },
-        { "/t/photo.png": "other" }
+        { "/t/photo.png": "link" }
     );
 
     assert.equal(
@@ -55,7 +55,7 @@ test("a link is not followed, however it is reached", () => {
     // finds the same file twice.
     const tree = treeOf(
         { "/t": ["elsewhere"], "/elsewhere": ["a.png"] },
-        { "/t/elsewhere": "other" }
+        { "/t/elsewhere": "link" }
     );
 
     assert.equal(imagesInFolder(tree, "/t", new Set()).reason, "contains no supported images");

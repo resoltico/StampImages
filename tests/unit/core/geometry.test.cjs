@@ -12,8 +12,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const {
     placeStamp,
-    edgesOf,
-    describeCrowding
+    edgesOf
 } = require("../../../src/core/geometry.js");
 
 const IMAGE = { width: 1000, height: 800 };
@@ -63,8 +62,6 @@ test("a margin with no room for it is the edge, and it is said", () => {
         placeStamp(IMAGE, STAMP, { position: "bottom-right", margin: 5000 }).crowded,
         true
     );
-    assert.match(describeCrowding(3), /^3 photographs had too little room/u);
-    assert.match(describeCrowding(1), /^1 photograph had/u);
 });
 
 test("a margin measured from two edges is not measured from four", () => {

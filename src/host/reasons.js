@@ -16,19 +16,24 @@ const { pathCandidates } = require("./input.js");
  * is. Kept apart from the filtering so that a rejection is a stated reason
  * rather than the absence of an entry in a list.
  */
+const FOLDER = "a folder; select the images inside it";
+const UNSUPPORTED = `not a supported format (${supportedFormatList()})`;
+const NOT_A_FILE = "not a readable file";
+const NOT_A_PATH = "not an absolute path to a file";
+
 function rejectionReason(app, path) {
     // Asked first, because a folder that happens to be called album.png would
     // otherwise be turned away for having the wrong extension, and a folder
     // called album for having no extension at all. Neither says what it is.
     if (isDirectory(app, path)) {
-        return "a folder; select the images inside it";
+        return FOLDER;
     }
 
     if (!isSupportedImage(path)) {
-        return `not a supported format (${supportedFormatList()})`;
+        return UNSUPPORTED;
     }
 
-    return isRegularFile(app, path) ? "" : "not a readable file";
+    return isRegularFile(app, path) ? "" : NOT_A_FILE;
 }
 
 /*
@@ -61,9 +66,11 @@ function describeUnresolved(item) {
         ? {
             path: "",
             name: named,
-            reason: "not an absolute path to a file"
+            reason: NOT_A_PATH,
+            code: "not-a-path",
+            stage: "selection"
         }
         : null;
 }
 
-module.exports = { rejectionReason, describeUnresolved };
+module.exports = { rejectionReason, describeUnresolved, FOLDER, UNSUPPORTED, NOT_A_FILE };

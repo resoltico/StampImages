@@ -130,3 +130,33 @@ test("a profile that could not be read is not a photograph without one", () => {
         { path: paths.colour, moved: true }
     );
 });
+
+test("a photograph its decoder finds cut short is refused as damaged, in inspection's words", () => {
+    // Measured: a truncated JPEG keeps an intact header, passes inspection,
+    // and only the full decode finds the end missing. vips said so in its
+    // own words -- "VipsJpeg: premature end of JPEG image", "jpegload: load
+    // error" -- and that was the message a person was shown.
+    const said = "\r(vips:1): VIPS-WARNING **: error in tile 0 x 24\rVipsJpeg: premature end of JPEG image\rjpegload: load error";
+    const { job } = jobOn({}, createFakeHost({ files: ["/a/one.jpg"], failures: [["'autorot'", new Error(said)]] }));
+
+    assert.throws(() => prepared(job, imageOf("/a/one.jpg"), "1", []), (error) => {
+        assert.equal(error.message, "This image is damaged or incomplete.");
+        assert.equal(error.issues[0].code, "damaged");
+        assert.equal(error.issues[0].stage, "stamping");
+        assert.match(error.issues[0].diagnostic.message, /premature end of JPEG image\njpegload/u);
+        assert.match(error.issues[0].diagnostic.command, /'autorot'/u);
+
+        return true;
+    });
+});
+
+test("a decode that fails for another reason keeps its own description", () => {
+    const { job } = jobOn({}, createFakeHost({ files: ["/a/one.jpg"], failures: [["'autorot'", new Error("No space left on device")]] }));
+
+    assert.throws(() => prepared(job, imageOf("/a/one.jpg"), "1", []), (error) => {
+        assert.equal(error.issues, undefined);
+        assert.match(error.message, /No space left on device/u);
+
+        return true;
+    });
+});
