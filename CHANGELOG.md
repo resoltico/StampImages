@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Native tests detach owned disk images by device and verify removal, handling missing exFAT mount paths and preserving work when cleanup cannot be confirmed.
+- Update npm to 12.2.2, glob to 14.0.4 and minimatch to 11.0.5 in the development toolchain.
+
 ## [2.0.0] - 2026-11-05
 
 - Headless settings use US English names: `textColor`, `outlineColor`, `bottom-center` and `top-center`. All ten fields are required and typed; update settings files.

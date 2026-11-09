@@ -147,6 +147,11 @@ Use vendor release information to choose updates. Pin development dependencies i
 `packageManager` and engines. The consistency gate checks these declarations.
 Keep workflow action references pinned to reviewed vendor commit hashes.
 
+The minimatch and glob overrides keep development tools on patched releases.
+They move together: glob 13 expects RegExp pattern parts, while minimatch 11
+returns Matcher objects supported by glob 14. Remove these overrides when the
+upstream ESLint and Stryker dependency ranges accept the patched versions.
+
 The Homebrew tools are not pinned at all — CI installs the current ones on
 every run, so a breaking change there surfaces as a failing integration job
 rather than as a silent drift.

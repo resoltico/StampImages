@@ -63,6 +63,12 @@ refuse exclusive rename must confirm recovery against an independent primitive
 probe rather than expose a partial final name; inability to attach an image
 is a skipped environment check, never a passing filesystem result.
 
+Volume cleanup resolves the owned image's backing partition-map device through
+DiskImages, including when its mount path is gone. It verifies detachment after
+bounded retries and a forced attempt; unreadable state or a still-attached image
+fails the suite and preserves its working directory. The card suite exercises
+an unmounted exFAT image and repeated cleanup after detachment.
+
 Set `STAMP_FORM_PREVIEWS` to an external directory to retain native captures.
 Inspect normal/correction, long-path, multiple-destination and large-detail states
 in Aqua and Dark Aqua. Controls and actions must fit within 744 points; complete

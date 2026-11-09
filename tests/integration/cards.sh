@@ -20,13 +20,17 @@ WORK=$(mktemp -d -t StampImages-cards)
 # A FAT label is eleven characters at most; a longer one is dropped and the
 # volume mounts as NO NAME.
 FAT_NAME=SIMGFAT
-FAT_VOLUME="/Volumes/$FAT_NAME"
+FAT_VOLUME="$WORK/mount-FAT32"
 EXFAT_NAME=SIMGEXF
-EXFAT_VOLUME="/Volumes/$EXFAT_NAME"
+EXFAT_VOLUME="$WORK/mount-exFAT"
 
 cleanup() {
-    detach_test_volume "$FAT_VOLUME" 2>/dev/null || true
-    detach_test_volume "$EXFAT_VOLUME" 2>/dev/null || true
+    if [ -f "$WORK/$FAT_NAME.dmg" ]; then
+        detach_test_volume "$FAT_VOLUME" "$WORK/$FAT_NAME.dmg" || return 1
+    fi
+    if [ -f "$WORK/$EXFAT_NAME.dmg" ]; then
+        detach_test_volume "$EXFAT_VOLUME" "$WORK/$EXFAT_NAME.dmg" || return 1
+    fi
     rm -rf "$WORK"
 }
 trap cleanup EXIT
@@ -63,7 +67,7 @@ said() {
 # name that is taken -- so that is what publishes there.
 # ---------------------------------------------------------------------------
 
-if attach_test_volume "MS-DOS FAT32" "$FAT_NAME"; then
+if attach_test_volume "MS-DOS FAT32" "$FAT_NAME" "$FAT_VOLUME"; then
     cp "$WORK/photo.jpg" "$FAT_VOLUME/"
     stamp "$FAT_VOLUME/photo.jpg"
 
@@ -94,7 +98,7 @@ if attach_test_volume "MS-DOS FAT32" "$FAT_NAME"; then
         assert_nothing_left_behind "$FAT_VOLUME"
         printf 'FAT32 native exclusive rename unavailable; confirmed recovery passed\n'
     fi
-    detach_test_volume "$FAT_VOLUME"
+    detach_test_volume "$FAT_VOLUME" "$WORK/$FAT_NAME.dmg"
 else
     printf 'link-free publication skipped: no MS-DOS volume could be attached\n'
 fi
@@ -110,7 +114,7 @@ fi
 # finished copy has to be somewhere the message names.
 # ---------------------------------------------------------------------------
 
-if attach_test_volume "ExFAT" "$EXFAT_NAME"; then
+if attach_test_volume "ExFAT" "$EXFAT_NAME" "$EXFAT_VOLUME"; then
     cp "$WORK/photo.jpg" "$EXFAT_VOLUME/"
     stamp "$EXFAT_VOLUME/photo.jpg"
 
@@ -134,7 +138,12 @@ if attach_test_volume "ExFAT" "$EXFAT_NAME"; then
     test "$(vipsheader -f width "$KEPT")" = 600 || fail "what was kept is not the copy"
     rm -f "$KEPT"
 
-    detach_test_volume "$EXFAT_VOLUME"
+    # A missing mount path does not establish that its image was detached.
+    diskutil unmount "$EXFAT_VOLUME"
+    test -n "$(node "$ROOT/tests/integration/lib/volume-device.cjs" "$WORK/$EXFAT_NAME.dmg")"
+    detach_test_volume "$EXFAT_VOLUME" "$WORK/$EXFAT_NAME.dmg"
+    # Repeating cleanup must confirm absence without acting on another image.
+    detach_test_volume "$EXFAT_VOLUME" "$WORK/$EXFAT_NAME.dmg"
 else
     printf 'exFAT publication skipped: no exFAT volume could be attached\n'
 fi

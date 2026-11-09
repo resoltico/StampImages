@@ -6,45 +6,47 @@
 # a volume has to detach it before the next one attaches its own, and what
 # detaching costs is not obvious from the attach.
 
-# attach_test_volume <format> <name>
+# attach_test_volume <format> <name> <owned-mountpoint>
 #
-# A volume of its own, so publication can be exercised where the finished copy
-# and the folder it belongs in are not on one filesystem -- and, for MS-DOS,
+# A volume of its own, so the publication can be exercised where the finished
+# copy and the output folder are not on one filesystem -- and, for MS-DOS,
 # where hard links cannot be made at all. Prints nothing and fails quietly
-# where a volume cannot be attached: whether that is possible is the machine's
+# when a volume cannot be attached: whether that is possible is the machine's
 # decision rather than the code's.
 attach_test_volume() {
-    local format=$1 name=$2 image
+    local format=$1 name=$2 mountpoint=$3 image
     image="$WORK/$name.dmg"
-    test ! -e "/Volumes/$name" || return 1
+    mkdir "$mountpoint" || return 1
 
     hdiutil create -size 40m -fs "$format" -volname "$name" -quiet -ov "$image" &&
-        hdiutil attach -quiet -mountpoint "/Volumes/$name" "$image" &&
-        touch "$WORK/$name.attached"
+        hdiutil attach -quiet -mountpoint "$mountpoint" "$image"
 }
 
-# detach_test_volume <volume>
+# detach_test_volume <volume> <image>
 #
-# A volume that was just written to is not always ready to go. macOS indexes
-# what appears on it, and a detach arriving during that is refused as
-# "Resource busy" -- which is the machine being busy, not the publication
-# holding anything open: the run that wrote the copy exited before this is
-# called, and the test has already established that nothing was left behind.
-#
-# So waiting is the answer, and forcing is what is left when waiting has
-# plainly not worked. A detach that fails after both still fails the test,
-# because the next volume cannot be attached over one that is still there.
+# Detach only the image created by this test. Native consumers can keep a
+# volume busy after the conversion process exits; bounded retries allow them
+# to finish. Persistent failure remains a test failure, with the final native
+# error and image facts visible. EXIT cleanup preserves WORK if still attached.
 detach_test_volume() {
-    local volume=$1
-    local name=${volume##*/}
-    test -f "$WORK/$name.attached" || return 0
+    local volume=$1 image=$2 device detach_status=0
 
-    # Five tries, two seconds apart. Indexing a forty-megabyte volume does not
-    # take ten seconds, and a volume still busy after that is not busy waiting.
+    # Five ordinary attempts, two seconds apart, before one forced attempt.
     for _ in 1 2 3 4 5; do
-        hdiutil detach -quiet "$volume" 2>/dev/null && { rm -f "$WORK/$name.attached"; return 0; }
+        device=$(node "$ROOT/tests/integration/lib/volume-device.cjs" "$image") || return 1
+        [ -n "$device" ] || return 0
+        hdiutil detach -quiet "$device" 2>/dev/null || true
+        device=$(node "$ROOT/tests/integration/lib/volume-device.cjs" "$image") || return 1
+        [ -n "$device" ] || return 0
         sleep 2
     done
 
-    hdiutil detach -force -quiet "$volume" && rm -f "$WORK/$name.attached"
+    device=$(node "$ROOT/tests/integration/lib/volume-device.cjs" "$image") || return 1
+    [ -n "$device" ] || return 0
+    hdiutil detach -force "$device" || detach_status=$?
+    device=$(node "$ROOT/tests/integration/lib/volume-device.cjs" "$image") || return 1
+    [ -n "$device" ] || return 0
+    printf 'Could not detach test image %s at %s (exit %s)\n' "$image" "$volume" "$detach_status" >&2
+    hdiutil info >&2 || true
+    return 1
 }

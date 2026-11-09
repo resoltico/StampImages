@@ -16,10 +16,12 @@ ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 SCRIPT="$ROOT/dist/Stamp-Images.jxa"
 WORK=$(mktemp -d -t StampImages-volumes)
 VOLUME_NAME=StampImages-test-volume
-VOLUME="/Volumes/$VOLUME_NAME"
+VOLUME="$WORK/mount-HFS"
 
 cleanup() {
-    detach_test_volume "$VOLUME" 2>/dev/null || true
+    if [ -f "$WORK/$VOLUME_NAME.dmg" ]; then
+        detach_test_volume "$VOLUME" "$WORK/$VOLUME_NAME.dmg" || return 1
+    fi
     rm -rf "$WORK"
 }
 trap cleanup EXIT
@@ -42,7 +44,7 @@ stamp() {
         >"$WORK/receipt" 2>"$WORK/error.txt" || true
 }
 
-if ! attach_test_volume "HFS+" "$VOLUME_NAME"; then
+if ! attach_test_volume "HFS+" "$VOLUME_NAME" "$VOLUME"; then
     printf 'cross-volume publication skipped: no volume could be attached\n'
     exit 0
 fi
@@ -75,6 +77,6 @@ stamp "$VOLUME/photo.jpg"
 test -f "$VOLUME/photo_stamped 2.jpg" || fail "the second copy was not published beside it"
 assert_nothing_left_behind "$VOLUME"
 
-detach_test_volume "$VOLUME"
+detach_test_volume "$VOLUME" "$WORK/$VOLUME_NAME.dmg"
 
 printf 'macOS cross-volume integration passed\n'
