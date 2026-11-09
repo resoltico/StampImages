@@ -134,6 +134,6 @@ test("the dialog detail ends with the elapsed time and then the version", () => 
     const { VERSION } = require("../../../src/core/version.js");
     const result = { ...runOutcome([{ source: "/a.jpg", state: "saved", output: "/o/a_stamped.jpg", issues: [] }]), elapsed: "1 second" };
 
-    assert.match(detailOf(result), new RegExp(`\\n\\nElapsed: 1 second\\n\\nStamp Images ${VERSION.replace(/\./gu, "\\.")}$`, "u"));
-    assert.match(detailOf(result, { commandLine: true }), /Elapsed: 1 second$/u);
+    assert.ok(detailOf(result).endsWith(`\n\nElapsed: 1 second\n\nStamp Images ${VERSION}`));
+    assert.ok(detailOf(result, { commandLine: true }).endsWith("Elapsed: 1 second"));
 });
