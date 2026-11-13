@@ -89,7 +89,7 @@ function produce(job, image, token, intermediates) {
     const artifact = registerArtifact(job.artifacts, target);
     retainCandidate(job);
     artifact.state = "validating";
-    try { saveCopy(job, drawn.stamped, target, photograph); }
+    try { saveCopy(job, drawn.stamped, target, { ...photograph, gainMap: image.gainMap }); }
     catch (error) {
         if (error instanceof OperationError) { artifact.state = "building"; }
         throw error;
@@ -151,7 +151,7 @@ function stampOne(job, image, token) {
         const owned = job.sources.capture(source, capturedPath);
         const captured = inspectCaptured(job, owned, source);
         if (!matchesAdmission(image.admission, captured)) { throw new OperationError("The source changed after selection; try again when it is stable."); }
-        return stampCaptured(job, { ...image, source, path: captured.path }, token);
+        return stampCaptured(job, { ...image, source, path: captured.path, gainMap: captured.gainMap }, token);
     } finally { removeOwned(job, capturedPath); }
 }
 

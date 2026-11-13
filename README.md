@@ -93,6 +93,7 @@ Supported formats are JPEG, PNG, HEIC/HEIF, TIFF, WebP and AVIF, in RGB or
 grayscale, with a matching filename extension. Convert other color models, such as
 CMYK, before stamping. Animated and multi-image files, GIF, vectors, documents and
 camera RAW are refused, as are files whose content turns out to be damaged.
+Ultra HDR JPEG photos are stamped as standard-range JPEG copies, without gain maps.
 
 Selected folders are searched recursively. The search skips hidden entries,
 packages, links and earlier stamped copies, and reports entries it cannot read.
@@ -111,9 +112,9 @@ see. A colored stamp on a grayscale image makes the copy RGB, and the copy says 
 
 ## Privacy and safety
 
-**Turning GPS off does not remove location data.** A copy keeps all of the
-metadata its original carried, including coordinates. This is not an
-anonymization tool.
+**Turning GPS off does not remove location data.** Copies retain capture
+metadata, including coordinates, and color profiles. HDR copies omit their gain
+maps. This is not an anonymization tool.
 
 Stamp Images reads only the images you select, works in a private temporary
 folder, and never opens an original for writing. Nothing is sent over the

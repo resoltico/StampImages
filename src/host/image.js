@@ -51,7 +51,7 @@ function composite(job, base, stamp, token) {
  * nowhere else: what is checked afterwards is the file itself.
  */
 function saveCopy(job, stamped, target, source) {
-    const written = savingPath(target);
+    const written = savingPath(target, source.gainMap);
 
     runArgv(
         job.app,

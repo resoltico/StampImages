@@ -44,7 +44,7 @@ jobs:
           retention-days: 14
 
   macos-integration:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 40
     env:
       HOMEBREW_NO_AUTO_UPDATE: "1"

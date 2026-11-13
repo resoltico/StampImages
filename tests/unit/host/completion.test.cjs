@@ -137,3 +137,18 @@ test("the dialog detail ends with the elapsed time and then the version", () => 
     assert.ok(detailOf(result).endsWith(`\n\nElapsed: 1 second\n\nStamp Images ${VERSION}`));
     assert.ok(detailOf(result, { commandLine: true }).endsWith("Elapsed: 1 second"));
 });
+
+
+test("unmapped-loader evidence is available through completion Details", () => {
+    const { showCompletion } = require("../../../src/host/completion.js");
+    const responses = ["Details", "Back", "OK"], seen = [];
+    const app = { displayDialog(message) { seen.push(message); return { buttonReturned: responses.shift() }; } };
+    const result = runOutcome([{ source: "/a.jpg", state: "saved", output: "/a_stamped.jpg", issues: [] }], [{
+        path: "/misnamed.png", code: "unsupported-content", stage: "inspection",
+        reason: "This file's content is not a supported still image; use JPEG, PNG, HEIC, TIFF, WebP or AVIF.",
+        diagnostic: { loader: "gifload" }
+    }]);
+    showCompletion(app, result);
+    assert.match(seen[1], /loader: gifload/u);
+    assert.doesNotMatch(seen[0], /gifload/u);
+});

@@ -45,7 +45,8 @@ Select images or folders in Finder and run Stamp Images. Review any items that
 cannot be included, choose the settings, then click Create. Copies of images
 found in a selected folder are saved in that folder; copies of images selected
 directly are saved beside them, as name_stamped.jpg. Originals are never
-modified.
+modified. Ultra HDR JPEG photos produce standard-range JPEG copies without
+gain maps; capture metadata and color profiles are retained.
 
 Turning GPS off changes only what the stamp shows: every copy keeps the
 location metadata its original carries.

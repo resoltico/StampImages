@@ -117,7 +117,7 @@ function diagnosticLines(value, label = "") {
 
 function showCompletion(app, result) {
     const paths = result.images.flatMap((image) => image.output || image.recovery ? [image.output ?? image.recovery] : []);
-    const diagnostics = [...result.diagnostics, ...result.issues, ...result.images.flatMap((image) => [...image.issues, ...(image.diagnostics ?? [])])];
+    const diagnostics = [...result.diagnostics, ...result.issues, ...result.rejected, ...result.images.flatMap((image) => [...image.issues, ...(image.diagnostics ?? [])])];
     const technical = diagnostics.filter((issue) => issue.diagnostic || issue.stack || issue.code === "observer-fault");
     const buttons = ["OK", ...paths.length ? ["Show in Finder"] : [], ...technical.length ? ["Details"] : []];
     // Details is a detour, not an ending: reading it must not take away Show

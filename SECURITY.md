@@ -44,8 +44,9 @@ alone. Help, version and invalid command-line requests do not run this cleanup.
 
 ## Embedded image metadata
 
-A copy keeps every piece of metadata its original carried, including GPS
-coordinates, whether or not the stamp shows them. A copy is not anonymized: review
+Copies retain capture metadata, including GPS coordinates, whether or not the
+stamp shows them. HDR JPEG copies are standard-range images without gain maps;
+they retain EXIF, ICC, XMP and IPTC metadata. A copy is not anonymized: review
 its metadata before sharing it when location or camera details are sensitive.
 The repository commits no real photographs or coordinates; its fixtures are
 generated.

@@ -17,7 +17,7 @@ concurrency:
 jobs:
   qualify:
     name: Qualify the tagged source
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 40
     env:
       HOMEBREW_NO_AUTO_UPDATE: "1"

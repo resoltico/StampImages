@@ -2,7 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { sourceIssue, sourceFileIssue, sourceIssues, orientedSize, sourceRefusal, matchesAdmission, captureIssue, changedSourceIssue } = require("../../../src/core/source-policy.js");
-const image = { loader: "jpegload", format: "JPEG", width: 400, height: 200, bands: 3, orientation: 1, pages: 1, icc: false, interpretation: "srgb" };
+const image = { loader: "jpegload", format: "JPEG", gainMap: false, width: 400, height: 200, bands: 3, orientation: 1, pages: 1, icc: false, interpretation: "srgb" };
 
 test("file access and empty-file refusals are distinct and precede content inspection", () => {
     assert.equal(sourceFileIssue({ readable: false, size: "0" }).code, "unreadable");
@@ -18,11 +18,7 @@ test("file access and empty-file refusals are distinct and precede content inspe
 test("the source policy owns content codes and user-facing messages", () => {
     assert.deepEqual(sourceIssues(image), []);
     for (const orientation of [1, 2, 3, 4, 5, 6, 7, 8]) { assert.deepEqual(sourceIssues({ ...image, orientation }), []); }
-    for (const loader of ["", "svgload", "pdfload", "pdfiumload"]) {
-        assert.equal(sourceIssues({ ...image, format: undefined, loader })[0].code, "not-an-image");
-    }
-    assert.equal(sourceIssues({ ...image, format: undefined, loader: "not-svgload" })[0].code, "unsupported-content");
-    assert.deepEqual(sourceIssues({ ...image, format: undefined, loader: "gifload" }), [{ code: "unsupported-content", stage: "inspection", message: "This image uses unsupported content; use JPEG, PNG, HEIC, TIFF, WebP or AVIF." }]);
+    assert.equal(sourceIssues({ ...image, format: undefined })[0].code, "not-an-image");
     assert.deepEqual(sourceIssues({ ...image, pages: 2 }), [{ code: "multiple-images", stage: "inspection", message: "This file contains 2 images; only single images are supported." }]);
     for (const patch of [{ width: 0 }, { height: -1 }, { bands: 1.5 }, { pages: NaN }, { orientation: 0 }, { orientation: 9 }]) {
         assert.equal(sourceIssues({ ...image, ...patch })[0].code, "damaged");
@@ -49,7 +45,7 @@ test("capture must match the admitted identity, version and all image facts", ()
     assert.equal(matchesAdmission(admitted, captured), true);
     assert.equal(matchesAdmission(undefined, captured), false);
     assert.equal(matchesAdmission({ identity: "1:2", version: "v1", image: {} }, captured), false);
-    for (const patch of [{ identity: "1:3" }, { version: "v2" }, { width: 401 }, { height: 201 }, { bands: 4 }, { orientation: 2 }, { pages: 2 }, { loader: "pngload" }, { format: "PNG" }, { icc: true }, { interpretation: "b-w" }]) {
+    for (const patch of [{ identity: "1:3" }, { version: "v2" }, { width: 401 }, { height: 201 }, { bands: 4 }, { orientation: 2 }, { pages: 2 }, { loader: "pngload" }, { format: "PNG" }, { icc: true }, { gainMap: true }, { interpretation: "b-w" }]) {
         assert.equal(matchesAdmission(admitted, { ...captured, ...patch }), false);
     }
 });
@@ -84,10 +80,19 @@ test("field regression: color-layout refusal gives a meaningful conversion instr
     const [issue] = sourceIssues({ ...image, interpretation: "cmyk", bands: 4 });
     assert.equal(issue.code, "unsupported-color");
     assert.match(issue.message, /convert.*RGB or grayscale/iu);
-    assert.equal(sourceIssues({ ...image, format: undefined, loader: "gifload" })[0].code, "unsupported-content");
+    assert.equal(sourceIssues({ problem: "unsupported-content", diagnostic: { loader: "gifload" } })[0].code, "unsupported-content");
 });
 
 test("HEIF is admitted only when its supported encoding is confirmed", () => {
     for (const compression of ["hevc", "av1"]) { assert.deepEqual(sourceIssues({ ...image, loader: "heifload", format: "HEIF", compression }), []); }
     for (const compression of [undefined, "", "unknown"]) { assert.equal(sourceIssues({ ...image, loader: "heifload", format: "HEIF", compression })[0].code, "unsupported-content"); }
+});
+
+
+test("unsupported HEIF encoding retains the decoder evidence", () => {
+    assert.deepEqual(sourceIssues({ ...image, loader: "heifload", format: "HEIF", compression: "other" }), [{
+        code: "unsupported-content", stage: "inspection",
+        message: "This file's content is not a supported still image; use JPEG, PNG, HEIC, TIFF, WebP or AVIF.",
+        diagnostic: { loader: "heifload" }
+    }]);
 });

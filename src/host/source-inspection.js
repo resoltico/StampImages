@@ -3,7 +3,7 @@ const { extensionFor } = require("../core/formats.js");
 const { hostError } = require("./cancellation.js");
 const { OperationError, isUserCanceled, errorMessage, commandOf } = require("../core/errors.js");
 const { issuesOf, ISSUE } = require("../core/outcomes.js");
-const { sourceIssues } = require("../core/source-policy.js");
+const { sourceIssues, sourceIssue } = require("../core/source-policy.js");
 const { REQUIRED_FIELDS, OPTIONAL_FIELDS, readMetadata, readMetadataBatch, rawMetadata, finishMetadata,
     optionalValue, scalarValues, fieldAbsent, headerFailureCode } = require("../backend/metadata.js");
 const { buildHeaderArgv, buildFieldArgv, headerGroups } = require("../backend/headers.js");
@@ -118,7 +118,7 @@ function inspectCandidates(app, selection, context) {
     const images = [];
     for (const image of inspected.images) {
         try { images.push({ ...image, extension: extensionFor(image.path, image.admission.image.format, image.admission.image.compression) }); }
-        catch (error) { inspected.rejected.push({ path: image.path, name: image.originalName, reason: error.message, code: "unsupported-content", stage: "inspection" }); }
+        catch (error) { inspected.rejected.push({ path: image.path, name: image.originalName, reason: sourceIssue("unsupported-content").message, code: "unsupported-content", stage: "inspection", diagnostic: { loader: image.admission.image.loader, message: error.message } }); }
     }
     return { ...inspected, images };
 }

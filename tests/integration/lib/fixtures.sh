@@ -78,3 +78,15 @@ require_tools() {
         command -v "$tool" >/dev/null
     done
 }
+
+# ultra_hdr_jpeg <path>: an SDR base plus gain map, made only from synthetic pixels.
+ultra_hdr_jpeg() {
+    local work
+    work=$(mktemp -d)
+    vips black "$work/base.v" 900 600 --bands 3
+    vips linear "$work/base.v" "$work/sdr.v" 1 128 --uchar
+    vips colourspace "$work/sdr.v" "$work/hdr.v" scrgb
+    vips uhdrsave "$work/hdr.v" "$1"
+    rm -rf "$work"
+    test "$(vipsheader -f vips-loader "$1")" = uhdrload
+}

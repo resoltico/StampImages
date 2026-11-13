@@ -25,6 +25,8 @@ const { splitExtension } = require("./naming.js");
 
 const QUALITY = "[Q=90]";
 const LOSSLESS = "";
+// Retain source color/capture metadata while excluding the stale HDR gain map.
+const SDR_JPEG = "[Q=90,keep=exif:icc:xmp:iptc]";
 
 const { SUPPORTED_FORMATS } = require("./paths.js");
 function sourceFormat(path) {
@@ -37,9 +39,10 @@ function extensionFor(path, family, compression) {
     if (!format) { throw new Error("The actual image encoding could not be confirmed as a supported format."); }
     return format.extensions.includes(source.extension.slice(1)) ? source.extension : `.${format.extensions[0]}`;
 }
-function outputFormat(path) {
+function outputFormat(path, gainMap) {
     const { extension, format } = sourceFormat(path);
     if (!format) { throw new Error("Unsupported output format."); }
+    if (format.name === "JPEG" && gainMap === true) { return { extension, options: SDR_JPEG }; }
     return { extension, options: ["PNG", "TIFF"].includes(format.name) ? LOSSLESS : QUALITY };
 }
 
@@ -48,8 +51,8 @@ function outputFormat(path) {
  * on the end of it. Only ever the argument vips is given: everything that
  * asks whether the file is there asks about the path itself.
  */
-function savingPath(targetPath) {
-    return `${targetPath}${outputFormat(targetPath).options}`;
+function savingPath(targetPath, gainMap) {
+    return `${targetPath}${outputFormat(targetPath, gainMap).options}`;
 }
 
 module.exports = { outputFormat, savingPath, extensionFor };

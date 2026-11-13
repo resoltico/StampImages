@@ -53,7 +53,8 @@ Duplicate keys follow `JSON.parse`: the last value wins.
 
 A request must stamp something: a date format, a coordinate format or nonblank
 custom text. `coordinateFormat` controls only what the stamp shows; copies keep the
-location metadata their originals carry.
+location metadata their originals carry. Ultra HDR JPEGs produce standard-range
+JPEG copies without gain maps; capture metadata and color profiles are retained.
 
 ## Receipt and exit status
 
@@ -116,7 +117,8 @@ workspace and is reported as a workspace issue, not as a recovered image.
 ## Issue codes
 
 Every issue and every `rejected` entry carries a `code`, a `stage` and a `message`;
-an issue may also carry `field`, `source` and `diagnostic`.
+an issue may also carry `field`, `source` and `diagnostic`. An `unsupported-content`
+refusal includes `diagnostic.loader`, the vips loader that recognized its content.
 
 | Stage | Codes |
 | --- | --- |

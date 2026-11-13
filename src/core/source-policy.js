@@ -14,7 +14,7 @@ function sourceIssue(code, facts = {}, diagnostic = null) {
             : "This file cannot be read (permission denied).",
         empty: "This file is empty.",
         "not-an-image": "This file is not a supported still raster image.",
-        "unsupported-content": `This image uses unsupported content; use ${supportedFormatList()}.`,
+        "unsupported-content": `This file's content is not a supported still image; use ${supportedFormatList()}.`,
         "unsupported-color": "This image uses an unsupported color model or channel layout; convert it to RGB or grayscale before stamping.",
         "multiple-images": `This file contains ${facts.pages} images; only single images are supported.`,
         damaged: "This image is damaged or incomplete."
@@ -32,10 +32,9 @@ function sourceFileIssue(facts) {
 function sourceIssues(descriptor) {
     if (descriptor.problem) { return [sourceIssue(descriptor.problem, descriptor, descriptor.diagnostic)]; }
     if (!RASTER_FAMILIES.has(descriptor.format)) {
-        const vector = !descriptor.loader || /^(?:svg|pdf)/u.test(descriptor.loader);
-        return [sourceIssue(vector ? "not-an-image" : "unsupported-content")];
+        return [sourceIssue("not-an-image")];
     }
-    if (descriptor.format === "HEIF" && !["hevc", "av1"].includes(descriptor.compression)) { return [sourceIssue("unsupported-content")]; }
+    if (descriptor.format === "HEIF" && !["hevc", "av1"].includes(descriptor.compression)) { return [sourceIssue("unsupported-content", {}, { loader: descriptor.loader })]; }
     if (![descriptor.width, descriptor.height, descriptor.bands, descriptor.pages, descriptor.orientation]
         .every((value) => Number.isSafeInteger(value) && value > 0) || descriptor.orientation > LAST_ORIENTATION) {
         return [sourceIssue("damaged")];

@@ -5,7 +5,8 @@
 The target is macOS 12.3 or later, using JavaScriptCore through osascript or
 Shortcuts. Source syntax is ES2022; esbuild targets Safari 15.4. A separate
 built-in check rejects features unavailable at that floor. These checks do not
-establish native interaction on every supported macOS release.
+establish native interaction on every supported macOS release. Automated native
+CI runs on macOS 26.
 
 Unit tests establish portable rules, application sequencing and adapter calls.
 Native suites establish behavior for the actual generated artifact and host used.
@@ -44,6 +45,9 @@ native form geometry/accessibility in both appearances. `resources.sh` checks
 confirmed temporary recovery and dead/live/retained/unreadable workspace ownership;
 `concurrency.sh` checks 12 two-process publication rounds. CLI and lifecycle probes
 also cover strict settings, statuses, source capture, recovery and cancellation.
+`hdr.sh` checks synthetic Ultra HDR admission, visible stamped SDR JPEGs with no
+gain map/MPF, retained EXIF/GPS and ICC profiles, orientations 6/8, damaged HDR
+and unmapped-loader diagnostics.
 
 Probe entrypoints import production modules and are built by
 `tools/build-probe.mjs` using the production scoped bundler. Ordinary end-to-end tests invoke

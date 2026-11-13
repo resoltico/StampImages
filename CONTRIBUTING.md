@@ -98,6 +98,12 @@ the sibling repository.
   with matching section order in both repositories. Documents describe the current
   state only; history belongs in `CHANGELOG.md`.
 
+HDR admission records a boolean gain-map fact and compares it after capture.
+JPEG output policy uses that fact to omit gain maps while retaining EXIF, ICC,
+XMP and IPTC metadata, so stamped pixels are not boosted by the original map.
+The native HDR suite checks the decoded loader, metadata, stamp pixels and source
+bytes through the production artifact.
+
 ## The released artifact
 
 Do not edit `dist/Stamp-Images.jxa` directly. `tools/scoped-bundle.mjs` uses pinned
@@ -147,10 +153,13 @@ Use vendor release information to choose updates. Pin development dependencies i
 `packageManager` and engines. The consistency gate checks these declarations.
 Keep workflow action references pinned to reviewed vendor commit hashes.
 
-The minimatch and glob overrides keep development tools on patched releases.
+The minimatch and glob overrides keep development tools off releases affected by
+GHSA-g3hv-75wg-m249 and GHSA-3g3m-2fjr-6pw4.
 They move together: glob 13 expects RegExp pattern parts, while minimatch 11
-returns Matcher objects supported by glob 14. Remove these overrides when the
-upstream ESLint and Stryker dependency ranges accept the patched versions.
+returns Matcher objects supported by glob 14. Remove these overrides when
+all upstream ESLint and Stryker dependency ranges exclude every affected version.
+The qs override fixes GHSA-6pq8-jhm2-2vcw in typed-rest-client, whose pinned
+qs 6.15.1 is affected; remove it when its range excludes affected versions.
 
 The Homebrew tools are not pinned at all — CI installs the current ones on
 every run, so a breaking change there surfaces as a failing integration job

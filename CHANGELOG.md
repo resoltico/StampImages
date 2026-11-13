@@ -2,9 +2,10 @@
 
 ## [Unreleased]
 
-- Native tests detach owned disk images by device and verify removal, handling missing exFAT mount paths and preserving work when cleanup cannot be confirmed.
-- Update npm to 12.2.2, glob to 14.0.4 and minimatch to 11.0.5 in the development toolchain.
-- Use literal test assertions instead of partial regex escaping, removing a CodeQL warning without changing application behavior.
+- Ultra HDR JPEG photos are accepted and stamped as standard-range JPEG copies without gain maps; capture metadata and color profiles are retained.
+- Unsupported-content refusals use clearer wording and include the vips loader in receipt diagnostics and completion Details.
+- Contributors must use Node 26.13.1 and npm 12.2.2; restore refreshed development dependencies with `npm ci --ignore-scripts`.
+- Native CI and release qualification run on macOS 26.
 
 ## [2.0.0] - 2026-11-05
 
