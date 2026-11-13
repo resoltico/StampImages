@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 - Licensed under AGPL-3.0-only instead of MPL-2.0: distributing the script or a modified version requires offering its corresponding source; see [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md).
+- Contributions are accepted under the [contribution terms](CONTRIBUTING.md#contribution-terms), which also let Ervins Strauhmanis license them commercially.
 - Ultra HDR JPEG photos are accepted and stamped as standard-range JPEG copies without gain maps; capture metadata and color profiles are retained.
 - Unsupported-content refusals use clearer wording and include the vips loader in receipt diagnostics and completion Details.
 - Contributors must use Node 26.13.1 and npm 12.2.2; restore refreshed development dependencies with `npm ci --ignore-scripts`.
