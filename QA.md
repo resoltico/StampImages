@@ -63,10 +63,13 @@ outputs surviving Stop and reporting faults; occupied files/directories/pipes/li
 remaining untouched; confirmed Downloads recovery and temporary fallback; retained
 unconfirmed candidates; cleanup failures; concurrent publication; stale-owner
 reclamation without deleting retained, unreadable or live workspaces. Required
-filesystem results include APFS, HFS+, FAT32 and exFAT; FAT32 drivers that
-refuse exclusive rename must confirm recovery against an independent primitive
-probe rather than expose a partial final name; inability to attach an image
-is a skipped environment check, never a passing filesystem result.
+filesystem results include APFS, HFS+, FAT32 and exFAT. FAT32 exclusive rename
+is probed independently with free and occupied destinations: supported drivers
+must pass publication and collision checks; unsupported drivers must expose no
+final name and produce a confirmed recovery; unexpected probe errors fail the
+suite. Passing checks remove only the recovered file they confirmed. Inability
+to attach an image is a skipped environment check, never a passing filesystem
+result.
 
 Volume cleanup resolves the owned image's backing partition-map device through
 DiskImages, including when its mount path is gone. It verifies detachment after

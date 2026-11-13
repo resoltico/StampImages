@@ -101,7 +101,7 @@ KEPT=$(kept_copy)
 test -n "$KEPT" || fail "no recovery path was named: $(cat "$WORK/receipt")"
 test -f "$KEPT" || fail "the copy is not where the message says it is: $KEPT"
 test "$(vipsheader -f width "$KEPT")" = 600 || fail "what was kept is not the copy"
-rm -f "$KEPT"
+remove_test_recovery "$KEPT"
 assert_nothing_left_behind "$WORK/readonly"
 test -z "$(find "$WORK/readonly" -name '*_stamped*')" ||
     fail "something was left at the output path"
@@ -132,7 +132,7 @@ assert_nothing_left_behind "$WORK/denied"
 DENIED_KEPT=$(kept_copy)
 test -n "$DENIED_KEPT" || fail "no recovery path was named: $(cat "$WORK/receipt")"
 test -f "$DENIED_KEPT" || fail "the copy is not where the message says it is"
-rm -f "$DENIED_KEPT"
+remove_test_recovery "$DENIED_KEPT"
 chmod -a# 0 "$WORK/denied"
 
 printf 'macOS publication integration passed\n'

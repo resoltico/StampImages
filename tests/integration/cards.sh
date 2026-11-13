@@ -71,10 +71,10 @@ if attach_test_volume "MS-DOS FAT32" "$FAT_NAME" "$FAT_VOLUME"; then
     cp "$WORK/photo.jpg" "$FAT_VOLUME/"
     stamp "$FAT_VOLUME/photo.jpg"
 
-    printf 'primitive control' > "$FAT_VOLUME/primitive-from"
     node "$ROOT/tools/build-probe.mjs" tests/integration/rename-probe.js "$WORK/rename.jxa"
-    PRIMITIVE=$(osascript -l JavaScript "$WORK/rename.jxa" "$FAT_VOLUME/primitive-from" "$FAT_VOLUME/primitive-to")
-    if [ "$PRIMITIVE" = 0 ]; then
+    PRIMITIVE=$(node "$ROOT/tests/integration/lib/exclusive-rename.cjs" "$WORK/rename.jxa" "$FAT_VOLUME")
+    printf 'FAT32 exclusive-rename probe: %s\n' "$PRIMITIVE"
+    if node -e 'process.exit(JSON.parse(process.argv[1]).supported ? 0 : 1)' "$PRIMITIVE"; then
         test -f "$FAT_VOLUME/photo_stamped.jpg" ||
             fail "the copy was not published: $(said)"
         test "$(vipsheader -f width "$FAT_VOLUME/photo_stamped.jpg")" = 600 ||
@@ -94,7 +94,7 @@ if attach_test_volume "MS-DOS FAT32" "$FAT_NAME" "$FAT_VOLUME"; then
         KEPT=$(node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));process.stdout.write(r.images.find(i=>i.state==="recovered")?.recovery??"")' "$WORK/receipt")
         test -n "$KEPT" && test -f "$KEPT" || fail "unsupported FAT32 primitive lost recovery"
         test "$(vipsheader -f width "$KEPT")" = 600 || fail "FAT32 recovery is not the finished image"
-        rm -f "$KEPT"
+        remove_test_recovery "$KEPT"
         assert_nothing_left_behind "$FAT_VOLUME"
         printf 'FAT32 native exclusive rename unavailable; confirmed recovery passed\n'
     fi
@@ -136,7 +136,7 @@ if attach_test_volume "ExFAT" "$EXFAT_NAME" "$EXFAT_VOLUME"; then
     KEPT=$(node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));process.stdout.write(r.images.find(i=>i.state==="recovered")?.recovery??"")' "$WORK/receipt")
     test -n "$KEPT" || fail "no recovery path was named: $REFUSAL"
     test "$(vipsheader -f width "$KEPT")" = 600 || fail "what was kept is not the copy"
-    rm -f "$KEPT"
+    remove_test_recovery "$KEPT"
 
     # A missing mount path does not establish that its image was detached.
     diskutil unmount "$EXFAT_VOLUME"

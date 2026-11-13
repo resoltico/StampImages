@@ -66,3 +66,17 @@ assert_nothing_left_behind() {
     test -z "$(find "$1" -maxdepth 1 -name '.StampImages-*')" ||
         fail "a staging place was left in $1: $(ls -a "$1")"
 }
+
+# remove_test_recovery <path>
+#
+# Removes one recovered copy a passing test has finished checking, and the
+# private temporary folder that held it when that is where it was kept. Never
+# a Downloads folder, and never anything recursively.
+remove_test_recovery() {
+    local recovered=$1 parent
+    parent=$(dirname "$recovered")
+    rm -f -- "$recovered"
+    case "$parent" in
+        */StampImages-recovered.*) rmdir "$parent" ;;
+    esac
+}

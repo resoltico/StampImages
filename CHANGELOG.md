@@ -5,7 +5,6 @@
 - Ultra HDR JPEG photos are accepted and stamped as standard-range JPEG copies without gain maps; capture metadata and color profiles are retained.
 - Unsupported-content refusals use clearer wording and include the vips loader in receipt diagnostics and completion Details.
 - Contributors must use Node 26.13.1 and npm 12.2.2; restore refreshed development dependencies with `npm ci --ignore-scripts`.
-- Native CI and release qualification run on macOS 26.
 
 ## [2.0.0] - 2026-11-05
 
