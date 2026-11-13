@@ -124,3 +124,7 @@ test("flat CLI string argv cannot enter interactive collection", () => {
     assert.equal(isCliInput([["/photo.jpg"], {}]), false);
     assert.equal(isCliInput([{}]), false); assert.equal(isCliInput(null), false);
 });
+
+test("only a string that starts as a file URL is decoded", () => {
+    assert.equal(decodeFileUrl("xfile:///a.png"), "");
+});

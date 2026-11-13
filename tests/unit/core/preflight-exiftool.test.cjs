@@ -55,3 +55,7 @@ test("every part of the answer has to be there, and one part has to not be", () 
     );
     assert.equal(isExiftoolUsable('[{"SourceFile":"/x"}]'), true);
 });
+
+test("an array-like object is not the list exiftool answers with", () => {
+    assert.equal(isExiftoolUsable('{"length": 1, "0": {"SourceFile": "/x"}}'), false);
+});

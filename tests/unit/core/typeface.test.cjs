@@ -12,7 +12,7 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { faceOf } = require("../../../src/core/typeface.js");
+const { faceOf, nearestFamily, sameName } = require("../../../src/core/typeface.js");
 const {
     resolved,
     inWords
@@ -140,4 +140,12 @@ test("a PostScript name is answered with the name this takes, not a claim the Ma
     assert.match(resolved(known, " HelveticaNeue-Bold ").problem,
         /PostScript name[\s\S]*Name it as Font Book does: "Helvetica Neue Bold"\./u);
     assert.match(resolved(known, "Nope Sans").problem, /This Mac has no typeface called "Nope Sans"/u);
+});
+
+test("the nearest family is a strict prefix of the name, joined by spaces, or nothing", () => {
+    const known = catalogOf();
+    assert.deepEqual(nearestFamily(known, "Helvetica Neue Wide"), { family: "Helvetica Neue", rest: "Wide" });
+    assert.deepEqual(nearestFamily(known, "Menlo"), { family: "", rest: "" });
+    assert.deepEqual(nearestFamily(known, "Nothing Known"), { family: "", rest: "" });
+    assert.equal(sameName("  menlo ", "MENLO"), true);
 });

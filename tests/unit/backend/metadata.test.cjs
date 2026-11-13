@@ -133,3 +133,43 @@ test("HEIF compression is parsed and scalar-confirmed independently of filename"
     assert.equal(optionalValue(parsed.raw, "heif-compression", " HEVC ").compression, "hevc");
     assert.equal(optionalValue(parsed.raw, "heif-compression", undefined).compression, undefined);
 });
+
+test("every mapped loader states whether it carries an HDR gain map", () => {
+    for (const [loader, format, gainMap] of [["jpegload", "JPEG", false], ["uhdrload", "JPEG", true], ["uhdrload_buffer", "JPEG", true],
+        ["pngload", "PNG", false], ["tiffload", "TIFF", false], ["heifload", "HEIF", false], ["webpload", "WebP", false]]) {
+        const { raw } = readMetadata(base.replace("jpegload", loader));
+        assert.deepEqual([raw.format, raw.gainMap, raw.problem], [format, gainMap, undefined], loader);
+    }
+});
+
+test("an unmapped loader is refused with its name, while a vector or missing loader is not an image", () => {
+    const { raw: gif } = readMetadata(base.replace("jpegload", "gifload"));
+    assert.deepEqual([gif.format, gif.gainMap, gif.problem, gif.diagnostic], [undefined, false, "unsupported-content", { loader: "gifload" }]);
+    for (const loader of ["svgload", "pdfload", "pdfload_source"]) {
+        const { raw } = readMetadata(base.replace("jpegload", loader));
+        assert.deepEqual([raw.problem, raw.diagnostic], ["not-an-image", undefined], loader);
+    }
+    const { raw: missing } = readMetadata("width: 1\n");
+    assert.deepEqual([missing.problem, missing.diagnostic], ["not-an-image", undefined]);
+});
+
+test("a damaged-metadata refusal carries the parser's own words", () => {
+    assert.throws(() => readMetadata(`${base}bands: 4\n`), (error) =>
+        error.issues.length === 1 && error.issues[0].code === "damaged" &&
+        error.issues[0].diagnostic.message === "Duplicate image metadata field: bands");
+});
+
+test("HEIF compression is normalized to lower case without framing", () => {
+    assert.equal(readMetadata(`${base.replace("jpegload", "heifload")}heif-compression:  HEVC \n`).raw.compression, "hevc");
+});
+
+test("only a response that starts with the exact filename loses its first line", () => {
+    assert.equal(readMetadata(base, "/elsewhere.png").raw.width, 400);
+    assert.equal(readMetadata("width: 5", "width").raw.width, 0);
+});
+
+test("batch headers accept single-digit dimensions and wider separators", () => {
+    const paths = ["/a.png", "/b.png"];
+    const block = (path, gap) => `${path}:${gap}4x2 uchar, 3 bands, srgb, jpegload\n${base.split("\n").filter(Boolean).map((line) => `${path}: ${line}`).join("\n")}\n`;
+    assert.deepEqual(readMetadataBatch(`${block(paths[0], " ")}${block(paths[1], "  ")}`, paths).map((entry) => entry.raw.width), [400, 400]);
+});

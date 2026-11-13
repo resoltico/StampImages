@@ -118,3 +118,8 @@ test("an unrecognized format writes nothing rather than something wrong", () => 
         undefined
     );
 });
+
+test("each requested fact a photograph lacks is named as missing", () => {
+    assert.deepEqual(inscriptionFor({}, settings({ customText: "Riga" })).missing, ["date/time", "GPS coordinates"]);
+    assert.deepEqual(inscriptionFor({ GPSLatitude: 56.9496, GPSLongitude: 24.1052 }, settings({ customText: "Riga" })).missing, ["date/time"]);
+});
