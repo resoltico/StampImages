@@ -46,8 +46,9 @@ confirmed temporary recovery and dead/live/retained/unreadable workspace ownersh
 `concurrency.sh` checks 12 two-process publication rounds. CLI and lifecycle probes
 also cover strict settings, statuses, source capture, recovery and cancellation.
 `hdr.sh` checks synthetic Ultra HDR admission, visible stamped SDR JPEGs with no
-gain map/MPF, retained EXIF/GPS and ICC profiles, orientations 6/8, damaged HDR
-and unmapped-loader diagnostics.
+gain map/MPF or stale HDR XMP declarations, retained EXIF/GPS, ICC, XMP and IPTC,
+orientations 6/8, damaged HDR
+and unmapped-loader diagnostics. A metadata-write failure must publish no copy.
 
 Probe entrypoints import production modules and are built by
 `tools/build-probe.mjs` using the production scoped bundler. Ordinary end-to-end tests invoke

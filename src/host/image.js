@@ -2,6 +2,7 @@
 const { OperationError } = require("../core/errors.js");
 
 const { buildCompositeArgv, buildFlattenArgv } = require("../backend/commands.js");
+const { buildMetadataCopyArgv } = require("../backend/metadata-copy.js");
 const { savingPath } = require("../core/formats.js");
 const { runArgv } = require("./shell.js");
 const { verifyFileWritten } = require("./asking.js");
@@ -60,6 +61,9 @@ function saveCopy(job, stamped, target, source) {
             : buildFlattenArgv(job.tools.vips, stamped, written),
         "saving the stamped copy"
     );
+    if (source.gainMap) {
+        runArgv(job.app, buildMetadataCopyArgv(job.tools.exiftool, source.metadataSource, target), "retaining image metadata");
+    }
     verifyFileWritten(job.app, target, "the stamped copy");
 
     /*

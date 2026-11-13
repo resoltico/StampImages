@@ -46,7 +46,8 @@ alone. Help, version and invalid command-line requests do not run this cleanup.
 
 Copies retain capture metadata, including GPS coordinates, whether or not the
 stamp shows them. HDR JPEG copies are standard-range images without gain maps;
-they retain EXIF, ICC, XMP and IPTC metadata. A copy is not anonymized: review
+they retain EXIF/GPS, ICC profiles, IPTC and XMP apart from HDR/gain-map/container
+declarations. A copy is not anonymized: review
 its metadata before sharing it when location or camera details are sensitive.
 The repository commits no real photographs or coordinates; its fixtures are
 generated.

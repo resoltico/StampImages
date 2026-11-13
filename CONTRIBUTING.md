@@ -101,6 +101,8 @@ the sibling repository.
 HDR admission records a boolean gain-map fact and compares it after capture.
 JPEG output policy uses that fact to omit gain maps while retaining EXIF, ICC,
 XMP and IPTC metadata, so stamped pixels are not boosted by the original map.
+Because uhdrload omits XMP/IPTC, those fields are copied from the captured source
+before final validation, with HDR/gain-map/container namespaces removed.
 The native HDR suite checks the decoded loader, metadata, stamp pixels and source
 bytes through the production artifact.
 

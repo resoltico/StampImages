@@ -89,7 +89,7 @@ function produce(job, image, token, intermediates) {
     const artifact = registerArtifact(job.artifacts, target);
     retainCandidate(job);
     artifact.state = "validating";
-    try { saveCopy(job, drawn.stamped, target, { ...photograph, gainMap: image.gainMap }); }
+    try { saveCopy(job, drawn.stamped, target, { ...photograph, gainMap: image.gainMap, metadataSource: image.path }); }
     catch (error) {
         if (error instanceof OperationError) { artifact.state = "building"; }
         throw error;
