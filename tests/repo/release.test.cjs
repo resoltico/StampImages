@@ -5,8 +5,8 @@ const { readFile } = require("node:fs/promises");
 
 function checkBanner(release) {
     assert.match(release, /^\/\*\n \* Stamp Images \d+\.\d+\.\d+\n/u);
-    assert.match(release, /SPDX-License-Identifier: MPL-2\.0/u);
-    assert.match(release, /Source Code Form: https:\/\/github\.com\/resoltico\/StampImages/u);
+    assert.match(release, /SPDX-License-Identifier: AGPL-3\.0-only/u);
+    assert.match(release, /Corresponding Source: https:\/\/github\.com\/resoltico\/StampImages/u);
     assert.match(release, /Requires macOS 12\.3 or later/u);
 }
 

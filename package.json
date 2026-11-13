@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "private": true,
   "description": "Source, build, QA, and release scaffolding for an exiftool + vips macOS Finder Quick Action",
-  "license": "MPL-2.0",
+  "license": "AGPL-3.0-only",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/resoltico/StampImages.git"

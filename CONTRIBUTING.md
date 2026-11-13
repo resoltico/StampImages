@@ -115,7 +115,7 @@ The artifact needs no Node or external JavaScript modules at runtime.
 
 `tools/build-probe.mjs` builds explicit native test entrypoints with the same
 bundler options. End-to-end tests must also invoke the actual production artifact.
-First-party contributions use MPL 2.0; preserve notices and third-party licenses.
+First-party files use `AGPL-3.0-only` ([LICENSE](LICENSE)); preserve notices and third-party licenses.
 Edit sources, run `npm run release`, and review sources plus generated output.
 `INSTALL.txt` remains plain text because it ships as a downloadable release asset.
 
@@ -166,3 +166,13 @@ qs 6.15.1 is affected; remove it when its range excludes affected versions.
 The Homebrew tools are not pinned at all — CI installs the current ones on
 every run, so a breaking change there surfaces as a failing integration job
 rather than as a silent drift.
+
+## Contribution rights
+
+Before merging an outside original contribution, obtain and retain documented
+permission from its rights holder covering both the public AGPL grant and the
+intended separate commercial licensing route described in
+[LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md). Contributor commercial terms are
+not yet settled; until they are, do not merge such contributions without that
+permission. Submitting a pull request, a sign-off, a bot identity or a coauthor
+trailer does not establish it. Third-party dependencies keep their own terms.
