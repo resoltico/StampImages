@@ -156,3 +156,26 @@ test("unmapped-loader evidence is available through completion Details", () => {
     assert.match(seen[1], /loader: gifload/u);
     assert.doesNotMatch(seen[0], /gifload/u);
 });
+
+test("a plain stopped run offers no empty Details and empty values stay out of diagnostic text", () => {
+    const { diagnosticLines, showCompletion } = require("../../../src/host/quick-action/completion.js");
+    const { createFakeApp } = require("./fake-app.cjs");
+    const app = createFakeApp();
+    const stopped = runOutcome([{ source: "/a.jpg", state: "canceled", issues: [{ code: "canceled", stage: "stamping", message: "User canceled.", diagnostic: { command: "", stack: "private stack" } }], missingMetadata: [] }]);
+    assert.equal(describe(stopped), "Stopped. No stamped copy was created.");
+    showCompletion(app, stopped);
+    assert.deepEqual(app.dialogs[0].options.buttons, ["OK"]);
+    assert.deepEqual(diagnosticLines({ empty: "", whitespace: " \t", missing: undefined, none: null, zero: 0, disabled: false }), ["zero: 0", "disabled: false"]);
+});
+
+test("meaningful per-image diagnostic fields retain Details even when their values are zero or false", () => {
+    const { showCompletion } = require("../../../src/host/quick-action/completion.js");
+    const { createFakeApp } = require("./fake-app.cjs");
+    const app = createFakeApp();
+    const answers = ["Details", "Back", "OK"];
+    app.displayDialog = (message, options) => { app.dialogs.push({ message, options }); return { buttonReturned: answers.shift() }; };
+    const result = runOutcome([{ source: "/a.jpg", state: "failed", issues: [], diagnostics: [{ code: "inspection-detail", count: 0, retry: false, empty: "", stack: "private" }], missingMetadata: [] }]);
+    showCompletion(app, result);
+    assert.match(app.dialogs[1].message, /count: 0\nretry: false/u);
+    assert.doesNotMatch(app.dialogs[1].message, /empty:|private/u);
+});

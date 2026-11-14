@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Completion omits empty diagnostic values and no longer offers Details for a plain stop with no useful technical information.
+
 - `elapsed` now measures image processing time, excluding setup, source inspection and time spent in settings or review dialogs.
 
 - Setup refusals now use receipt state `invalid` with exit 3 and a tool-specific headline; unusable `vipsheader` and invalid overrides are refused before image admission.
