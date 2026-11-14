@@ -16,6 +16,11 @@ function stampWithMetadata(ports, image, index, record) {
     if (!metadataKnown) { throw new TypeError("The stamp port did not supply its metadata facts."); }
     return made;
 }
+function finishedCopyFacts(made) {
+    if (typeof made.locationRetained !== "boolean") { throw new TypeError("A validated copy must report whether GPS metadata was retained."); }
+    return { crowded: made.crowded, unconverted: made.unconverted, expanded: made.expanded,
+        substituted: Boolean(made.substituted), locationRetained: made.locationRetained };
+}
 function executeImage(ports, image, index) {
     const record = { source: image.path, state: "building", issues: [], missingMetadata: [] };
     try {
@@ -23,7 +28,7 @@ function executeImage(ports, image, index) {
         const made = stampWithMetadata(ports, image, index, record);
         if (made.nothing) { Object.assign(record, { state: "nothing-to-stamp", reason: made.nothing }); }
         else {
-            Object.assign(record, { crowded: made.crowded, unconverted: made.unconverted, expanded: made.expanded, substituted: Boolean(made.substituted) });
+            Object.assign(record, finishedCopyFacts(made));
             const saved = ports.publish(made.staged, image);
             Object.assign(record, { state: "saved", output: saved.path });
             record.issues.push(...saved.issues);

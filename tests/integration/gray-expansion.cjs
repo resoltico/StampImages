@@ -1,4 +1,5 @@
 "use strict";
+const { parseReceipt } = require("./lib/receipt.cjs");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -108,7 +109,7 @@ for (const palette of palettes) {
     const settings = { ...JSON.parse(fs.readFileSync(baseConfig, "utf8")), textColor: palette.textColor, outlineColor: palette.outlineColor, outlineWidth: palette.outlineWidth };
     const config = path.join(work, `${palette.name}.json`); fs.writeFileSync(config, JSON.stringify(settings));
     const result = run("/usr/bin/osascript", ["-l", "JavaScript", artifact, "--", "--headless", config, input]);
-    const receipt = JSON.parse(result.toString()); assert.equal(receipt.state, "complete"); assert.equal(receipt.images.length, forms.length);
+    const receipt = parseReceipt(result.toString()); assert.equal(receipt.state, "complete"); assert.equal(receipt.images.length, forms.length);
     for (const spec of forms) { verify(spec, receipt.images.find(record => record.source === spec.path), palette.active); }
     console.log(JSON.stringify({ grayscalePalette: palette.name, records: forms.length, sourceDepthAlphaPixelsProfilesChecked: true }));
 }

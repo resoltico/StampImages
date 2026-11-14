@@ -46,7 +46,8 @@ function notesOf(image) {
         image.crowded ? "The margin was reduced to keep the stamp on the selected side of the image." : "",
         image.expanded ? "Written in color from a grayscale original." : "",
         image.substituted ? "Some characters are not in the chosen typeface and were drawn in another one." : "",
-        image.unconverted ? "The caption color could not be converted to the image's color profile." : ""
+        image.unconverted ? "The caption color could not be converted to the image's color profile." : "",
+        image.locationRetained ? "Embedded GPS metadata was retained." : ""
     ].filter(Boolean);
 }
 

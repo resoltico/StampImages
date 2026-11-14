@@ -1,4 +1,5 @@
 "use strict";
+const { parseReceipt } = require("./lib/receipt.cjs");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -67,13 +68,14 @@ function noPrivateFields(value) {
 }
 const settings = { font: "Menlo", size: 24, textColor: "#FFFFFF", outlineColor: "#000000", outlineWidth: 0, position: "bottom-right", margin: 24, dateFormat: "none", coordinateFormat: "decimal", customText: "GPS" };
 let sequence = 0;
-function stamp(file, config = {}, env = {}) {
+function stamp(file, config = {}, env = {}, retained = true) {
     const configPath = at(`settings-${sequence}.json`); sequence += 1;
     fs.writeFileSync(configPath, JSON.stringify({ ...settings, ...config }));
     const before = digest(file);
     const result = spawnSync("/usr/bin/osascript", ["-l", "JavaScript", artifact, "--", "--headless", configPath, file], { encoding: "utf8", timeout: 60000, killSignal: "SIGKILL", env: { ...process.env, ...env } });
     assert.ifError(result.error); assert.equal(result.signal, null, result.stderr); assert.equal(digest(file), before);
-    const receipt = JSON.parse(result.stdout); assert.equal(receipt.images.length, 1);
+    const receipt = parseReceipt(result.stdout); assert.equal(receipt.images.length, 1);
+    if (receipt.images[0].state === "saved") { assert.equal(receipt.images[0].locationRetained, retained); if (retained) { assert.match(result.stderr, /Embedded GPS metadata was retained\./u); } else { assert.doesNotMatch(result.stderr, /Embedded GPS metadata was retained/u); } }
     noPrivateFields(receipt);
     fs.writeFileSync(at(`receipt-${sequence}.json`), result.stdout); fs.writeFileSync(at(`report-${sequence}.txt`), result.stderr);
     return { result, receipt, image: receipt.images[0] };
@@ -109,7 +111,7 @@ for (const file of manifest.files.filter(row => row.format !== "jpg" && ["valid-
     assert.deepEqual(comparable(readGpsRecord({ path: made.image.output }, run, exiftool)), comparable(verified.rows.find(row => row.path === file.path).readback));
     if (file.name === "bad-refs") { assert.deepEqual(made.image.invalidMetadata, ["GPS coordinates"]); }
 }
-const clean = stamp(manifest.bases.find(row => row.format === "png").path, { coordinateFormat: "none" });
+const clean = stamp(manifest.bases.find(row => row.format === "png").path, { coordinateFormat: "none" }, {}, false);
 assert.equal(clean.result.status, 0, clean.result.stderr); assert.equal(clean.image.state, "saved");
 const wrapper = at("controlled-exiftool");
 fs.writeFileSync(wrapper, `#!/usr/bin/env node\nrequire(${JSON.stringify(require.resolve("./lib/metadata-failure.cjs"))}).runMetadataFailure(process.argv.slice(2));\n`); fs.chmodSync(wrapper, 0o755);

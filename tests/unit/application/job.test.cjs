@@ -5,7 +5,9 @@ const { runJob, executeImage } = require("../../../src/application/job.js");
 const { IssueError, OperationError, UserCanceled, isUserCanceled } = require("../../../src/core/errors.js");
 const images = [{ path: "/a/photo.png" }, { path: "/b/photo.png" }, { path: "/c/photo.png" }];
 function stamped(made, inscription = {}) {
-    return (image, index, metadataReady) => { metadataReady(inscription); return made; };
+    // Synthetic finished copies have independently declared no-GPS facts unless overridden.
+    const finished = made.nothing ? made : { crowded: false, expanded: false, unconverted: false, locationRetained: false, ...made };
+    return (image, index, metadataReady) => { metadataReady(inscription); return finished; };
 }
 function fixture(overrides = {}) {
     const events = [];
@@ -161,7 +163,7 @@ test("an early throwing stamp preserves its original failure and makes no input-
     assert.equal(Object.hasOwn(result, "invalidMetadata"), false);
 });
 test("missing or duplicate required metadata handoffs are faults before publication", () => {
-    for (const stamp of [() => ({ staged: "/ready" }), (image, index, metadataReady) => { metadataReady({}); metadataReady({}); return { staged: "/ready" }; }]) {
+    for (const stamp of [() => ({ staged: "/ready", locationRetained: false }), (image, index, metadataReady) => { metadataReady({}); metadataReady({}); return { staged: "/ready", locationRetained: false }; }]) {
         let published = 0;
         const result = runJob(fixture({ stamp, publish() { published += 1; } }).ports, images);
         assert.equal(result.images[0].state, "failed"); assert.equal(result.images[0].issues[0].code, "fault");
@@ -186,8 +188,25 @@ test("a stop after metadata handoff keeps known omissions and the existing cance
     assert.equal(result.images[1].state, "not-started"); assert.equal(Object.hasOwn(result.images[0], "crowded"), false);
 });
 test("publication failure retains both known input metadata and finished appearance facts", () => {
-    const result = executeImage(fixture({ stamp: stamped({ staged: "/ready", crowded: true, expanded: false, unconverted: false },
+    const result = executeImage(fixture({ stamp: stamped({ staged: "/ready", crowded: true, expanded: false, unconverted: false, locationRetained: true },
         { missing: ["GPS coordinates"], invalid: ["GPS coordinates"] }), publish() { throw new OperationError("Destination unavailable."); } }).ports, images[0], 0);
     assert.equal(result.state, "failed"); assert.deepEqual(result.invalidMetadata, ["GPS coordinates"]);
     assert.equal(result.crowded, true); assert.equal(result.expanded, false);
+});
+
+test("validated retention facts survive publication failure without source-presence inference", () => {
+    for (const locationRetained of [false, true]) {
+        const result = executeImage(fixture({ stamp: stamped({ staged: "/ready", locationRetained }), publish() { throw new OperationError("Destination refused."); } }).ports, images[0], 0);
+        assert.equal(result.state, "failed"); assert.equal(result.locationRetained, locationRetained);
+    }
+});
+test("an absent or wrong typed finished-copy retention proof is a fault before publish", () => {
+    for (const value of [undefined, null, 0, "false"]) {
+        let published = false;
+        const result = executeImage(fixture({ stamp(image, index, metadataReady) { metadataReady({}); return { staged: "/ready", locationRetained: value }; },
+            publish() { published = true; } }).ports, images[0], 0);
+        assert.equal(result.state, "failed"); assert.equal(result.issues[0].code, "fault");
+        assert.match(result.issues[0].message, /must report whether GPS metadata was retained/u); assert.equal(published, false);
+        assert.equal(Object.hasOwn(result, "locationRetained"), false);
+    }
 });

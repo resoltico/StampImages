@@ -146,7 +146,9 @@ receipt reports the actual saved representation.
 
 ## Privacy and safety
 
-**Turning GPS off does not remove location data.** Copies retain capture
+**Turning GPS off does not remove location data.** Completion reports verified
+retained GPS metadata even for caption-only copies. The CLI receipt carries
+`locationRetained`; it does not claim the coordinates are valid. Copies retain capture
 metadata, including coordinates, and color profiles. HDR copies omit their gain
 maps. This is not an anonymization tool.
 

@@ -108,6 +108,7 @@ function produce(job, image, token, intermediates) {
         crowded: drawn.crowded,
         unconverted: drawn.unconverted,
         expanded: expandedColor(image.admission.image, saved),
+        locationRetained: saved.locationRetained,
         substituted: substituted(job, image.inscription.lines)
     };
 }

@@ -146,7 +146,10 @@ UTF-8 byte limits can shorten the stem while reserving collision suffix room.
 ## Image records
 
 Each record has the image's full `source` path, `state`, `issues` and
-`missingMetadata`.
+`missingMetadata`. An optional per-image `diagnostics` array records observer
+failures without changing a confirmed output. Diagnostics carry `code` and
+`message`, may carry `stage`, and retain other structured context except `stack`.
+The same diagnostic shape applies to run-level diagnostics.
 
 | State | Meaning |
 | --- | --- |
@@ -167,6 +170,10 @@ Input omissions/classification are retained once metadata inspection completes, 
 if rendering or metadata copying later fails. Early failures make no invalid-field
 claim. Appearance notes describe only a fully validated finished copy.
 
+The stderr reminder "Embedded GPS metadata was retained." uses the verified
+finished-copy fact even for caption-only runs or `coordinateFormat: "none"`.
+It is informational and does not make a complete run incomplete.
+
 GPS validation uses original unsigned EXIF rational components and explicit N/S/E/W
 references. Minutes and seconds must be below 60, denominators positive, and poles
 within bounds. If either EXIF coordinate is recorded, its whole pair takes precedence;
@@ -175,7 +182,9 @@ coordinates need their intrinsic hemisphere. Invalid recorded GPS is listed in
 `invalidMetadata` and omitted from visible text. A copy that cannot retain the
 original GPS metadata without normalization fails instead of publishing changed data.
 
-Saved and recovered records also carry appearance notes, each `true` or `false`:
+Finished-copy facts are booleans. They are present on saved/recovered records and
+remain on failed/canceled records when a fully validated copy reached publication.
+Unbuilt and nothing-to-stamp records omit them:
 
 | Note | Meaning |
 | --- | --- |
@@ -183,6 +192,7 @@ Saved and recovered records also carry appearance notes, each `true` or `false`:
 | `expanded` | A grayscale original was saved with RGB channels, determined from the actual final copy |
 | `unconverted` | The image's color profile could not be read; colors were drawn in sRGB |
 | `substituted` | Some characters were not in the typeface and were drawn in another one |
+| `locationRetained` | Verified finished metadata contains GPS tags, including incomplete/invalid coordinates; this does not mean the coordinates are valid |
 
 A `recovery` path may be in Downloads, a temporary copy, or the retained workspace;
 the record's issues say which. A copy whose validation faulted stays in its
@@ -190,8 +200,11 @@ workspace and is reported as a workspace issue, not as a recovered image.
 
 ## Issue codes
 
-Every issue and every `rejected` entry carries a `code`, a `stage` and a `message`;
-an issue may also carry `field`, `source` and `diagnostic`. An `unsupported-content`
+Every issue carries `code`, `stage` and `message`; it may also carry `field`,
+`source` and `diagnostic`. Each `rejected` or `excluded` entry instead carries
+`path`, `name`, `reason`, `code` and `stage`, and may carry `diagnostic`. An unresolved
+request can have an empty `path` while `name` retains its requested spelling.
+An `unsupported-content`
 refusal includes `diagnostic.loader`, the vips loader that recognized its content.
 
 | Stage | Codes |
@@ -216,6 +229,10 @@ only. Software faults (`fault`), cleanup failures and a stop end the run; remain
 images are `not-started`. Confirmed copies are kept in every case.
 
 `empty-stamp` identifies `customText` at the `settings` stage.
+
+A `workspace` issue with code `retained` reports current private work that could
+not safely be removed. Observer/reporting diagnostics remain technical context;
+these do not introduce a serialized `fatal` flag.
 
 ## Tool overrides
 

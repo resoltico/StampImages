@@ -200,3 +200,15 @@ test("temporary-root scan, optional observer and malformed diagnostics stay tech
     }
     assert.doesNotMatch(reportText(runOutcome([saved])), /Temporary work:/u);
 });
+
+
+test("verified retained GPS adds an informational reminder without changing run state", () => {
+    for (const state of ["saved", "recovered"]) {
+        const image = { source: "/source.jpg", state, issues: [], missingMetadata: [], locationRetained: true,
+            ...state === "saved" ? { output: "/output.jpg" } : { recovery: "/private/kept.jpg" } };
+        const outcome = runOutcome([image]);
+        assert.match(reportText(outcome), /Embedded GPS metadata was retained\./u);
+        if (state === "saved") { assert.equal(outcome.state, "complete"); }
+        assert.doesNotMatch(reportText(runOutcome([{ ...image, locationRetained: false }])), /Embedded GPS metadata/u);
+    }
+});

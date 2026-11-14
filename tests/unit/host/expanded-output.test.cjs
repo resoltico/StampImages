@@ -24,7 +24,7 @@ function fixture(original, saved, failure = null, planned = false) {
         "./image.js": { composite: () => "/work/drawn.v", saveCopy(unused, drawn, target) {
             assert.equal(job.artifacts.get(target).state, "validating");
             if (failure) { throw failure; }
-            return saved;
+            return { ...saved, locationRetained: false };
         } }
     };
     const loaded = new Module(filename), normal = createRequire(filename);

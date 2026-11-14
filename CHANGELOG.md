@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Receipts add `locationRetained` for validated finished copies, and completion reminds you when GPS metadata remains even with visible coordinates off.
+- Receipt documentation distinguishes selection `reason` from issue `message` and describes observer diagnostics without stack traces.
+
 - ExifTool must support typed JSONQ metadata projections; incompatible installations or overrides are refused at setup.
 - GPS with invalid references or components is reported and left off the stamp; copies preserve original GPS values without normalization or fail safely.
 - Known missing or invalid metadata remains reported when a later rendering or metadata-copy step fails.

@@ -157,3 +157,9 @@ and physical TIFF tag checks verify the inputs and unchanged decoded pixels. Act
 copy builders retain raw values or refuse unsupported wire structures; product
 copies omit invalid visible coordinates while retaining known input classifications.
 Live native setter/readback failures and missing/wrong target echoes publish nothing.
+
+The receipt schema checks actual serialized native ledgers alongside existing pixel,
+source, ownership and exit checks. It distinguishes issue `message` from entry
+`reason`, known input omissions from finished-copy booleans, and rejects nested
+stack keys. GPS-retention tests include disabled coordinates, caption-only copies,
+invalid-but-retained GPS, metadata-free copies and unbuilt failures.

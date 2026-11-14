@@ -139,7 +139,7 @@ test("original replacement before Downloads release preserves its named candidat
 
 function imageRun(job) {
     const { runJob } = require("../../../src/application/job.js");
-    return runJob({ begin: () => undefined, stamp: (image, index, metadataReady) => { metadataReady({}); return { staged }; }, publish: () => publishImage(job, staged, target),
+    return runJob({ begin: () => undefined, stamp: (image, index, metadataReady) => { metadataReady({}); return { staged, locationRetained: false }; }, publish: () => publishImage(job, staged, target),
         cleanup: () => [], completed: () => undefined }, [{ path: "/in/a.png" }, { path: "/in/b.png" }]);
 }
 

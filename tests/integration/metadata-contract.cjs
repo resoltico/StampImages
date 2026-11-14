@@ -1,4 +1,5 @@
 "use strict";
+const { parseReceipt } = require("./lib/receipt.cjs");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -20,7 +21,7 @@ function stamp(file, status = 0, environment = {}) {
     const result = spawnSync("osascript", ["-l", "JavaScript", script, "--", "--headless", at("metadata-settings.json"), file], { encoding: "utf8", env: { ...process.env, ...environment }, timeout: 120000 });
     assert.ifError(result.error);
     assert.equal(result.status, status, `${result.stdout}\n${result.stderr}`);
-    return JSON.parse(result.stdout);
+    return parseReceipt(result.stdout);
 }
 function metadata(file) {
     return JSON.parse(native("exiftool", ["-j", "-n", "-a", "-G1", "-DateTimeOriginal", "-GPSLatitude", "-GPSLongitude", "-Make", "-Model", "-ExposureTime", "-FNumber", "-Orientation", "-ExifImageWidth", "-ExifImageHeight", "-XMP-tiff:ImageWidth", "-XMP-tiff:ImageHeight", "-XMP-dc:Title", "-XMP-hdrgm:Version", file]))[0];

@@ -1,4 +1,5 @@
 "use strict";
+const { parseReceipt } = require("./lib/receipt.cjs");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -67,6 +68,6 @@ const proseResult = withBrokenPipe("report-pipe", (descriptor) => spawnSync("/us
     { encoding: "utf8", stdio: ["ignore", "pipe", descriptor], timeout: 30000, killSignal: "SIGKILL" }));
 verified(proseResult, prose);
 assert.ok(proseResult.status !== 0 || proseResult.signal !== null, "the first transport refusal remains nonzero");
-const receipt = JSON.parse(proseResult.stdout);
+const receipt = parseReceipt(proseResult.stdout);
 assert.equal(receipt.state, "complete"); assert.equal(receipt.images[0].output, prose.output);
 console.log("macOS CLI transport passed: closed output, prebroken output pipe, prebroken report pipe and published/source integrity");

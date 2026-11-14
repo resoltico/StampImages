@@ -1,4 +1,5 @@
 "use strict";
+const { parseReceipt } = require("./lib/receipt.cjs");
 const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
 const fs = require("node:fs");
@@ -81,7 +82,7 @@ async function signalRun(delivered, index) {
     const [code, signal] = await ended;
     assert.equal(signal, null, stderr); assert.equal(code, delivered.length ? 1 : 0, `${stdout}\n${stderr}`);
     assert.doesNotMatch(stderr, /execution error|\(-2700\)|\n\s+at \w/u);
-    verifyResult(JSON.parse(stdout), input, delivered);
+    verifyResult(parseReceipt(stdout), input, delivered);
 }
 
 async function main() {

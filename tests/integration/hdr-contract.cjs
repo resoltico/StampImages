@@ -1,4 +1,5 @@
 "use strict";
+const { parseReceipt } = require("./lib/receipt.cjs");
 const assert = require("node:assert/strict");
 const { Buffer } = require("node:buffer");
 const fs = require("node:fs");
@@ -13,7 +14,7 @@ function run(files, status, environment = {}) {
     const result = spawnSync("osascript", ["-l", "JavaScript", script, "--", "--headless", at("settings.json"), ...files.map(at)], { encoding: "utf8", timeout: 120000, env: { ...process.env, ...environment } });
     assert.ifError(result.error);
     assert.equal(result.status, status, `${result.stdout}\n${result.stderr}`);
-    return JSON.parse(result.stdout);
+    return parseReceipt(result.stdout);
 }
 
 function visibleStamp(output, label) {

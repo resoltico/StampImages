@@ -1,4 +1,5 @@
 "use strict";
+const { parseReceipt } = require("./lib/receipt.cjs");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const { Buffer } = require("node:buffer");
@@ -17,7 +18,7 @@ function stamp(customText, changes = {}) {
     const result = spawnSync("/usr/bin/osascript", ["-l", "JavaScript", artifact, "--", "--headless", config, source], { encoding: "utf8", timeout: 30000, killSignal: "SIGKILL" });
     assert.ifError(result.error); assert.equal(result.signal, null, result.stderr);
     assert.deepEqual(fs.readFileSync(source), originalBytes);
-    const receipt = JSON.parse(result.stdout); assert.equal(receipt.images.length, 1);
+    const receipt = parseReceipt(result.stdout); assert.equal(receipt.images.length, 1);
     return { folder, result, receipt, image: receipt.images[0] };
 }
 function pixels(file) {

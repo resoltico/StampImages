@@ -1,4 +1,5 @@
 "use strict";
+const { parseReceipt } = require("./lib/receipt.cjs");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -10,7 +11,7 @@ for (const directory of [work, path.join(work, "A"), path.join(work, "B")]) {
 }
 const occupied = path.join(work, "A", "same_stamped.PNG"); fs.writeFileSync(occupied, "Existing unrelated output.");
 function stamp() {
-    return JSON.parse(execFileSync("/usr/bin/osascript", ["-l", "JavaScript", artifact, "--", "--headless", config, work], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }));
+    return parseReceipt(execFileSync("/usr/bin/osascript", ["-l", "JavaScript", artifact, "--", "--headless", config, work], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }));
 }
 function verify(receipt, suffix) {
     assert.equal(receipt.state, "complete"); assert.equal(receipt.images.length, 3);

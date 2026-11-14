@@ -1,4 +1,5 @@
 "use strict";
+const { parseReceipt } = require("./lib/receipt.cjs");
 const assert = require("node:assert/strict");
 const { Buffer } = require("node:buffer");
 const crypto = require("node:crypto");
@@ -38,7 +39,7 @@ for (const [index, spec] of [
     const before = digest(input);
     if (spec.occupied) { fs.writeFileSync(path.join(directory, spec.occupied), "Occupied by somebody else."); }
     const output = execFileSync("/usr/bin/osascript", ["-l", "JavaScript", script, "--", "--headless", config, input], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
-    const receipt = JSON.parse(output);
+    const receipt = parseReceipt(output);
     assert.equal(receipt.state, "complete"); assert.equal(receipt.images.length, 1);
     const actual = actualEntry(receipt.images[0].output);
     if (spec.expected) { assert.equal(actual, spec.expected); }

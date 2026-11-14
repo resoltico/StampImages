@@ -1,4 +1,5 @@
 "use strict";
+const { parseReceipt } = require("./lib/receipt.cjs");
 const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
 const fs = require("node:fs");
@@ -20,7 +21,7 @@ function stamp(name, fields, config, expectedStatus) {
     const result = spawnSync("/usr/bin/osascript", ["-l", "JavaScript", artifact, "--", "--headless", file, source], { encoding: "utf8", timeout: 30000, killSignal: "SIGKILL" });
     assert.ifError(result.error); assert.equal(result.status, expectedStatus, `${result.stdout}\n${result.stderr}`);
     assert.equal(hash(source), before);
-    const receipt = JSON.parse(result.stdout); assert.equal(receipt.images.length, 1);
+    const receipt = parseReceipt(result.stdout); assert.equal(receipt.images.length, 1);
     return { record: receipt.images[0], stderr: result.stderr };
 }
 
