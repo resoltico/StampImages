@@ -89,7 +89,7 @@ plain-language report to stderr. Read both the receipt and the exit status.
 | `excluded` | Earlier stamped copies found in selected folders and left alone |
 | `issues` | Problems affecting the request as a whole |
 | `diagnostics` | Optional-surface and cleanup diagnostics |
-| `elapsed` | Human-readable run time; absent for invalid requests and when nothing was admitted |
+| `elapsed` | Human-readable processing time, from the first image's preparation to completion; excludes dialogs and is absent before processing |
 
 Exit 3 identifies the setup phase, including required tools or native capabilities
 that are unavailable. A setup cancellation has receipt state `canceled` and issue

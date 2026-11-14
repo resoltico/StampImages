@@ -32,8 +32,8 @@ function prepare(app, input, options) {
 function execute(app, input, options) {
     const { interaction } = options;
     const { progress } = interaction;
-    // Measure the whole use case, including setup, inspection and interactive consent.
-    const started = Date.now();
+    // Start with the first image job, after setup, inspection and settings.
+    let started = null;
     return executeRun({
         progress,
         prepare: () => prepare(app, input, options),
@@ -41,6 +41,7 @@ function execute(app, input, options) {
             const job = assemble(prepared, place, resolved);
             progress.summary(job.settings);
             progress.expect(prepared.selection.images.length);
+            started = Date.now();
             return runJob(job, prepared.selection.images);
         }),
         interaction: { settings: interaction.settings,
