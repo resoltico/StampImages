@@ -49,6 +49,9 @@ installing and removing the action.
    **Show in Finder** reveals the copies; **Details** shows technical
    diagnostics and **Back** returns to the summary.
 
+Run without input files, for example from the Shortcuts menu bar, to use Finder’s
+current selection.
+
 Appearance settings, including the GPS choice, are remembered for the next run
 in the preferences domain `com.resoltico.StampImages`; custom text is not. To
 reset them:

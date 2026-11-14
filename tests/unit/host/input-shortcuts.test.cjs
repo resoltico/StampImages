@@ -101,3 +101,30 @@ test("unsupported files in the selection are still filtered out", () => {
 
     assert.deepEqual(records.map((record) => record.path), ["/a/1.jpg", "/a/2.png"]);
 });
+
+test("the measured empty Shortcuts envelope and applet record use Finder selection", () => {
+    const previous = globalThis.Application;
+    const selected = [selectedFile("/a/Finder selection.jpg")];
+    let calls = 0;
+    globalThis.Application = (name) => {
+        assert.equal(name, "Finder");
+        return { selection() { calls += 1; return selected; } };
+    };
+    try {
+        const envelope = [[], { ignoresInput: false, source: "Finder", "temporary items path": "/private/tmp/shortcut-items" }];
+        assert.equal(collectInvocation(createFakeApp(), envelope).inputItems, selected);
+        assert.equal(collectInvocation(createFakeApp(), {}).inputItems, selected);
+        assert.equal(calls, 2);
+    } finally { globalThis.Application = previous; }
+});
+
+test("a supplied file is retained while an unreadable object's string conversion cannot trigger Finder", () => {
+    const previous = globalThis.Application;
+    globalThis.Application = () => { throw new Error("Finder must not be consulted for explicit input"); };
+    const unreadable = { toString() { throw new Error("unreadable host value"); } };
+    try {
+        const file = selectedFile("/a/explicit.jpg");
+        assert.deepEqual(collectInvocation(createFakeApp(), [[file], PARAMETERS]).inputItems, [file]);
+        assert.deepEqual(collectInvocation(createFakeApp(), [file, unreadable]).inputItems, [file, unreadable]);
+    } finally { globalThis.Application = previous; }
+});

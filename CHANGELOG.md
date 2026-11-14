@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Running the Quick Action without input files now uses Finder’s current selection.
+
 - Invisible-only captions are refused before processing; Windows line endings no longer add blank lines to stamps.
 
 - 16-bit grayscale images are now stamped instead of being refused during preparation.
