@@ -3,24 +3,10 @@ const { broadcast } = require("./broadcast.js");
 const { imageProgress } = require("./image-progress.js");
 
 /*
- * Saying what the run is doing while it does it: how much there is, how much
- * is done, and the one object every surface is reported to. What is said about
- * the photograph in hand is image-progress.js, and where any of it is displayed is
- * surfaces.js.
- *
- * One photograph is one unit of work, so there is one number rather than two.
- * The sibling this was taken from had a mode that published a single document
- * out of every image, and there the units and the images were different counts
- * -- carrying that distinction here would be carrying an answer to a question
- * this product does not ask.
- *
- * Two rules hold the rest of it up. The loop that owns a photograph closes
- * its unit, and nothing else counts -- publication used to be the only thing
- * that advanced it in the sibling, so a run whose second image failed ended at
- * 2 of 3, and one where all three failed ended at 0 of 3. And a report of what
- * is about to happen may stop the run, while a report of what has happened may
- * not: that is image-progress.js's rule, and this is where the answer it asks for
- * comes from.
+ * One image is one unit. The image loop closes its unit on every outcome,
+ * including failure. image-progress.js announces stages and checks pending
+ * stops before work; surfaces adapt those reports to displays. Reports about
+ * completed work must not undo confirmed publication.
  */
 
 function nothing() {

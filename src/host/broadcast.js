@@ -7,13 +7,9 @@ const { isUserCanceled } = require("../core/errors.js");
  */
 
 /*
- * Every surface gets every report, and one that refuses does not stop the
- * others: they are presented by different hosts, not by one host twice.
- *
- * A surface can report two things by throwing and only one is about the
- * surface. "I could not show this" is not news. "The person asked you to
- * stop" is not about the display at all -- that is merely where it arrived --
- * and it used to be discarded along with it.
+ * Deliver reports to every surface even if one fails. Display faults become
+ * diagnostics; a translated cancellation latches a stop for the next safe
+ * checkpoint rather than interrupting publication.
  */
 function broadcast(sinks, state) {
     const failed = new Set();

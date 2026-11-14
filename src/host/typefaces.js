@@ -7,28 +7,14 @@ function fontBridge(objc, ns) {
 }
 
 /*
- * What faces this Mac has, asked of the font system that draws them.
+ * Query system family and style names through AppKit, matching the CoreText
+ * font system used by the renderer. Fontconfig can expose a different catalog,
+ * including different activated fonts.
  *
- * The renderer is pango through cairo, and on a Mac pango draws through
- * CoreText unless it is told otherwise. Measured: pangocairo links both
- * CoreText and fontconfig, and the two answer differently -- fontconfig lists
- * 671 families here of which the renderer draws 147, CoreText lists 217 of
- * which it draws 188, and neither list contains the other. Asking fontconfig
- * was asking a catalog the renderer was not reading from, which is how a
- * font every other app on this Mac could use was refused: a face switched on
- * by a font manager is in CoreText and not in fontconfig.
- *
- * So one font system answers, and it is the one that draws. What is asked here
- * is what will be drawn with.
- *
- * It answers about names, not about files. Measured: of the 217 families
- * CoreText lists, 7 are ones cairo cannot open -- Hoefler Text, Big Caslon,
- * Apple Chancery and four Indic faces, all of them old suitcase fonts -- and
- * those draw in the fallback face without saying so. Drawing with each one and
- * comparing was tried and is worse: the fallback face is Helvetica itself, so
- * that test can never approve Helvetica or Times, and it refused 442 of the
- * 589 families a person can see. A rare silent substitution beats refusing the
- * most ordinary names on the machine.
+ * Catalog availability does not guarantee Cairo can open every suitcase font.
+ * Comparing drawings to a fallback cannot establish availability when the
+ * requested face is itself the fallback. Preserve the naming contract and
+ * report glyph coverage separately from renderer substitution guarantees.
  */
 
 /*

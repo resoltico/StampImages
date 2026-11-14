@@ -18,14 +18,10 @@ function refusalLines(entry) {
 }
 
 /*
- * The two questions an interactive run asks besides its settings, worded as
- * Image Files to PDF asks them.
- *
- * Both are consent, so both answer only with the button that goes on: Cancel
- * is the dialog's cancel button, and anything else that comes back -- a host
- * that returns Cancel rather than raising it -- is a cancellation, never
- * agreement. A headless run reaches neither: its configuration is the whole
- * of what it is told.
+ * Selection and settings review require affirmative consent. Only the
+ * continuing button approves the operation; a returned Cancel is cancellation
+ * just as a raised native Cancel is. Command-line requests never enter these
+ * interactive reviews.
  */
 
 const { showDetails } = require("./details-dialog.js");

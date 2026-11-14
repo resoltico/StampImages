@@ -26,13 +26,9 @@ function sizeOf(job, path) {
 }
 
 /*
- * The color as the photograph will read it.
- *
- * Three cases, because a profile that could not be read is not a photograph
- * without one: that used to take the no-profile path, which reports the color
- * as handled, so an extraction that failed was a stamp in unconverted numbers
- * and a run that said everything went well. A transform that fails leaves the
- * sRGB numbers too, and either way the run counts it.
+ * Distinguish no profile from an unreadable profile. Failed extraction or
+ * transformation leaves sRGB caption numbers and marks the result as
+ * unconverted; it must not report a successful color conversion.
  */
 function inSpaceOf(job, paths, profile) {
     if (profile.failed) {

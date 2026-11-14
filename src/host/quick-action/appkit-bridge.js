@@ -37,9 +37,8 @@ function rectOf(ns, rect) {
 }
 
 /*
- * A zero-argument ObjC method, which JXA performs on property access. Named
- * once rather than written as a bare expression statement at each call, where
- * it reads as a mistake and has to be excused to the linter.
+ * JXA invokes zero-argument Objective-C methods through property access.
+ * Name that operation explicitly so callers do not use bare expressions.
  */
 function perform(target, method) {
     return target[method];

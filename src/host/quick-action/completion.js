@@ -6,7 +6,7 @@ const { showDetails } = require("./details-dialog.js");
 function completionMessage(result) {
     return [reportText(result, false), result.state === "invalid" ? "" : `${APP_NAME} ${VERSION}`].filter(Boolean).join("\n\n");
 }
-// Technical details as key: value lines, the format Image Files to PDF uses; stacks stay in the receipt.
+// Technical details use key: value lines; stacks stay in the receipt.
 function diagnosticLines(value, label = "") {
     if (value === null || value === undefined) { return []; }
     if (typeof value !== "object") { return [`${label}${String(value).replace(/\r\n?/gu, "\n")}`]; }

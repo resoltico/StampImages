@@ -27,14 +27,9 @@ const REGULAR = "NSFileTypeRegular";
 const SYMBOLIC_LINK = "NSFileTypeSymbolicLink";
 
 /*
- * Which file this is, as the filesystem knows it: the volume it is on and its
- * number on that volume. Two spellings of one file give the same pair --
- * measured, for A.jpg against a.jpg on a case-insensitive volume, which is
- * how a Mac is formatted by default.
- *
- * It comes out of the attributes this walk already reads, so knowing it costs
- * nothing, and it is "" when there are no attributes to read -- which is the
- * same thing as there being no file.
+ * Classify native file kinds without following links. Query package metadata
+ * only for directories, and refuse unavailable package facts rather than
+ * walking an unverified bundle.
  */
 function kindFrom(attributes, packageFor, path) {
     if (!attributes) {

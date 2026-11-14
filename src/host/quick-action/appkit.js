@@ -46,17 +46,10 @@ const WIDGETS = {
  */
 
 /*
- * A modal that ends any other way than by one of its buttons is one this code
- * did not ask for, and the form is treated as unavailable so the stepwise
- * dialogs can ask instead.
- *
- * There used to be a watchdog here: an abortModal scheduled two minutes out,
- * so a form that never returned could not hang the run. It fired on forms
- * that were working perfectly, because taking two minutes to choose a
- * typeface and a color is not evidence of anything -- and the user was
- * dropped into the stepwise dialogs half way through answering. Measured, not
- * assumed: abortModal yields NSModalResponseAbort, which is -1001, and -1000
- * is NSModalResponseStop.
+ * A modal response other than a form button makes the form unavailable, so
+ * stepwise dialogs can ask instead. Do not impose a timeout on working forms:
+ * choosing settings can take arbitrarily long. Native abort is -1001; -1000
+ * is the distinct stop response.
  */
 const RESPONSE_ABORT = -1001;
 const FIRST_BUTTON = 1000;

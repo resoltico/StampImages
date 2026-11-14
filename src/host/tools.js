@@ -20,12 +20,9 @@ const TOOL_SEARCH_PATH =
     "/opt/homebrew/bin:/usr/local/bin:/opt/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
 
 /*
- * Three, and fc-match is not among them any more. It was asked which family a
- * name resolves to, which turned out to be a question about fontconfig's
- * catalog while the renderer draws from the system's own -- so the answer
- * was about the wrong machine. The font system is asked directly now, across
- * the same bridge the form is built with, and nothing has to be installed for
- * it.
+ * The required external tools inspect metadata and render images. Installed
+ * typefaces are queried through the native font catalog, not an external
+ * fontconfig command.
  */
 const TOOL_NAMES = ["vips", "vipsheader", "exiftool"];
 

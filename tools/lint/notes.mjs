@@ -1,11 +1,8 @@
 import { readFromDisk } from "./consistency.mjs";
 
 /*
- * The CHANGELOG section for one version, for a release body.
- *
- * Taken from the CHANGELOG rather than from a per-tag notes file, because a
- * second copy of the same prose is a second thing to keep in agreement, and
- * this repository has been bitten by exactly that before.
+ * Read release summaries from CHANGELOG.md, their authoritative source.
+ * Do not keep a second manually maintained per-tag summary.
  */
 
 const HEADING = "## ";
@@ -16,10 +13,8 @@ const HEADING = "## ";
 const releaseHeading = (version) => `${HEADING}[${version}]`;
 
 /*
- * Compared as a string rather than by building a regex from the version.
- * A version is full of dots, which are regex wildcards, and the escaping that
- * was supposed to make them literal silently matched nothing — so "1.2.3"
- * would have accepted a "## 1x2y3" heading as its own.
+ * Match release headings as literal strings. Version dots must not act as
+ * regular-expression wildcards, and Unreleased is not a version heading.
  */
 function isHeadingFor(line, version) {
     const heading = releaseHeading(version);

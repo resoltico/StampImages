@@ -2,11 +2,8 @@
 const { plural } = require("../../core/formatting.js");
 
 /*
- * What will be created, said before anything is.
- *
- * Worded as its sibling action, Image Files to PDF, words the same things:
- * the same sentence for what was selected, the same rule for where output
- * goes, the same promise about the originals.
+ * Describe the selection, destination and unchanged originals before creating
+ * any stamped copies.
  */
 
 /*
@@ -29,9 +26,8 @@ const COPY_NOTE = "Each image gets a stamped copy, saved in each folder you " +
     "changed.";
 
 /*
- * The outcome in one line, as Image Files to PDF states it: how many images,
- * what they become, and where that goes. One folder is named; several are
- * counted, and listed under Save locations.
+ * Summarize image count, stamped-copy count and destination in one line.
+ * Name a single folder; count multiple folders and list their paths separately.
  */
 function outcomeSummary({ count = 0, folders = [] } = {}) {
     const destination = folders.length === 1

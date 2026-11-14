@@ -7,13 +7,9 @@ const { selectedItems } = require("./selection.js");
 const { rejectionReason, FOLDER, UNSUPPORTED, NOT_A_FILE } = require("./reasons.js");
 
 /*
- * Which of the requested files this action will convert, and why it will not
- * convert the others.
- *
- * Separated from resolution because a rejection is a stated reason rather than
- * the absence of an entry in a list: a silent filter turned a GIF selected
- * alongside two photos into a report that nothing had failed. What was
- * selected, and whether two selections are the same thing, is selection.js.
+ * Admit supported requests and keep explicit reasons for the others.
+ * selection.js normalizes requested spellings; admission decides which
+ * accepted requests refer to an image already included in this run.
  */
 
 function record(path, folder) {
@@ -125,9 +121,9 @@ function admit(app, tree, root, outcome) {
 }
 
 /*
- * The tree is what makes a selected folder mean the images inside it. Without
- * one -- no ObjC bridge -- a folder is refused with a reason instead, and the
- * files that were selected directly are converted as they always were.
+ * Folder expansion needs an injected native tree. The production composition
+ * root requires that capability before calling admission; the null default
+ * keeps isolated adapter tests explicit about missing native facts.
  */
 function collectImageFiles(app, inputItems, tree = null) {
     const outcome = {

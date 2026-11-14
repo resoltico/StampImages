@@ -5,31 +5,16 @@ const { runArgvInto } = require("./shell.js");
 const { sameBytes, isRegularNonEmpty } = require("./filesystem-probes.js");
 
 /*
- * Which colors a photograph's numbers mean.
- *
- * A color chosen in the form is three sRGB numbers, and writing those
- * numbers into a photograph does not make them that color: they are read
- * through whatever profile the photograph carries. Measured on this Mac, in
- * Lab: #FF3B30 written into a Display P3 photograph lands about 19 away from
- * the red that was asked for, and #FFD400 about 28. A difference of 2 is
- * visible. Every recent iPhone photograph is Display P3, so this is the
- * ordinary case rather than an exotic one -- and white and gray are exact,
- * which is why the defaults never showed it.
- *
- * So the photograph's profile is taken out of it and the color is moved into
- * that space before it is painted. A photograph with no profile needs none of
- * this: numbers with no profile are sRGB by convention, which is what they
- * already are.
+ * Caption colors are sRGB values. Convert them through the image profile
+ * before painting; otherwise chromatic colors can change meaning in P3 or
+ * other spaces even when gray defaults look correct. An image without a
+ * profile uses the sRGB convention.
  */
 
 /*
- * Three answers, because two were not enough.
- *
- * "There is no profile" and "the profile could not be read" used to be the
- * same empty string, and the empty string took the no-profile path -- which
- * reports the color as handled. So an extraction that failed was a stamp
- * painted in unconverted numbers and a run that said everything went well.
- * They are told apart now, and a failure is counted rather than assumed away.
+ * Distinguish an absent profile, an extracted profile and failed extraction.
+ * Only absence permits the sRGB convention without a warning; extraction
+ * failure must remain visible in the outcome.
  */
 function none() {
     return { path: "", failed: false };

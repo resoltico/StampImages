@@ -11,7 +11,7 @@ function choiceCaption(choice) {
     return caption && !restates ? `${choice.value} (${caption})` : choice.value;
 }
 
-// One line per setting, in the form Image Files to PDF uses: values, then the default.
+// One line per setting: values, then the declared default.
 function settingsHelp() {
     return Object.entries(SETTINGS_SCHEMA).map(([field, rule]) => {
         let values = rule.kind === "color" ? "#RRGGBB" : "text";

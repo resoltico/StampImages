@@ -65,24 +65,16 @@ function memoryOn(objc, ns, suite) {
                 // now; it is removed rather than left in the domain for good.
                 suite.removeObjectForKey(ns(RETIRED_KEY));
             } catch {
-                // The next run opens on the defaults, which is what it did
-                // before there was anything to remember.
+                // Preference failures must not interrupt stamping.
             }
         }
     };
 }
 
 /*
- * A memory with nowhere to keep anything, which is what every way of failing
- * to reach the defaults comes back as.
- *
- * Not null. A caller given nothing has to remember to ask whether it got
- * something, at every place it uses it, and forgetting once put a null where
- * a set of answers belonged -- which the form could not read, so a machine
- * that merely could not save its settings was answering ten questions one at
- * a time instead. Being unable to remember is a way of behaving, and it says
- * what this policy has said all along: recall nothing, keep nothing, and let
- * the stamping get on with it.
+ * Unavailable preferences still implement recall and remember. Callers can
+ * proceed with defaults through the same interface, without treating missing
+ * storage as a reason to abandon the settings form.
  */
 const FORGETFUL = Object.freeze({
     recall() {

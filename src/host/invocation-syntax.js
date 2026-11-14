@@ -69,22 +69,10 @@ function isLocalAuthority(authority) {
 }
 
 /*
- * Decoded, or refused. Keeping the undecoded string when decoding fails gives
- * two different URLs one meaning: "file:///a/photo%20one%ZZ.jpg" is malformed
- * -- a percent must be followed by two hexadecimal digits -- and
- * "file:///a/photo%2520one%25ZZ.jpg" is the correct encoding of a file really
- * called photo%20one%ZZ.jpg. Both used to resolve to that file, so a malformed
- * URL silently selected a photograph nobody had named.
- *
- * What is given up by refusing: a host that hands over an unencoded URL whose
- * filename contains a percent that is not an escape. Unencoded spaces survive
- * either way -- decodeURIComponent does not object to them -- and Finder
- * encodes. What is gained is that a URL this action cannot read becomes a
- * stated rejection naming it rather than a photograph chosen by guesswork.
- *
- * A NUL decodes without complaint and is not a character any path can hold.
- * It used to travel as far as the first shell command, where the refusal was
- * caught and reported as "not a readable file" -- true, for the wrong reason.
+ * Refuse malformed escapes and decoded NUL characters in file URLs. Keeping
+ * an undecodable URL as a path could select a different file from the one
+ * named. Unencoded spaces are accepted by decodeURIComponent; literal percent
+ * characters in a filename must be encoded.
  */
 const NUL = "\u0000";
 

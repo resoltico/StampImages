@@ -12,10 +12,8 @@ const {
 const { findTool, TOOL_NAMES, TOOL_SEARCH_PATH } = require("./tools.js");
 
 /*
- * Everything that can be checked before the user is asked anything.
- *
- * This runs first, so a machine that is missing a tool says so immediately
- * rather than after six dialogs have been answered.
+ * Verify backend tools before source admission. Quick-action settings follow
+ * setup; command-line settings and typeface validation precede this check.
  */
 
 /*

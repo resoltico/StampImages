@@ -3,22 +3,9 @@
 const { OperationError } = require("./errors.js");
 
 /*
- * Where the block of text goes on the photograph.
- *
- * In pixels of the image itself, measured from the edge the position names.
- * A margin given as a fraction of the picture would put the stamp in a
- * different place on every photograph of a batch, which is the opposite of
- * what stamping a batch is for.
- *
- * Two different things used to be clamped here and only one of them should
- * have been. A margin larger than the room there is asks for a place outside
- * the picture, and the edge is the honest answer: the whole stamp is still
- * visible and a margin is a request rather than a promise. A stamp larger
- * than the photograph is not that. Measured: vips crops an overlay to the
- * image beneath it, so a caption 26 characters long at 90 points on a
- * 120-pixel photograph was published as the letters "A v" and reported as a
- * success. That is refused now, with both sizes in the message, because
- * nothing this program can do to it would be what was asked for.
+ * Place the stamp in image pixels from the edges named by its position.
+ * Clamp an excessive margin to keep the whole stamp visible. Refuse a stamp
+ * larger than the image: libvips crops overlays, which would lose caption text.
  */
 
 const CENTER_HALVES = 2;
@@ -64,14 +51,8 @@ function refuseSize(image, stamp) {
 }
 
 /*
- * Where the stamp goes, and whether that is where it was asked to go.
- *
- * Both come out of the same arithmetic, which is the only way they can agree.
- * Asking a second time whether the margin fitted was a second rule, and it
- * was wrong: it required room for the margin on both sides of both edges,
- * when a margin is measured from the two edges the position names. An
- * eighty-pixel stamp fifteen pixels in from the corner of a hundred-pixel
- * photograph was reported as sitting against the edge.
+ * Position and crowded-margin status come from the same arithmetic.
+ * A margin applies only to the edges named by the selected position.
  */
 function placeStamp(image, stamp, settings) {
     if (stamp.width > image.width || stamp.height > image.height) {

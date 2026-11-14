@@ -1,15 +1,8 @@
 import { assertAll, readFromDisk } from "./consistency.mjs";
 
 /*
- * The Homebrew command that installs the integration toolchain, and the
- * commands that suite actually requires.
- *
- * Both halves earned their place. The install command is written out in four
- * places — twice in CONTRIBUTING.md and once in each workflow — with nothing
- * to stop them drifting apart. And `tiffcp` was required by the suite while
- * being named by none of them: it worked only because vips happens to depend
- * on libtiff, so the documented install would have been one upstream change
- * away from failing on a machine that followed it exactly.
+ * Check that documented and CI Homebrew installs agree and provide every
+ * command required by the integration suites.
  */
 
 const INSTALL_SOURCES = [
@@ -22,11 +15,8 @@ const INSTALL = /brew install (?<value>[^\n`]+)/gu;
 const REQUIRED_TOOLS = /for tool in (?<value>[^;]+); do/u;
 
 /*
- * Which formula provides each command. A command is not a formula: vips
- * provides two of these under different names, and a suite that required one
- * nobody had named worked only because something else happened to depend on
- * it -- one upstream change from failing on a machine that followed the
- * documented install exactly.
+ * Map required commands to the formulae that provide them. Do not rely on
+ * transitive dependencies to supply commands missing from the declared install.
  */
 const PROVIDED_BY = {
     vips: "vips",
