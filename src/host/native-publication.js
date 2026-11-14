@@ -1,4 +1,6 @@
 "use strict";
+const { OperationError } = require("../core/errors.js");
+const { basename, dirname } = require("../core/paths.js");
 const { attributesAt, attributeText, identityOf, kindOf } = require("./native-file-attributes.js");
 
 const RENAME_EXCL = 4;
@@ -25,6 +27,27 @@ function nativeFacts(objc, ns, manager, path) {
     return identity && Number.isSafeInteger(size) && size >= 0 ? { identity, size } : { identity: "", size: -1 };
 }
 
+function sameArtifact(facts, expected) {
+    return Boolean(expected.identity) && facts.identity === expected.identity && facts.size === expected.size;
+}
+
+function storedPath({ objc, ns, manager }, path, expected) {
+    if (!sameArtifact(nativeFacts(objc, ns, manager, path), expected)) {
+        throw new OperationError("The published image identity could not be confirmed before reading its name.");
+    }
+    const error = ns();
+    const values = ns.NSURL.fileURLWithPath(ns(path)).resourceValuesForKeysError(ns([ns.NSURLCanonicalPathKey]), error);
+    if (!values || values.isNil()) { throw new OperationError("The published image's stored filename could not be read."); }
+    const value = values.objectForKey(ns.NSURLCanonicalPathKey);
+    if (!value || value.isNil()) { throw new OperationError("The published image's stored filename is unavailable."); }
+    const canonical = String(objc.unwrap(value));
+    const actual = dirname(path) + basename(canonical);
+    if (!sameArtifact(nativeFacts(objc, ns, manager, canonical), expected) || !sameArtifact(nativeFacts(objc, ns, manager, actual), expected)) {
+        throw new OperationError("The published image identity changed while reading its stored filename.");
+    }
+    return actual;
+}
+
 function nativePublication(objc, ns) {
     if (!objc || !ns) { return null; }
     objc.import("Foundation");
@@ -35,6 +58,7 @@ function nativePublication(objc, ns) {
     const manager = ns.NSFileManager.defaultManager;
     return {
         facts: (path) => nativeFacts(objc, ns, manager, path),
+        actualPath: (path, expected) => storedPath({ objc, ns, manager }, path, expected),
         // link(2) rather than NSFileManager: measured, linkItemAtPath writes
         // the name decomposed, so a photograph named "rīga.jpg" in NFC came
         // back as a copy whose name no longer matched its original's bytes.

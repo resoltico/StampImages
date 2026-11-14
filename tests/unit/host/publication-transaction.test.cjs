@@ -107,7 +107,7 @@ test("unknown original identity fails before any claim", () => {
     job.publication.facts = () => ({ identity: "", size: -1 });
     let called = false;
     job.publication.link = () => { called = true; return { state: "created" }; };
-    assert.throws(() => publishImage(job, staged, target), (error) => Boolean(error.recovery));
+    assert.throws(() => publishImage(job, staged, target), (error) => error.recovery === null && error.issues[0].code === "fault");
     assert.equal(called, false);
 });
 
@@ -133,7 +133,7 @@ test("unknown faults in a native adapter remain fatal diagnostics after recovery
 
 test("a measured zero-byte validated candidate is not published",()=>{
     const {job}=fixture({emptyFiles:[staged]});
-    assert.throws(()=>publishImage(job,staged,target),/identity could not be measured/u);
+    assert.throws(()=>publishImage(job,staged,target),(error)=>error.recovery===null && error.issues[0].code==="fault");
 });
 
 test("publication cannot acquire ownership merely from a pathname",()=>{
@@ -279,7 +279,7 @@ test("copied candidates require byte confirmation before publication or recovery
     assert.equal(copied.state, "failed");
     assert.match(copied.error.message, /byte/iu);
     assert.ok(app.files.has(staged));
-    const rescue = setAside(app, staged, job.publication.facts, "recovered.png");
+    const rescue = setAside(app, staged, job.publication, { intendedName: "recovered.png", original: job.publication.facts(staged) });
     assert.equal(rescue.path, staged); assert.ok(app.files.has(staged));
 });
 

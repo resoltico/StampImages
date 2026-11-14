@@ -115,6 +115,14 @@ paths are known. Their existing diagnostic object shape is unchanged;
 `workspace-reclaimed` records successful reclamation with stage `workspace` and
 `diagnostic.path`. These informational diagnostics do not change run state.
 
+Output and recovery basenames are read back after publication and match the
+actual directory entry bytes; creation preserves source spelling where the
+filesystem permits it. A name-verification refusal keeps the validated original
+in its private workspace and reports claim uncertainty without inventing a public
+output path. A missing or replaced original is a fatal fault with no asserted
+recovery path; a confirmed public output remains saved when original cleanup
+cannot safely proceed.
+
 ## Image records
 
 Each record has the image's full `source` path, `state`, `issues` and

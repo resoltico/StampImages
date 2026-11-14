@@ -25,13 +25,20 @@ A finished copy is published with an exact-path hard link, or with an exclusive
 rename of an owned copy on volumes that cannot link. Only a classified name
 collision is retried, with the next `_stamped N` name. Existing files, folders,
 pipes and links are never replaced or written inside. Native identity and size
-confirm the actual output before the workspace copy is released. A volume without
-either exclusive route fails over to recovery instead of exposing a partial file.
+confirm the output and its actual stored basename before the workspace copy is
+released. The original is rechecked before copied recovery and before removal.
+A volume without either exclusive route fails over to recovery instead of exposing
+a partial file.
 
 If a copy cannot be published, it is recovered to `~/Downloads` under its intended
 name with the same exclusive rules, or failing that to a confirmed copy in the system
 temporary directory. Only a confirmed recovery releases the workspace copy; otherwise
-the workspace is retained and its location reported. A candidate whose validation
+the workspace is retained and its location reported. If a created copy's stored
+name cannot be verified, that claimed entry is left untouched and the verified
+original stays in its workspace; no additional recovery copy is attempted. Missing,
+replaced or uninspectable originals are not asserted as recoveries or removed. A
+confirmed output can remain saved with a fatal cleanup fault and a retained
+workspace when original cleanup cannot safely proceed. A candidate whose validation
 faulted is reported as unconfirmed, never as a validated recovery. Stop keeps saved
 copies and retains a finished, unpublished copy in its workspace. Temporary storage
 is not permanent: move needed recovered or retained work promptly.

@@ -9,7 +9,7 @@ const { createProgress } = require("../../src/host/progress.js");
 const { cliCommand } = require("../../src/host/command-line/cli.js");
 const { CP } = require("../../src/core/executables.js");
 const { runArgv } = require("../../src/host/shell.js");
-const { UserCanceled } = require("../../src/core/errors.js");
+const { OperationError, UserCanceled } = require("../../src/core/errors.js");
 function run(input) {
     const [scenario, replacement, ...argv] = input;
     const nativeApp = Application.currentApplication();
@@ -41,6 +41,9 @@ function run(input) {
         if (scenario === "stop-after-commit" && result.state === "created") { injected += 1; throw new UserCanceled(); }
         return result;
     };
+    if (scenario === "stored-name-refused") {
+        publication.actualPath = () => { injected += 1; throw new OperationError("Injected stored-name lookup refusal."); };
+    }
     const {invocation} = cliCommand(argv);
     const progress = createProgress([]);
     const {phase} = progress;

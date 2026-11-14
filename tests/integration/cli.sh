@@ -140,5 +140,19 @@ if (result.injected !== 1 || result.publicationAttempts !== 1 || record.state !=
 if (process.argv[3] === 'fault-after-commit' && !record.issues.some(issue => issue.code === 'fault')) throw Error('post-commit fault diagnostic was lost');
 JS
 done
+cp "$WORK/source.png" "$WORK/name-unverified.png"
+osascript -l JavaScript "$WORK/lifecycle.jxa" stored-name-refused "$WORK/replacement.png" --headless "$WORK/settings.json" "$WORK/name-unverified.png" > "$WORK/name-unverified.json"
+node - "$WORK/name-unverified.json" "$WORK/name-unverified_stamped.png" <<'JS'
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {execFileSync}=require('node:child_process');
+const result=JSON.parse(fs.readFileSync(process.argv[2],'utf8')),record=result.images[0];
+assert.equal(result.injected,1);assert.equal(result.publicationAttempts,1);
+assert.equal(record.state,'recovered');assert.equal(Object.hasOwn(record,'output'),false);
+assert.ok(fs.existsSync(record.recovery));assert.ok(fs.existsSync(process.argv[3]));
+assert.equal(execFileSync('vipsheader',['-f','width',record.recovery],{encoding:'utf8'}).trim(),'600');
+assert.ok(record.issues[0].diagnostic.message.includes('A finished copy was created, but its stored filename could not be verified.'));
+const directory=path.dirname(record.recovery);assert.match(directory,/\/StampImages\.[A-Za-z0-9]{10}$/u);
+fs.rmSync(directory,{recursive:true});
+JS
 node "$ROOT/tests/integration/signals.cjs" "$SCRIPT" "$WORK/settings.json" "$WORK/source.png" "$WORK/signals"
 printf 'macOS CLI and capture lifecycle integration passed\n'

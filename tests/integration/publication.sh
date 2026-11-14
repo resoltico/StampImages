@@ -92,13 +92,19 @@ assert_nothing_left_behind "$WORK/link"
 # ---------------------------------------------------------------------------
 
 in_folder readonly
+mv "$WORK/readonly/photo.jpg" "$WORK/readonly/café.jpg"
 chmod 555 "$WORK/readonly"
-stamp "$WORK/readonly/photo.jpg"
+stamp "$WORK/readonly/café.jpg"
 
 KEPT=$(kept_copy)
 test -n "$KEPT" || fail "no recovery path was named: $(cat "$WORK/receipt")"
 test -f "$KEPT" || fail "the copy is not where the message says it is: $KEPT"
 test "$(vipsheader -f width "$KEPT")" = 600 || fail "what was kept is not the copy"
+node - "$KEPT" <<'JS'
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const output=process.argv[2];assert.equal(fs.lstatSync(output).isFile(),true);
+assert.ok(fs.readdirSync(path.dirname(output),{encoding:'buffer'}).some(entry=>entry.equals(Buffer.from(path.basename(output)))),'recovery receipt must name raw directory entry bytes');
+JS
 assert_contains "$(cat "$WORK/error.txt")" 'Saved elsewhere:' 'recovered work has its own heading'
 assert_contains "$(cat "$WORK/error.txt")" "$KEPT" 'the human report names the actual recovery'
 assert_contains "$(cat "$WORK/error.txt")" 'Permission denied' 'the human report includes the native cause'

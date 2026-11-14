@@ -2,7 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { runJob, executeImage } = require("../../../src/application/job.js");
-const { OperationError, UserCanceled } = require("../../../src/core/errors.js");
+const { IssueError, OperationError, UserCanceled, isUserCanceled } = require("../../../src/core/errors.js");
 const images = [{ path: "/a/photo.png" }, { path: "/b/photo.png" }, { path: "/c/photo.png" }];
 function fixture(overrides = {}) {
     const events = [];
@@ -111,4 +111,30 @@ test("requested metadata is accounted for on every record, and unusable fields a
     assert.deepEqual(unsaid.images[0].missingMetadata, [], "a port that says nothing omits nothing");
     const invalidSaved = runJob(fixture({ stamp: () => ({ staged: "/ready", missing: ["GPS coordinates"], invalid: ["GPS coordinates"] }) }).ports, [images[0]]);
     assert.deepEqual(invalidSaved.images[0].invalidMetadata, ["GPS coordinates"]);
+});
+
+
+test("explicit no-recovery ownership faults override a canceled cause without hiding it", () => {
+    const stop = new UserCanceled();
+    const failure = new IssueError("Original no longer verified.", { cause: stop, recovery: null,
+        issues: [{ code: "fault", stage: "publication", message: "Original no longer verified." }] });
+    const { ports } = fixture({ publish() { throw failure; } });
+    const result = runJob(ports, images);
+    assert.equal(isUserCanceled(failure), true);
+    assert.equal(failure.cause, stop);
+    assert.equal(result.images[0].state, "failed");
+    assert.equal(result.images[0].issues[0].code, "fault");
+    assert.equal(Object.hasOwn(result.images[0], "recovery"), false);
+    assert.equal(result.images[1].state, "not-started");
+    assert.equal(result.state, "incomplete");
+});
+
+test("inherited null and absent recovery keep their original cancellation behavior", () => {
+    for (const failure of [new UserCanceled(), Object.create(new UserCanceled({ recovery: null }))]) {
+        assert.equal(Object.hasOwn(failure, "recovery"), false);
+        const { ports } = fixture({ publish() { throw failure; } });
+        const result = runJob(ports, images);
+        assert.equal(result.images[0].state, "canceled");
+        assert.equal(Object.hasOwn(result.images[0], "recovery"), false);
+    }
 });

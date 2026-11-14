@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Output and recovery paths now report actual stored filename bytes; unverifiable names retain validated originals, and unverified originals are never claimed as recoveries or removed.
+
 - SIGINT and SIGTERM now request a cooperative command-line stop; every canceled run exits 1, including during setup, and later runs report retained or safely reclaimed workspaces.
 
 - Command-line settings files accept local `file://` URLs, including encoded spaces and Unicode; remote and malformed settings URLs are refused before processing.

@@ -18,7 +18,8 @@ function executeImage(ports, image, index) {
     } catch (error) {
         record.issues.push(...issuesOf(error, "stamping"));
         record.state = isUserCanceled(error) ? "canceled" : "failed";
-        if (error?.recovery) { record.state = "recovered"; }
+        if (error && Object.hasOwn(error, "recovery") && error.recovery === null) { record.state = "failed"; }
+        else if (error?.recovery) { record.state = "recovered"; }
         if (error?.recovery) { record.recovery = error.recovery; }
     }
     try { record.issues.push(...ports.cleanup()); }

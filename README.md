@@ -132,10 +132,11 @@ maps. This is not an anonymization tool.
 
 Stamp Images reads only the images you select, works in a private temporary
 folder, and never opens an original for writing. Nothing is sent over the
-network. If a copy cannot be saved where it belongs, it is saved to Downloads
-under its intended name, or failing that to a checked temporary copy, and
-completion shows where. [SECURITY.md](SECURITY.md) describes the file-safety rules
-in full.
+network. Recovery normally uses Downloads under the intended name, or a checked
+temporary copy, and completion shows the actual stored name. If a created copy's
+name cannot be verified, the original stays in its workspace when it can still be
+verified; otherwise no recovery path is claimed. [SECURITY.md](SECURITY.md)
+describes the file-safety rules in full.
 
 ## Command line
 

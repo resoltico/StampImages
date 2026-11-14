@@ -155,4 +155,5 @@ test -f "$WORK/${PRECOMPOSED}_stamped.png" ||
 ls "$WORK" | grep -q "$(printf 'ri\xcc\x84ga')_stamped" &&
     fail "the copy's name was decomposed"
 
+node "$ROOT/tests/integration/name-bytes.cjs" "$SCRIPT" "$WORK/name.json" "$WORK/$PRECOMPOSED.png" "$WORK/names"
 printf 'macOS copies passed\n'

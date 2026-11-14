@@ -58,7 +58,11 @@ first-line initialization and later user scrolling for details, notes and multil
 captions; caption documents use clip-local coordinates. Callback tests guard
 registration, teardown and reentrant native visibility getters. `resources.sh` checks
 confirmed temporary recovery and dead/live/retained/unreadable workspace ownership;
-`concurrency.sh` checks 12 two-process publication rounds. CLI and lifecycle probes
+`concurrency.sh` checks 12 two-process publication rounds. Copy naming checks
+compare receipt basename buffers to raw directory entries for NFC/NFD, case and
+normalization collisions, long byte-budget names, and accented recovery names.
+Ownership controls cover name-readback refusal, original replacement during copy
+and after name lookup, explicit no-recovery faults and confirmed-output retention. CLI and lifecycle probes
 also cover strict settings, statuses, source capture, recovery and cancellation.
 Signal controller unit checks cover native adapter ownership and complete saved
 signal actions. Actual command-line SIGINT/SIGTERM/repeat runs must produce canceled
