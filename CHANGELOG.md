@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Text size hints clarify that one point equals one image pixel.
+
 - Receipts add `locationRetained` for validated finished copies, and completion reminds you when GPS metadata remains even with visible coordinates off.
 - Receipt documentation distinguishes selection `reason` from issue `message` and describes observer diagnostics without stack traces.
 

@@ -66,7 +66,7 @@ test("the rule a value breaks is marked along with the value", () => {
     const hints = view.subviews.filter((child) => child.editable === false
         && String(child.stringValue).includes("–"));
     const marginHint = hints.find((hint) => hint.stringValue.includes("2000 px"));
-    const sizeHint = hints.find((hint) => hint.stringValue.includes("pt"));
+    const sizeHint = hints.find((hint) => hint.stringValue.startsWith("8–400 pixels"));
 
     assert.equal(marginHint.textColor.name, "systemRed");
     assert.equal(sizeHint.textColor.name, "secondaryLabel", "the valid rule stays quiet");
@@ -82,7 +82,7 @@ test("a choice row can be marked too, not only a typed one", () => {
 });
 
 test("a hint that offers is not marked with the value it did not rule out", () => {
-    // "8–400 pt" in red says what the number had to be. "or type a name" in
+    // "8–400 pixels, increase for larger photos" in red says what the number had to be. "or type a name" in
     // red said, to somebody who had just typed one, that they had not --
     // reported from use, and the loudest thing on the row.
     const { view } = build(specFor(undefined, [
@@ -95,7 +95,7 @@ test("a hint that offers is not marked with the value it did not rule out", () =
     ).textColor.name;
 
     assert.equal(
-        colorOf("8–400 pt"),
+        colorOf("8–400 pixels, increase for larger photos"),
         "systemRed",
         "the rule a number broke is marked with it"
     );

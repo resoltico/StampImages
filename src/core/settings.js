@@ -9,14 +9,14 @@ const CUSTOM_TEXT_LIMIT = 500;
 const UNRENDERABLE_TEXT = /\u0000|[\uD800-\uDFFF]/u;
 function choiceRule(name, labels) { const choices = Object.entries(labels).map(([value, label]) => ({ value, label })); return { kind: "choice", name, default: choices[0].value, choices }; }
 function integerRule(rule) {
-    return { kind: "integer", ...rule, hint: `${rule.minimum}–${rule.maximum} ${rule.unit}${rule.note ? `, ${rule.note}` : ""}` };
+    return { kind: "integer", ...rule, hint: `${rule.minimum}–${rule.maximum} ${rule.hintUnit ?? rule.unit}${rule.note ? `, ${rule.note}` : ""}` };
 }
 const SETTINGS_SCHEMA = Object.freeze({
     dateFormat: choiceRule("Date/time format", { "iso-minutes": "2026-09-09 14:30", "iso-date": "2026-09-09", "long-date": "September 9, 2026", none: "Do not stamp the date" }),
     coordinateFormat: choiceRule("Coordinate format", { none: "Do not stamp the coordinates", decimal: "56.9496, 24.1052", sexagesimal: "56°56'58.6\"N 24°6'18.7\"E" }),
     customText: { kind: "text", name: "Custom text", maximumLength: CUSTOM_TEXT_LIMIT, multiline: true, default: "" },
     font: { kind: "typeface", name: "Typeface", default: "Helvetica Neue", hint: "or type a name", suggestions: ["Helvetica Neue", "Arial", "Verdana", "Avenir Next", "Gill Sans", "Georgia", "Palatino", "Baskerville", "Menlo", "Courier New"] },
-    size: integerRule({ name: "Text size", minimum: 8, maximum: 400, unit: "pt", default: 36 }),
+    size: integerRule({ name: "Text size", minimum: 8, maximum: 400, unit: "pt", hintUnit: "pixels", default: 36, note: "increase for larger photos" }),
     textColor: { kind: "color", name: "Text color", default: "#FFFFFF", hint: "or type #RRGGBB", presets: ["#FFFFFF", "#000000", "#FFD400", "#FF3B30"] },
     outlineWidth: integerRule({ name: "Outline", minimum: 0, maximum: 20, unit: "px", default: 2, note: "0 for none" }),
     outlineColor: { kind: "color", name: "Outline color", default: "#202020", hint: "or type #RRGGBB", presets: ["#202020", "#000000", "#FFFFFF"] },

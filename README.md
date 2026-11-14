@@ -74,12 +74,14 @@ vendor-specific field or embedded preview can be transferred.
 | `coordinateFormat` | Coordinate format | `none`, `decimal` (56.9496, 24.1052), `sexagesimal` (56°56'58.6"N 24°6'18.7"E) | `none` |
 | `customText` | Custom text | Up to 500 UTF-16 code units after line-ending normalization; may span lines | empty |
 | `font` | Typeface | An installed face, named as in Font Book: `Georgia`, `Georgia Bold`, `Avenir Black` | Helvetica Neue |
-| `size` | Text size | 8–400 pt, at the image's own scale | 36 |
+| `size` | Text size | 8–400 pt (1 pt = 1 image pixel) | 36 |
 | `textColor` | Text color | `#RRGGBB` | `#FFFFFF` |
 | `outlineWidth` | Outline | 0–20 px; 0 for none | 2 |
 | `outlineColor` | Outline color | `#RRGGBB` | `#202020` |
 | `position` | Position | `bottom-right`, `bottom-left`, `top-right`, `top-left`, `bottom-center`, `top-center` | `bottom-right` |
 | `margin` | Margin | 0–2000 px from the edges the position names | 24 |
+
+Text size is fixed in image pixels, so larger photos need larger text sizes.
 
 The form prefers Helvetica Neue when available, otherwise the first installed
 suggestion. Settings files always require `font`; declared defaults do not fill

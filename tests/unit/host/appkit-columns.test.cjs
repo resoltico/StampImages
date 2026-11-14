@@ -93,7 +93,7 @@ test("a hint is centered against the field it describes", () => {
     // below the value it qualifies.
     const { view, controls } = buildForm(createFakeObjC(), specFor(), WIDGETS);
     const hints = view.subviews.filter((child) => child.editable === false
-        && child.stringValue === "8–400 pt");
+        && child.stringValue === "8–400 pixels, increase for larger photos");
     const [hint] = hints;
     const field = controls.size;
 

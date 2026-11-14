@@ -48,6 +48,7 @@ test("every row becomes exactly one description", () => {
 test("each kind of row carries what its widget needs and no more", () => {
     assert.equal(byKey("size").kind, "number");
     assert.equal(byKey("size").minimum, 8);
+    assert.equal(byKey("size").hint, "8–400 pixels, increase for larger photos");
     assert.equal(byKey("size").maximum, 400);
     assert.equal(byKey("textColor").kind, "color");
     assert.match(byKey("textColor").hint, /#RRGGBB/u);

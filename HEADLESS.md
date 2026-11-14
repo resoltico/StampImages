@@ -56,12 +56,14 @@ including when the configured typeface is unavailable.
 | `coordinateFormat` | Coordinate format | `none`, `decimal` or `sexagesimal` |
 | `customText` | Custom text | String of up to 500 UTF-16 code units; may contain newlines; CRLF and CR normalize to LF before counting; NUL and unpaired surrogates are refused |
 | `font` | Typeface | Nonblank name of an installed face, as in Font Book; trimmed |
-| `size` | Text size | Integer 8–400 (points at the image's scale) |
+| `size` | Text size | Integer 8–400 (one point equals one image pixel at 72 dpi) |
 | `textColor` | Text color | Six hexadecimal digits, optional `#`; outer whitespace trimmed, normalized to uppercase `#RRGGBB` |
 | `outlineWidth` | Outline | Integer 0–20 (pixels) |
 | `outlineColor` | Outline color | Six hexadecimal digits, optional `#`; outer whitespace trimmed, normalized to uppercase `#RRGGBB` |
 | `position` | Position | `bottom-right`, `bottom-left`, `top-right`, `top-left`, `bottom-center` or `top-center` |
 | `margin` | Margin | Integer 0–2000 (pixels) |
+
+Text size is fixed in image pixels, so larger photos need larger text sizes.
 
 A request must stamp something: a date format, a coordinate format or visible
 custom text. Whitespace, Unicode control/format characters and blank fillers alone

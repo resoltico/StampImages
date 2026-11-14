@@ -117,7 +117,7 @@ test("each numeric field is told the bounds it accepts", () => {
         .filter((child) => child.editable === false)
         .map((child) => child.stringValue);
 
-    assert.ok(hints.includes("8–400 pt"), hints.join(" | "));
+    assert.ok(hints.includes("8–400 pixels, increase for larger photos"), hints.join(" | "));
     assert.ok(hints.includes("0–2000 px"), hints.join(" | "));
     assert.ok(hints.includes("0–20 px, 0 for none"), hints.join(" | "));
 });
