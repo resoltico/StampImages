@@ -56,7 +56,7 @@ function daysInMonth(year, month) {
 }
 
 function isCalendarDate(year, month, day) {
-    return month >= 1 && month <= MONTHS_IN_YEAR &&
+    return year >= 1 && month >= 1 && month <= MONTHS_IN_YEAR &&
         day >= 1 && day <= daysInMonth(year, month);
 }
 
@@ -81,7 +81,7 @@ function isClockTime(hour, minute, second) {
  * stamped is the camera's own "09", not a nine.
  */
 function readMoment(text) {
-    const match = EXIF_MOMENT.exec(String(text));
+    const match = typeof text === "string" ? EXIF_MOMENT.exec(text) : null;
 
     if (!match) {
         return null;
@@ -106,4 +106,16 @@ function readMoment(text) {
     return isOffset(match.groups) ? { year, month, day, hour, minute } : null;
 }
 
-module.exports = { readMoment, isLeapYear, daysInMonth };
+/* A blank EXIF placeholder or a fully zero moment carries no capture time.
+ * Other recorded text, including year 0000 with nonzero fields, is invalid
+ * when readMoment cannot read it. Keep the same complete grammar for zeros.
+ */
+function isRecordedMoment(value) {
+    if (value === undefined || value === null) { return false; }
+    if (typeof value !== "string") { return true; }
+    const text = value.trim();
+    return !/^[\s:]*$/u.test(text) &&
+        (!EXIF_MOMENT.test(text) || /[1-9]/u.test(text));
+}
+
+module.exports = { readMoment, isRecordedMoment, isLeapYear, daysInMonth };

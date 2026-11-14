@@ -145,10 +145,12 @@ Each record has the image's full `source` path, `state`, `issues` and
 | `canceled` | Stop interrupted this image |
 | `not-started` | An earlier stop or fault ended the run first |
 
-`missingMetadata` lists requested fields the image cannot supply ("date/time",
-"GPS coordinates"). `invalidMetadata`, present only when non-empty, names those
-that are recorded but not valid, such as a zero date or a latitude beyond 90°.
-Either makes the run incomplete while keeping the copy.
+`missingMetadata` lists requested fields omitted from the stamp ("date/time",
+"GPS coordinates"), including recorded-invalid fields. `invalidMetadata`, present
+only when non-empty, names that subset: February 30, hour 24, year 0000 with nonzero
+date fields, or a latitude beyond 90°. Blank/all-zero dates are absent. Either kind
+of omission makes the run incomplete; other requested content can still make a copy.
+Human Missing notes name only absent fields, separately from recorded-invalid ones.
 
 Saved and recovered records also carry appearance notes, each `true` or `false`:
 

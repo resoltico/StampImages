@@ -46,10 +46,10 @@ test("coordinate parsing rejects coercible non-decimal data without losing valid
 });
 
 test("a requested field that is recorded but unusable is named apart from one that is absent", () => {
-    // Field regression: DateTimeOriginal "0000:00:00 00:00:00" and a latitude
+    // Field regression: An impossible recorded DateTimeOriginal and a latitude
     // of 999 degrees were reported as photographs that "do not say" when or
     // where they were taken.
-    const broken = { DateTimeOriginal: "0000:00:00 00:00:00", GPSLatitude: 999, GPSLongitude: 12 };
+    const broken = { DateTimeOriginal: "2026:02:30 00:00:00", GPSLatitude: 999, GPSLongitude: 12 };
     const both = { ...DEFAULTS, coordinateFormat: "decimal" };
     const nothing = inscriptionFor(broken, both);
 
@@ -62,7 +62,7 @@ test("a requested field that is recorded but unusable is named apart from one th
     assert.equal(inscriptionFor({}, both).invalid, undefined, "absent is not invalid");
     assert.match(inscriptionFor({ CreateDate: " " }, DEFAULTS).nothing, /does not say when it was taken,/u);
     assert.match(inscriptionFor({ CreateDate: "garbled" }, DEFAULTS).nothing,
-        /does not say when it was taken \(its date\/time is recorded but not valid\), and there/u);
+        /its date\/time is recorded but not valid, and there/u);
     for (const absent of [undefined, null, "", "  "]) {
         assert.equal(inscriptionFor({ DateTimeOriginal: absent }, DEFAULTS).invalid, undefined, String(absent));
     }

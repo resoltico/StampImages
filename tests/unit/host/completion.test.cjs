@@ -98,7 +98,7 @@ test("the detail lists copies by folder, then notes, failures, refusals and the 
     ], [{ path: "/u/x.gif", name: "x.gif", reason: "This file is not a supported format." }]);
 
     assert.equal(detail(result), [
-        "2 saved; 1 failed; 1 with nothing to stamp; 1 not started; 1 not included; 1 copy missing requested metadata.",
+        "2 saved; 1 failed; 1 with nothing to stamp; 1 not started; 1 not included; 1 copy with requested metadata left off.",
         "Saved to:\n/t/\na_stamped.jpg\nb_stamped.jpg",
         "Notes:\na_stamped.jpg: Missing requested metadata: GPS coordinates.\nb_stamped.jpg: The margin is larger than this image has room for, so the stamp was placed against the opposite edge.",
         "Nothing to stamp:\n/u/d.jpg: it does not say when it was taken",

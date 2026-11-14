@@ -35,12 +35,13 @@ function countsLine(summary) {
     const labels = { saved: "saved", recovered: "recovered", failed: "failed", "nothing-to-stamp": "with nothing to stamp", canceled: "canceled", "not-started": "not started" };
     const parts = Object.entries(labels).filter(([key]) => summary.counts[key] > 0).map(([key, label]) => `${summary.counts[key]} ${label}`);
     if (summary.refusals.length > 0) { parts.push(`${summary.refusals.length} not included`); }
-    if (summary.missing > 0) { parts.push(`${plural(summary.missing, "copy", "copies")} missing requested metadata`); }
+    if (summary.missing > 0) { parts.push(`${plural(summary.missing, "copy", "copies")} with requested metadata left off`); }
     return parts.length > 0 ? `${parts.join("; ")}.` : "";
 }
 function notesOf(image) {
+    const absent = (image.missingMetadata ?? []).filter((field) => !image.invalidMetadata?.includes(field));
     return [
-        image.missingMetadata?.length ? `Missing requested metadata: ${image.missingMetadata.join(", ")}.` : "",
+        absent.length ? `Missing requested metadata: ${absent.join(", ")}.` : "",
         image.invalidMetadata?.length ? `Recorded but not valid, so left off: ${image.invalidMetadata.join(", ")}.` : "",
         image.crowded ? "The margin is larger than this image has room for, so the stamp was placed against the opposite edge." : "",
         image.expanded ? "Written in color from a grayscale original." : "",

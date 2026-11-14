@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Blank or all-zero capture dates are missing; impossible dates and year 0000 are left off as invalid, with distinct explanations and the first valid capture-date fallback.
+
 - Neutral captions keep grayscale copies gray; colored captions retain 16-bit precision when expanding gray to RGB, and receipts describe the actual saved representation.
 
 - Command-line reports precede JSON receipts; broken stdout exits 1 with one plain stderr line, including help/version, while confirmed copies stay saved.

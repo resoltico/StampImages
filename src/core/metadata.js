@@ -1,6 +1,6 @@
 "use strict";
 
-const { readMoment } = require("./moment.js");
+const { readMoment, isRecordedMoment } = require("./moment.js");
 
 /*
  * What a photograph says about itself, read strictly.
@@ -8,9 +8,9 @@ const { readMoment } = require("./moment.js");
  * exiftool answers in JSON, and every field in it is a claim by whatever
  * wrote the file rather than a fact about the world. A camera clock can be
  * wrong, a coordinate can be absent, and a tag can hold text where a number
- * belongs. So each field is either understood completely or treated as
- * missing: a half-read date stamped onto somebody's photograph is worse than
- * no date, because it looks like a record.
+ * belongs. A field must be understood completely before it is stamped;
+ * absent fields and recorded-invalid ones are reported apart. A half-read
+ * date looks like a record, so it is worse than leaving that date off.
  *
  * Nothing here reaches the filesystem or a process. It takes the answer and
  * says what can be believed of it.
@@ -44,6 +44,10 @@ function captureMoment(facts) {
     }
 
     return null;
+}
+
+function captureMomentRecorded(facts) {
+    return MOMENT_TAGS.some((tag) => isRecordedMoment(facts[tag]));
 }
 
 const LATITUDE_LIMIT = 90;
@@ -86,4 +90,4 @@ function coordinates(facts) {
         : { latitude, longitude };
 }
 
-module.exports = { captureMoment, coordinates, MONTHS, MOMENT_TAGS };
+module.exports = { captureMoment, captureMomentRecorded, coordinates, MONTHS, MOMENT_TAGS };

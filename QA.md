@@ -69,6 +69,9 @@ signal actions. Actual command-line SIGINT/SIGTERM/repeat runs must produce canc
 receipts with exit 1 and preserve confirmed output/source integrity. Separate native
 controller probes establish explicit-close restoration; real command-line exit
 reclaims process-owned monitoring resources instead of returning through JS finally.
+Content checks generate blank/all-zero, year-zero and impossible calendar dates,
+verify distinct absence/invalid notes, and compare actual stamp pixels with
+caption-only or valid-secondary controls while keeping every source unchanged.
 Prior-workspace notes must exclude unrelated and temporary-root scan diagnostics.
 The color suite also checks neutral/active/inactive-outline palettes against gray8,
 non8bit-derived gray16, alpha and tagged profiles. It compares every channel outside

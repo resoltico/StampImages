@@ -87,8 +87,10 @@ omitted fields. Command-line typefaces are checked before tools or image
 inspection. See [HEADLESS.md](HEADLESS.md) for receipts and exit precedence.
 
 The stamp says at least one thing: a date, coordinates or custom text. The date
-comes from the image's `DateTimeOriginal`, or `CreateDate` when that is absent,
-never from the file's modification time; coordinates come from its GPS tags.
+uses the first valid `DateTimeOriginal` or `CreateDate`, in that order, never the
+file's modification time; coordinates come from its GPS tags. Blank/all-zero dates
+are absent; impossible recorded dates, including nonzero dates in year 0000, are
+left off as invalid.
 Both describe what the camera recorded, not an independently verified time or
 place. An image that lacks a requested field is still stamped with what it has,
 and completion says which field was missing or recorded but not valid. An image

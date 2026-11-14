@@ -51,7 +51,7 @@ test("field regression: stopped and partial completion expose unfinished counts 
     assert.match(detailOf(stopped).split("\n\n")[0], /1 saved; 1 canceled; 1 not started/u);
     const partial = runOutcome([{ source: "/a", state: "saved", output: "/out", issues: [], missingMetadata: ["date/time"] }]);
     assert.match(describe(partial), /issues/u);
-    assert.match(detailOf(partial).split("\n\n")[0], /1 copy missing requested metadata/u);
+    assert.match(detailOf(partial).split("\n\n")[0], /1 copy with requested metadata left off/u);
 });
 
 test("a usage error says what was wrong and the one line that would be right, not the whole help", () => {

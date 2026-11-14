@@ -12,9 +12,9 @@ const fc = require("fast-check");
  * valid. Date keeps its own calendar, so it is the one asked.
  */
 
-// Four digits of year is what the field holds, so every one of them.
+// Supported capture years are 0001–9999; year 0000 has separate invalid controls.
 const WHEN = fc.date({
-    min: new Date("0000-01-01T00:00:00.000Z"),
+    min: new Date("0001-01-01T00:00:00.000Z"),
     max: new Date("9999-12-31T23:59:59.999Z"),
     noInvalidDate: true
 });

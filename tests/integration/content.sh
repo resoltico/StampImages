@@ -72,4 +72,5 @@ if stamp "$WORK/caption-and-date.json" "$WORK/no-date.png" > "$WORK/partial.json
 fi
 assert_contains "$(cat "$WORK/partial.json")" '"missingMetadata":["date/time"]' "missing date is reported"
 test -f "$WORK/no-date_stamped.png" || fail "the caption-only partial copy was lost"
+node "$ROOT/tests/integration/date-content.cjs" "$SCRIPT" "$WORK/date-cases" "$WORK/photo.png" "$WORK/off.json"
 printf 'macOS stamp content integration passed\n'

@@ -23,7 +23,7 @@ test("summary facts retain saved grouping, all states, refusals and missing meta
     const summary = summarizeRun(runOutcome(images, [{ name: "no.gif", reason: "Not supported" }], ["/old.jpg"]));
     assert.deepEqual(summary.counts, { saved: 3, recovered: 1, failed: 1, "nothing-to-stamp": 1, canceled: 1, "not-started": 1 });
     assert.deepEqual(summary.saved, [{ folder: "/out/", outputs: [{ path: "/out/a.jpg", name: "a.jpg" }, { path: "/out/c.jpg", name: "c.jpg" }] }, { folder: "/other/", outputs: [{ path: "/other/b.jpg", name: "b.jpg" }] }]);
-    assert.equal(countsLine(summary), "3 saved; 1 recovered; 1 failed; 1 with nothing to stamp; 1 canceled; 1 not started; 1 not included; 1 copy missing requested metadata.");
+    assert.equal(countsLine(summary), "3 saved; 1 recovered; 1 failed; 1 with nothing to stamp; 1 canceled; 1 not started; 1 not included; 1 copy with requested metadata left off.");
     assert.equal(summary.notStarted, 1);
     assert.equal(summary.excluded[0], "/old.jpg");
     assert.equal(countsLine(summarizeRun(runOutcome())), "");
@@ -37,7 +37,7 @@ test("core report sections and metadata notes are literal contracts", () => {
         { state: "not-started", source: "/in/later.jpg", issues: [] }], [{ name: "no.gif", reason: "Unsupported" }], ["/old.jpg"], [{ code: "workspace", message: "Kept work", diagnostic: { path: "/workspace" } }]), elapsed: "1 second" };
     assert.equal(reportText(result), [
         "Stopped. Created 1 stamped copy.",
-        "1 saved; 1 failed; 1 with nothing to stamp; 1 canceled; 1 not started; 1 not included; 1 copy missing requested metadata.",
+        "1 saved; 1 failed; 1 with nothing to stamp; 1 canceled; 1 not started; 1 not included; 1 copy with requested metadata left off.",
         "Saved to:\n/out/\na.jpg",
         "Notes:\na.jpg: Missing requested metadata: date/time.\na.jpg: Recorded but not valid, so left off: GPS coordinates.\na.jpg: The margin is larger than this image has room for, so the stamp was placed against the opposite edge.\na.jpg: Written in color from a grayscale original.\na.jpg: Some characters are not in the chosen typeface and were drawn in another one.\na.jpg: The caption color could not be converted to the image's color profile.",
         "Nothing to stamp:\n/in/no-date.jpg: No date",
@@ -71,7 +71,7 @@ test("no-image dialogs retain both headlines and Finder instructions", () => {
 
 test("recovered metadata notes name the source and unknown publication reasons keep their own message", () => {
     const outcome = runOutcome([{ state: "recovered", source: "/in/a.jpg", recovery: "/kept/a.jpg", missingMetadata: ["date/time"], issues: [{ code: "publication", message: "Cannot save." }] }]);
-    assert.equal(reportText(outcome, false), "1 recovered; 1 copy missing requested metadata.\n\nNotes:\na.jpg: Missing requested metadata: date/time.\n\nSaved elsewhere:\n/kept/a.jpg\nCannot save.");
+    assert.equal(reportText(outcome, false), "1 recovered; 1 copy with requested metadata left off.\n\nNotes:\na.jpg: Missing requested metadata: date/time.\n\nSaved elsewhere:\n/kept/a.jpg\nCannot save.");
     assert.equal(describeNoImages([]), "No images selected.\n\nSelect JPEG, PNG, HEIC, TIFF, WebP or AVIF files or folders in Finder, then run the action again.");
 });
 
@@ -105,8 +105,8 @@ test("reports separate multiple folders, metadata fields and failure reasons", (
     const result = runOutcome([{ ...saved, missingMetadata: ["date/time", "GPS coordinates"], invalidMetadata: ["date/time", "GPS coordinates"] },
         { ...saved, source: "/in/b.jpg", output: "/other/b.jpg", missingMetadata: ["date/time"] },
         { state: "failed", source: "/in/c.jpg", issues: [{ code: "operation", message: "Failed.", diagnostic: { state: "denied" } }, { code: "cleanup", message: "Cleanup failed." }] }]);
-    assert.equal(reportText(result, false), ["2 saved; 1 failed; 2 copies missing requested metadata.", "Saved to:\n/out/\na.jpg\n\n/other/\nb.jpg",
-        "Notes:\na.jpg: Missing requested metadata: date/time, GPS coordinates.\na.jpg: Recorded but not valid, so left off: date/time, GPS coordinates.\nb.jpg: Missing requested metadata: date/time.",
+    assert.equal(reportText(result, false), ["2 saved; 1 failed; 2 copies with requested metadata left off.", "Saved to:\n/out/\na.jpg\n\n/other/\nb.jpg",
+        "Notes:\na.jpg: Recorded but not valid, so left off: date/time, GPS coordinates.\nb.jpg: Missing requested metadata: date/time.",
         "Could not stamp:\n/in/c.jpg: Failed. Cleanup failed."].join("\n\n"));
     assert.equal(describeNoImages([{ path: "/a.gif", reason: "Unsupported" }, { name: "b.gif", reason: "Unreadable" }], false), "/a.gif: Unsupported\nb.gif: Unreadable");
 });

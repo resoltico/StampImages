@@ -1,6 +1,6 @@
 "use strict";
 
-const { MONTHS, MOMENT_TAGS, captureMoment, coordinates } = require("./metadata.js");
+const { MONTHS, captureMoment, captureMomentRecorded, coordinates } = require("./metadata.js");
 const { normalizeCustomText, hasVisibleText } = require("./stamp-content.js");
 const { decimalPlace, sexagesimalPlace } = require("./place.js");
 
@@ -53,18 +53,17 @@ function customLines(text) {
  * rather than as a failure, because it is one: a scan has no shutter time and
  * no place, and neither has the program done anything wrong.
  */
-function describeAbsence(settings, invalid) {
-    const missing = [
-        settings.dateFormat === "none" ? "" : "when",
-        settings.coordinateFormat === "none" ? "" : "where"
+function describeNothing(settings, invalid) {
+    const absent = [
+        settings.dateFormat !== "none" && !invalid.includes("date/time") ? "when" : "",
+        settings.coordinateFormat !== "none" && !invalid.includes("GPS coordinates") ? "where" : ""
     ].filter(Boolean);
-    // A photograph whose date reads 0000:00:00 does say when it was taken --
-    // wrongly. Telling its owner it says nothing sends them looking for a tag
-    // that is there.
-    const unreadable = invalid.length > 0 ? ` (its ${invalid.join(" and ")} ${invalid.length === 1 ? "is" : "are"} recorded but not valid)` : "";
-
-    return `it does not say ${missing.join(" or ")} it was taken${unreadable}, ` +
-        "and there is no text of your own to put on it";
+    const missing = absent.length ? `it does not say ${absent.join(" or ")} it was taken` : "";
+    const unreadable = invalid.length
+        ? `its ${invalid.join(" and ")} ${invalid.length === 1 && invalid[0] === "date/time" ? "is" : "are"} recorded but not valid`
+        : "";
+    return [[missing, unreadable].filter(Boolean).join("; "),
+        "there is no text of your own to put on it"].filter(Boolean).join(", and ");
 }
 
 /*
@@ -77,7 +76,7 @@ function isRecorded(value) {
 
 // Asked only of what was requested and is missing: what was not requested is not read.
 const RECORDED = {
-    "date/time": (facts) => MOMENT_TAGS.some((tag) => isRecorded(facts[tag])),
+    "date/time": captureMomentRecorded,
     "GPS coordinates": (facts) => isRecorded(facts.GPSLatitude) || isRecorded(facts.GPSLongitude)
 };
 
@@ -139,7 +138,7 @@ function inscriptionFor(facts, settings) {
 
     return lines.length > 0
         ? { lines, text, ...omissions }
-        : { nothing: describeAbsence(settings, invalid), ...omissions };
+        : { nothing: describeNothing(settings, invalid), ...omissions };
 }
 
 module.exports = { inscriptionFor, wantsMetadata };
