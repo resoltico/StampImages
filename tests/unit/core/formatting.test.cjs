@@ -25,4 +25,3 @@ test("plural accepts an irregular plural", () => {
     assert.equal(plural(1, "entry", "entries"), "1 entry");
     assert.equal(plural(3, "entry", "entries"), "3 entries");
 });
-
