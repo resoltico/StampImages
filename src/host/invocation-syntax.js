@@ -8,8 +8,8 @@
  * argument. Dropping leading separators makes both of these equivalent, which
  * is what lets the integration suite run unattended:
  *
- *     osascript -l JavaScript script.jxa -- --headless config.json image
- *     osascript -l JavaScript script.jxa    --headless config.json image
+ *     osascript -l JavaScript script.jxa -- <args…>
+ *     osascript -l JavaScript script.jxa    <args…>
  */
 
 const ARGUMENT_SEPARATOR = "--";
@@ -18,7 +18,8 @@ const ARGUMENT_SEPARATOR = "--";
  * Normalize nested Shortcuts input, such as [[file, file], parameters], into
  * individual items. Stringifying an array would join paths with commas and
  * could pass superficial path/extension checks while naming no actual file.
- * The trailing parameters object is left for path resolution to ignore.
+ * The interactive collector filters the trailing parameters record before
+ * deciding whether Finder selection fallback is needed.
  */
 function normalizeInvocationInput(input) {
     if (input === undefined || input === null) {
@@ -47,12 +48,6 @@ function isLocalAuthority(authority) {
     return authority === "" || authority.toLowerCase() === LOCAL_HOST;
 }
 
-/*
- * Refuse malformed escapes and decoded NUL characters in file URLs. Keeping
- * an undecodable URL as a path could select a different file from the one
- * named. Unencoded spaces are accepted by decodeURIComponent; literal percent
- * characters in a filename must be encoded.
- */
 function hasUrlScheme(value) { return /^[A-Za-z][A-Za-z\d+.-]*:/u.test(String(value)); }
 
 function isRemoteUrl(value) {
@@ -66,6 +61,12 @@ function isRemoteUrl(value) {
 
 const NUL = "\u0000";
 
+/*
+ * Refuse malformed escapes and decoded NUL characters in file URLs. Keeping
+ * an undecodable URL as a path could select a different file from the one
+ * named. Unencoded spaces are accepted by decodeURIComponent; literal percent
+ * characters in a filename must be encoded.
+ */
 function decodePath(path) {
     try {
         const decoded = decodeURIComponent(path);

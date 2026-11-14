@@ -35,6 +35,7 @@ source "$ROOT/tests/integration/lib/volume.sh"
 
 require_tools
 test -f "$SCRIPT" || fail "no built artifact at $SCRIPT"
+node "$ROOT/tools/build-probe.mjs" tests/integration/stored-name-probe.js "$WORK/stored-name.jxa"
 
 settings_file "$WORK/config.json" "Riga"
 solid "$WORK/photo.jpg" 600 400 "#3080c0"
@@ -55,6 +56,7 @@ fi
 # name from there. What must not survive it is that place.
 # ---------------------------------------------------------------------------
 
+node "$ROOT/tests/integration/stored-names.cjs" "$WORK/stored-name.jxa" "$VOLUME/stored-names" HFS+
 cp "$WORK/photo.jpg" "$VOLUME/"
 stamp "$VOLUME/photo.jpg"
 

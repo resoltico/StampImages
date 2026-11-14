@@ -77,8 +77,16 @@ Inspect originals before consent, then capture and independently inspect private
 bytes before metadata/profile extraction and decoding. Keep original paths for
 reporting. `src/core/artifacts.js` owns artifact retention; workspace cleanup must
 not delete unresolved validated copies. Processing stays within the owned
-workspace lifetime. `src/core/inscription.js` decides what an image can say before
-rendering. Outcomes own actual saved/recovery mappings; progress counters do not
+workspace lifetime. `src/host/directory-entry-names.js` owns raw POSIX entry names;
+Foundation name APIs can normalize POSIX-created FAT32 names. Normalization selects
+candidates only; return literal entries after regular identity/size and chosen-parent
+rechecks. Mandatory stream cleanup remains a cleanup issue through publication
+preservation and stops later work. `src/core/inscription.js` decides what an image can say before
+rendering. The application supplies a required-once `metadataReady` handoff to the
+stamp port, copying known omission/invalidity arrays before rendering so later
+failures do not erase them. Validated-copy appearance and GPS-retention facts are
+reported only after the finished copy is checked. ExifTool projection carriers and
+reader-view notices remain private adapter data. Outcomes own actual saved/recovery mappings; progress counters do not
 establish publication.
 
 Shared facts and wording belong to `src/core/run-summary.js` and

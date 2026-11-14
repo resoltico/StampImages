@@ -45,6 +45,9 @@ source "$ROOT/tests/integration/lib/volume.sh"
 require_tools
 test -f "$SCRIPT" || fail "no built artifact at $SCRIPT"
 
+node "$ROOT/tools/build-probe.mjs" tests/integration/stored-name-probe.js "$WORK/stored-name.jxa"
+node "$ROOT/tests/integration/stored-names.cjs" "$WORK/stored-name.jxa" "$WORK/stored-local" local
+
 settings_file "$WORK/config.json" "Riga"
 solid "$WORK/photo.jpg" 600 400 "#3080c0"
 
@@ -68,6 +71,7 @@ said() {
 # ---------------------------------------------------------------------------
 
 if attach_test_volume "MS-DOS FAT32" "$FAT_NAME" "$FAT_VOLUME"; then
+    node "$ROOT/tests/integration/stored-names.cjs" "$WORK/stored-name.jxa" "$FAT_VOLUME/stored-names" FAT32
     cp "$WORK/photo.jpg" "$FAT_VOLUME/"
     stamp "$FAT_VOLUME/photo.jpg"
 
@@ -115,6 +119,7 @@ fi
 # ---------------------------------------------------------------------------
 
 if attach_test_volume "ExFAT" "$EXFAT_NAME" "$EXFAT_VOLUME"; then
+    node "$ROOT/tests/integration/stored-names.cjs" "$WORK/stored-name.jxa" "$EXFAT_VOLUME/stored-names" exFAT
     cp "$WORK/photo.jpg" "$EXFAT_VOLUME/"
     stamp "$EXFAT_VOLUME/photo.jpg"
 

@@ -168,3 +168,10 @@ Invalid-control styling is checked on the actual composed parent region with onl
 the native tint view removed as the negative control. Every control keeps its
 geometry, native content, mouse target, focus and accessibility; the long invalid
 caption is checked again after scrolling its real clip.
+
+Stored-name prerequisites rename an owned Node-created ASCII file through ordinary
+C rename, then check source-backed readback against independent raw Buffer names,
+dev/inode/size and payload. They run on local, HFS+, FAT32 and exFAT even when a
+provider lacks exclusive claims. Existing real-image/collision/recovery assertions
+remain. Required close-only and primary-plus-close failures stop later images while
+preserving causes, validated originals, claimed entries and every cleanup issue.

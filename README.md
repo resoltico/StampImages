@@ -99,7 +99,7 @@ are absent; impossible recorded dates, including nonzero dates in year 0000, are
 left off as invalid.
 GPS requires complete coordinate pairs, explicit valid references and valid original
 components. Invalid or incomplete EXIF coordinates are left off rather than replaced
-with XMP; XMP coordinates carry their own hemisphere when no EXIF pair is recorded.
+with XMP; XMP coordinates carry their own hemisphere when neither EXIF coordinate is recorded.
 Copies retain original GPS values without normalization, or the copy is refused.
 Both describe what the camera recorded, not an independently verified time or
 place. An image that lacks a requested field is still stamped with what it has,
@@ -136,6 +136,10 @@ overwritten. Leading dots, underscores and legal stem spelling remain intact, as
 does a matching extension’s case. Controls, line breaks and path separators become
 underscores; long names are shortened to leave room for collision numbering.
 Selecting a stamped copy directly stamps it again.
+
+Destination folders need read/search access as well as write access to verify the
+stored filename. An uncertain name leaves the created entry untouched and retains
+the validated original in its private workspace; see [file safety](SECURITY.md#file-safety-boundary).
 
 A copy keeps its source's format, chosen from the image content rather than its
 extension: a PNG named `photo.jpg` becomes `photo_stamped.png`. PNG and TIFF are

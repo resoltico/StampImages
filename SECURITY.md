@@ -25,9 +25,13 @@ A finished copy is published with an exact-path hard link, or with an exclusive
 rename of an owned copy on volumes that cannot link. Only a classified name
 collision is retried, with the next `_stamped N` name. Existing files, folders,
 pipes and links are never replaced or written inside. Native identity and size
-confirm the output and its actual stored basename before the workspace copy is
-released. The original is rechecked before copied recovery and before removal.
-A volume without either exclusive route fails over to recovery instead of exposing
+confirm the output and its literal directory-entry basename before the workspace
+copy is released. Destination folders require read/search access for that name
+verification; unavailable or ambiguous listings do not fall back to a canonical
+or guessed path. The original is rechecked before copied recovery and before removal.
+Required directory-stream cleanup failures stop later images while preserving
+validated work and the original failure/cancellation cause. A volume without
+either exclusive route fails over to recovery instead of exposing
 a partial file.
 
 If a copy cannot be published, it is recovered to `~/Downloads` under its intended
@@ -75,6 +79,13 @@ The action runs with your user permissions and trusts the installed `exiftool`,
 and verifying attestations need network access. Diagnostics can contain source and
 output paths and the underlying commands; review them before sharing.
 
+ExifTool's raw-copy program is fixed source; paths are passed as UserParam data,
+never interpolated into native code. It writes only the private candidate. Any
+scoped metadata-reader view or legacy WebP reader repair is memory-only: it does
+not replace source pixels, source files, or the actual target profile/maker data.
+Raw GPS must match a fresh target readback before publication. Unsupported physical
+GPS structures or a failed required setter/readback refuse the copy.
+
 ## Distribution integrity
 
 The release workflow requires the generated artifact to reproduce the committed
@@ -85,10 +96,3 @@ installation instructions and license are attestation subjects.
 [README.md](README.md#verify-a-download) describes download verification.
 Checksums and attestations do not verify a copy pasted into Shortcuts; replace it
 with the complete verified file when installing a build.
-
-ExifTool's raw-copy program is fixed source; paths are passed as UserParam data,
-never interpolated into native code. It writes only the private candidate. Any
-scoped metadata-reader view or legacy WebP reader repair is memory-only: it does
-not replace source pixels, source files, or the actual target profile/maker data.
-Raw GPS must match a fresh target readback before publication. Unsupported physical
-GPS structures or a failed required setter/readback refuse the copy.

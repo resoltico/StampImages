@@ -17,7 +17,7 @@ A command-line run never opens a dialog and neither reads nor writes remembered
 settings. External tools run in the C locale so message parsing does not depend on
 the terminal language. Paths may be absolute or relative to the working directory. Local
 `file://` URLs for settings and images are accepted; remote URLs of any scheme are refused.
-A relative filename containing a colon needs an explicit `./` prefix, for example
+A relative filename that looks like a URI scheme needs an explicit `./` prefix, for example
 `./photo:one.jpg`, to distinguish it from a URL scheme. Missing paths are reported
 before filename-format checks; permission failures remain distinct.
 
@@ -131,9 +131,12 @@ paths are known. Their existing diagnostic object shape is unchanged;
 `workspace-reclaimed` records successful reclamation with stage `workspace` and
 `diagnostic.path`. These informational diagnostics do not change run state.
 
-Output and recovery basenames are read back after publication and match the
-actual directory entry bytes; creation preserves source spelling where the
-filesystem permits it. A name-verification refusal keeps the validated original
+Output and recovery basenames come from literal native directory entries, coupled
+to the claimed regular-file identity and size. Normalization selects candidates
+but never changes the reported name; the chosen parent spelling is retained.
+Destination folders require read/search access. Unavailable or ambiguous listings
+report uncertainty instead of guessing a name. Creation preserves source spelling
+where the filesystem permits it. A name-verification refusal keeps the validated original
 in its private workspace and reports claim uncertainty without inventing a public
 output path. A missing or replaced original is a fatal fault with no asserted
 recovery path; a confirmed public output remains saved when original cleanup
