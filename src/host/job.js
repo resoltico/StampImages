@@ -17,4 +17,4 @@ function runJob(job, images) {
         completed: (record) => job.progress.finished(record.state)
     }, images);
 }
-module.exports = { runJob, destinationFor };
+module.exports = { runJob };

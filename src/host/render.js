@@ -2,7 +2,7 @@
 const { removeOwned } = require("./owned-cleanup.js");
 const { buildCompositeArgv } = require("../backend/commands.js");
 const { runArgv } = require("./shell.js");
-const { verifyFileWritten } = require("./asking.js");
+const { verifyFileWritten } = require("./filesystem-probes.js");
 const { drawLayers } = require("./layers.js");
 
 /*

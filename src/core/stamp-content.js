@@ -29,9 +29,4 @@ function requireStampContent(settings) {
     return settings;
 }
 
-module.exports = {
-    stampsNothing,
-    contentProblem,
-    requireStampContent,
-    EMPTY_STAMP_MESSAGE
-};
+module.exports = { stampsNothing, contentProblem, requireStampContent };

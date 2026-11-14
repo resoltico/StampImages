@@ -1,11 +1,11 @@
 "use strict";
 const { broadcast } = require("./broadcast.js");
-const { reporting } = require("./saying.js");
+const { imageProgress } = require("./image-progress.js");
 
 /*
  * Saying what the run is doing while it does it: how much there is, how much
  * is done, and the one object every surface is reported to. What is said about
- * the photograph in hand is saying.js, and where any of it is displayed is
+ * the photograph in hand is image-progress.js, and where any of it is displayed is
  * surfaces.js.
  *
  * One photograph is one unit of work, so there is one number rather than two.
@@ -19,7 +19,7 @@ const { reporting } = require("./saying.js");
  * that advanced it in the sibling, so a run whose second image failed ended at
  * 2 of 3, and one where all three failed ended at 0 of 3. And a report of what
  * is about to happen may stop the run, while a report of what has happened may
- * not: that is saying.js's rule, and this is where the answer it asks for
+ * not: that is image-progress.js's rule, and this is where the answer it asks for
  * comes from.
  */
 
@@ -110,7 +110,7 @@ function createProgress(sinks) {
     );
     const life = lifecycle(state, each);
 
-    return { ...reporting(state, say, life.stopped), ...life, diagnostics: state.diagnostics };
+    return { ...imageProgress(state, say, life.stopped), ...life, diagnostics: state.diagnostics };
 }
 
 module.exports = { createProgress, SILENT };

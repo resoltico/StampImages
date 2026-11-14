@@ -11,7 +11,7 @@ const { registerArtifact } = require("../core/artifacts.js");
 const { retainCandidate } = require("./workspace.js");
 const { removeOwned } = require("./owned-cleanup.js");
 const { composite, saveCopy } = require("./image.js");
-const { prepared } = require("./preparing.js");
+const { preparePhotograph } = require("./preparing.js");
 
 /*
  * One photograph, from the file that was selected to a finished copy waiting
@@ -74,7 +74,7 @@ function substituted(job, lines) {
 }
 
 function produce(job, image, token, intermediates) {
-    const met = prepared(job, image, token, intermediates);
+    const met = preparePhotograph(job, image, token, intermediates);
     const { photograph } = met;
     const drawn = stampOnto(job, photograph, {
         text: image.inscription.text,

@@ -2,7 +2,7 @@
 const { removeOwned } = require("./owned-cleanup.js");
 const { isUserCanceled } = require("../core/errors.js");
 const { runArgvInto } = require("./shell.js");
-const { sameBytes, isRegularNonEmpty } = require("./asking.js");
+const { sameBytes, isRegularNonEmpty } = require("./filesystem-probes.js");
 
 /*
  * Which colors a photograph's numbers mean.

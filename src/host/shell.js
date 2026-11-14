@@ -13,7 +13,7 @@ const { errorMessage, summarizeCommand } = require("../core/errors.js");
  * ever assembles a command string by concatenation.
  *
  * Asking the filesystem a question is a different thing and lives in
- * asking.js: a question that comes back "no" has answered, and must not be
+ * filesystem-probes.js: a question that comes back "no" has answered, and must not be
  * dressed up as a command that failed.
  */
 

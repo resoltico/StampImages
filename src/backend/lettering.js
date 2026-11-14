@@ -86,4 +86,4 @@ function buildTextArgv(vipsPath, outputPath, text, font) {
     ];
 }
 
-module.exports = { fontDescription, asMarkup, buildTextArgv };
+module.exports = { fontDescription, buildTextArgv };

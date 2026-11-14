@@ -20,7 +20,7 @@ const { UserCanceled } = require("../core/errors.js");
  * call following the button, so the report that discovers a stop is the one
  * being made, and checking first would miss it.
  */
-function reporting(state, say, stopped) {
+function imageProgress(state, say, stopped) {
     const announce = (text) => {
         state.description = text;
         say();
@@ -51,4 +51,4 @@ function reporting(state, say, stopped) {
     };
 }
 
-module.exports = { reporting };
+module.exports = { imageProgress };

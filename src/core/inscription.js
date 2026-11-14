@@ -163,4 +163,4 @@ function inscriptionFor(facts, settings) {
         : { nothing: describeAbsence(settings, invalid), ...omissions };
 }
 
-module.exports = { inscriptionFor, wantsMetadata, customLines, describeAbsence };
+module.exports = { inscriptionFor, wantsMetadata };

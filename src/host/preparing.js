@@ -4,7 +4,7 @@ const { buildOrientArgv } = require("../backend/commands.js");
 const { buildToSrgbArgv } = require("../backend/coloring.js");
 const { wantsColor } = require("../core/color.js");
 const { runArgv } = require("./shell.js");
-const { verifyFileWritten } = require("./asking.js");
+const { verifyFileWritten } = require("./filesystem-probes.js");
 const { sizeOf } = require("./tinting.js");
 const { refuseUnfaithful, hasAlpha, bandsOf } = require("./fidelity.js");
 const { profileFor } = require("./color-space.js");
@@ -105,7 +105,7 @@ function readPhotograph(job, source, token) {
  * it is read into sRGB and the stamp stays there with it -- which is the whole
  * of what the profile is for, so the profile goes with it.
  */
-function meeting(job, photograph, profile, token) {
+function prepareColorSpace(job, photograph, profile, token) {
     if (bandsOf(job, photograph.path) > GRAY_BANDS || !wantsColor(job.settings)) {
         return { photograph, profile, expanded: false };
     }
@@ -121,14 +121,14 @@ function meeting(job, photograph, profile, token) {
  * Everything the photograph has to be, in order, with each stage this
  * photograph's to clear away -- the expansion included.
  */
-function prepared(job, image, token, intermediates) {
+function preparePhotograph(job, image, token, intermediates) {
     const read = readPhotograph(job, image.path, token);
 
     intermediates.push(read.path);
 
-    const met = meeting(job, read, profileFor(job, image.path, token), token);
+    const met = prepareColorSpace(job, read, profileFor(job, image.path, token), token);
 
-    // Only when there is a second file: unexpanded, the meeting hands back the
+    // Only when there is a second file: unexpanded, color preparation hands back the
     // photograph it was given, and a list holding it twice removes it twice.
     if (met.expanded) {
         intermediates.push(met.photograph.path);
@@ -137,4 +137,4 @@ function prepared(job, image, token, intermediates) {
     return met;
 }
 
-module.exports = { readPhotograph, inColor, meeting, prepared };
+module.exports = { readPhotograph, prepareColorSpace, preparePhotograph };

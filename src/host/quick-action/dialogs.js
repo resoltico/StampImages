@@ -137,4 +137,4 @@ function collectDialogSettings(app, answers, context) {
     }
 }
 
-module.exports = { collectDialogSettings, askRow };
+module.exports = { collectDialogSettings };

@@ -79,4 +79,4 @@ function normalizeSettings(input) {
     if (result.issues.length) { throw new IssueError(result.issues.map((issue) => issue.message).join("\n"), { issues: result.issues }); }
     return result.settings;
 }
-module.exports = { SETTINGS_SCHEMA, SETTINGS_FIELDS, CUSTOM_TEXT_LIMIT, isSettingsRecord, settingIssue, readSetting, validateSettings, stampIssues, normalizeSettings };
+module.exports = { SETTINGS_SCHEMA, SETTINGS_FIELDS, CUSTOM_TEXT_LIMIT, settingIssue, readSetting, validateSettings, stampIssues, normalizeSettings };

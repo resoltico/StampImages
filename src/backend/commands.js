@@ -70,10 +70,4 @@ function buildFlattenArgv(vipsPath, inputPath, outputPath) {
     return [vipsPath, "flatten", inputPath, outputPath, "--background=255,255,255"];
 }
 
-module.exports = {
-    FAIL_ON_DAMAGE,
-    readingPath,
-    buildCompositeArgv,
-    buildOrientArgv,
-    buildFlattenArgv
-};
+module.exports = { readingPath, buildCompositeArgv, buildOrientArgv, buildFlattenArgv };

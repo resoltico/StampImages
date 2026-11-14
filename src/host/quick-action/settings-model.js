@@ -96,5 +96,4 @@ function readAnswers(answers, fonts) {
     }
     return problems.length > 0 ? { problems, values: settings } : { settings };
 }
-module.exports = { CONTROLS, POSITION, DATE_FORMAT, COORDINATE_FORMAT, SIZE, MARGIN, OUTLINE_WIDTH, ORDER, labelsOf, defaultValueOf, labelOfValue, defaultLabelOf, valueOfLabel,
-    fontControl, resolvedRow, controlFor, formRows, defaultSettings, answersFromSettings, defaultAnswers, readNumber, readAnswer, readAnswers };
+module.exports = { POSITION, DATE_FORMAT, COORDINATE_FORMAT, SIZE, MARGIN, OUTLINE_WIDTH, ORDER, labelsOf, defaultValueOf, labelOfValue, defaultLabelOf, valueOfLabel, fontControl, resolvedRow, controlFor, formRows, defaultSettings, answersFromSettings, defaultAnswers, readAnswer, readAnswers };

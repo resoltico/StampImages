@@ -5,7 +5,7 @@ const { buildCompositeArgv, buildFlattenArgv } = require("../backend/commands.js
 const { buildMetadataCopyArgv } = require("../backend/metadata-copy.js");
 const { savingPath } = require("../core/output-format.js");
 const { runArgv } = require("./shell.js");
-const { verifyFileWritten } = require("./asking.js");
+const { verifyFileWritten } = require("./filesystem-probes.js");
 const { sizeOf } = require("./tinting.js");
 
 /*

@@ -72,4 +72,4 @@ function resolved(known, name) {
         : { problem: unknownTypeface(known, name) };
 }
 
-module.exports = { inWords, unknownTypeface, resolved };
+module.exports = { inWords, resolved };

@@ -76,4 +76,4 @@ function showDetails(app, spec, bridge = appkitBridge(globalThis.ObjC, globalThi
     const response = Number(detailsAlert(bridge.ns, spec).runModal);
     return response === MODAL_UNAVAILABLE ? showDetailPages(app, spec) : response - FIRST_BUTTON;
 }
-module.exports = { makeDetails, detailsAlert, showDetails, detailPages, DETAIL_HEIGHT, DETAIL_WIDTH };
+module.exports = { makeDetails, showDetails, DETAIL_HEIGHT };

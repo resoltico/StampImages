@@ -35,8 +35,6 @@ function writeReceipt(text, ns = foundation(globalThis.ObjC, globalThis.$), stde
     return true;
 }
 
-function isCompleteSuccess(result) { return result.state === "complete"; }
-
 function exitCli(code) { ObjC.import("stdlib"); return $.exit(code); }
 
-module.exports = { exitCli, foundation, writeReceipt, isCompleteSuccess };
+module.exports = { exitCli, writeReceipt };

@@ -6,7 +6,7 @@ const {
     buildIccArgv
 } = require("../backend/coloring.js");
 const { positiveHeaderField } = require("./fidelity.js");
-const { succeeds } = require("./asking.js");
+const { succeeds } = require("./filesystem-probes.js");
 const { runArgv } = require("./shell.js");
 
 /*

@@ -11,7 +11,7 @@ const {
     isExecutable,
     pathIsTaken,
     verifyFileWritten
-} = require("../../../src/host/asking.js");
+} = require("../../../src/host/filesystem-probes.js");
 const { createFakeApp, failing } = require("./fake-app.cjs");
 
 test("the file predicates report true when test succeeds", () => {

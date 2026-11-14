@@ -89,4 +89,4 @@ function releaseOwnedArtifact(job, path) {
 }
 
 function nonce() { return `${Date.now()}-${Math.floor(Math.random() * NONCE_RANGE)}`; }
-module.exports = { createWorkspace, removeWorkspace, reclaimWorkspaces, retainCandidate, clearRetention, releaseOwnedArtifact, nonce };
+module.exports = { createWorkspace, removeWorkspace, reclaimWorkspaces, retainCandidate, releaseOwnedArtifact, nonce };

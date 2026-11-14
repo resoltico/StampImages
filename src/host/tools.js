@@ -4,7 +4,7 @@ const { isUserCanceled } = require("../core/errors.js");
 const { PRINTENV } = require("../core/executables.js");
 const { shellQuote } = require("../core/shell.js");
 const { tryArgv } = require("./shell.js");
-const { isExecutable } = require("./asking.js");
+const { isExecutable } = require("./filesystem-probes.js");
 
 /*
  * Discovery of the external command-line tools.
