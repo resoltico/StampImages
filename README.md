@@ -116,10 +116,13 @@ packages, links and earlier stamped copies, and reports unreadable entries and
 visible special files such as pipes and sockets.
 Overlapping selections and hard links are stamped once.
 
-A copy of an image found in a selected folder is saved in that selected folder; a
-copy of an image selected directly is saved beside it. Copies are named
+Every stamped copy is saved beside its original, including images found in selected
+subfolders. Copies are named
 `holiday_stamped.jpg`, then `holiday_stamped 2.jpg` and so on; nothing is ever
-overwritten. Selecting a stamped copy directly stamps it again.
+overwritten. Leading dots, underscores and legal stem spelling remain intact, as
+does a matching extension’s case. Controls, line breaks and path separators become
+underscores; long names are shortened to leave room for collision numbering.
+Selecting a stamped copy directly stamps it again.
 
 A copy keeps its source's format, chosen from the image content rather than its
 extension: a PNG named `photo.jpg` becomes `photo_stamped.png`. PNG and TIFF are

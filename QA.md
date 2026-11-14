@@ -60,7 +60,9 @@ registration, teardown and reentrant native visibility getters. `resources.sh` c
 confirmed temporary recovery and dead/live/retained/unreadable workspace ownership;
 `concurrency.sh` checks 12 two-process publication rounds. Copy naming checks
 compare receipt basename buffers to raw directory entries for NFC/NFD, case and
-normalization collisions, long byte-budget names, and accented recovery names.
+normalization collisions, hidden/legal stem spelling, matching extension case,
+long byte-budget names, and accented recovery names. Folder checks verify copies
+beside each original, per-folder collisions and exclusions on repeated runs.
 Ownership controls cover name-readback refusal, original replacement during copy
 and after name lookup, explicit no-recovery faults and confirmed-output retention. CLI and lifecycle probes
 also cover strict settings, statuses, source capture, recovery and cancellation.

@@ -131,6 +131,12 @@ output path. A missing or replaced original is a fatal fault with no asserted
 recovery path; a confirmed public output remains saved when original cleanup
 cannot safely proceed.
 
+Folder discoveries are saved beside each original rather than in the selected top
+folder. A matching source extension retains its spelling/case; content mismatches
+use the encoding’s canonical extension. Legal source stems, including leading dots
+and underscores, are kept. Controls, line breaks and separators become underscores;
+UTF-8 byte limits can shorten the stem while reserving collision suffix room.
+
 ## Image records
 
 Each record has the image's full `source` path, `state`, `issues` and

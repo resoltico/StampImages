@@ -24,11 +24,11 @@ test("the copy keeps the kind of file the photograph was", () => {
     }
 });
 
-test("the spelling on disk does not decide the spelling written back", () => {
-    // A name is matched however it was typed, and answered in one spelling.
-    assert.equal(outputFormat("/a/PHOTO.JPG", false).extension, ".jpg");
-    assert.equal(outputFormat("/a/photo.JPEG", false).extension, ".jpeg");
-    assert.equal(outputFormat("/a/photo.TiFf", false).extension, ".tiff");
+test("matching extension spelling is preserved while encoder matching is case-insensitive", () => {
+    // Matching is case-insensitive; the supplied matching spelling is data.
+    assert.equal(outputFormat("/a/PHOTO.JPG", false).extension, ".JPG");
+    assert.equal(outputFormat("/a/photo.JPEG", false).extension, ".JPEG");
+    assert.equal(outputFormat("/a/photo.TiFf", false).extension, ".TiFf");
 });
 
 
@@ -53,7 +53,7 @@ test("unsupported output and disguised source formats are refused", () => {
     const { extensionFor } = require("../../../src/core/output-format.js");
     assert.throws(() => outputFormat("photo.gif", false).extension, /Unsupported/u);
     assert.equal(extensionFor("photo.jpg", "PNG"), ".png");
-    assert.equal(extensionFor("photo.JPEG", "JPEG"), ".jpeg");
+    assert.equal(extensionFor("photo.JPEG", "JPEG"), ".JPEG");
 });
 
 test("actual content families match every supported extension", () => {
@@ -79,4 +79,14 @@ test("HDR JPEG saves exclude the gain map and retain standard metadata classes",
     assert.equal(savingPath("photo.jpg", false), "photo.jpg[Q=90]");
     assert.equal(savingPath("photo.png", true), "photo.png");
     assert.equal(savingPath("photo.webp", true), "photo.webp[Q=90]");
+});
+
+
+test("only genuine content mismatches switch to a canonical extension", () => {
+    const { extensionFor } = require("../../../src/core/output-format.js");
+    assert.equal(extensionFor("UPPER.JPG", "JPEG"), ".JPG");
+    assert.equal(extensionFor("mixed.PnG", "PNG"), ".PnG");
+    assert.equal(extensionFor("wrong.JPG", "PNG"), ".png");
+    assert.equal(extensionFor("wrong.HEIC", "HEIF", "av1"), ".avif");
+    assert.equal(savingPath("UPPER.JPG", false), "UPPER.JPG[Q=90]");
 });

@@ -12,10 +12,9 @@ const { rejectionReason, FOLDER, UNSUPPORTED, NOT_A_FILE, NOT_A_PATH, REMOTE_URL
  * accepted requests refer to an image already included in this run.
  */
 
-function record(path, folder) {
-    // Copies from a folder selection go into that selected folder, including
-    // images discovered below it; directly selected images use their own folder.
-    return { path, originalName: basename(path), folder };
+function record(path) {
+    // Every stamped copy belongs beside its original, including folder discoveries.
+    return { path, originalName: basename(path), folder: dirname(path) };
 }
 
 const KIND_REASONS = {
@@ -63,7 +62,7 @@ function admitFolder(tree, path, outcome) {
     }
 
     for (const image of found.found) {
-        outcome.images.push(record(image, `${path}/`));
+        outcome.images.push(record(image));
     }
 }
 
@@ -106,7 +105,7 @@ function admit(app, tree, root, outcome) {
     // have taken the same photograph under the name it is stored as.
     if (!outcome.taken.has(root.identity || root.path)) {
         outcome.taken.add(root.identity || root.path);
-        outcome.images.push(record(root.path, dirname(root.path)));
+        outcome.images.push(record(root.path));
     }
 }
 

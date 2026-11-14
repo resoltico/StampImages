@@ -33,21 +33,20 @@ const COLLISION_RESERVE_BYTES = 5;
 function boundedStem(stem, suffix) {
     const budget =
         FILENAME_BUDGET_BYTES - utf8Length(suffix) - COLLISION_RESERVE_BYTES;
-    const kept = truncateToBytes(stem, Math.max(budget, 0));
-
-    // Cutting can leave the trailing underscore or dot that sanitizing exists
-    // to remove, so what is left goes through it again.
-    return kept === stem ? stem : sanitizeFilename(kept);
+    return truncateToBytes(stem, Math.max(budget, 0));
 }
 
 /*
  * A name built from a source name, a marker and an extension, cut to fit.
  *
- * The stem is sanitized before it is measured, because sanitizing can change
- * how many bytes it is.
+ * Preserve the original stem, including leading dots, underscores and spaces.
+ * Only controls/line breaks/separators and the output byte budget require changes.
  */
 function nameFrom(originalName, suffix) {
-    const stem = sanitizeFilename(fileStem(originalName));
+    // A source basename cannot contain a separator; controls and line breaks
+    // must not turn a displayed output name into another line.
+    const cleaned = fileStem(originalName).replace(/[\p{Cc}\u2028\u2029/]/gu, "_");
+    const stem = cleaned || "image";
 
     return `${boundedStem(stem, suffix)}${suffix}`;
 }

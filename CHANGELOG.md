@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Folder runs save each stamped copy beside its original; legal stems and matching extension case stay intact, with only unsafe controls or byte-length limits changing names.
+
 - Blank or all-zero capture dates are missing; impossible dates and year 0000 are left off as invalid, with distinct explanations and the first valid capture-date fallback.
 
 - Neutral captions keep grayscale copies gray; colored captions retain 16-bit precision when expanding gray to RGB, and receipts describe the actual saved representation.

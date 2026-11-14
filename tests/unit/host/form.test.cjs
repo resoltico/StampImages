@@ -114,3 +114,17 @@ test("several corrections are counted above the controls and listed in the note"
     assert.equal(shown.detail, "Correct the 2 highlighted settings, listed below.");
     assert.match(shown.fullDetail, /^A\.\nB\.\n/u);
 });
+
+
+test("folder discovery sends actual descendant destinations to the save-location note", () => {
+    const { collectImageFiles } = require("../../../src/host/admission.js");
+    const { executeRun } = require("../../../src/application/run.js");
+    const { treeOf } = require("./fake-tree.cjs");
+    const { createFakeApp } = require("./fake-app.cjs");
+    const selection = collectImageFiles(createFakeApp(), ["/Trip"], treeOf({ "/Trip": ["A", "B"], "/Trip/A": ["same.png"], "/Trip/B": ["same.png"] }));
+    let context = null;
+    executeRun({ prepare: () => ({ selection }), process: () => ({ images: [], issues: [] }), progress: { pause: () => undefined, close: () => undefined, diagnostics: [] },
+        interaction: { settings: (value) => { context = value; return {}; }, present: (result) => result } });
+    assert.deepEqual(context.folders, ["/Trip/A/", "/Trip/B/"]);
+    assert.match(invitation(context), /saved in 2 folders\n\nSave locations:\n\/Trip\/A\/\n\/Trip\/B\//u);
+});

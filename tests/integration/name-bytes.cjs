@@ -19,13 +19,22 @@ function actualEntry(filename) {
 
 for (const [index, spec] of [
     { name: "café.png", expected: "café_stamped.png" },
+    { name: "UPPER.JPG", expected: "UPPER_stamped.JPG", jpeg: true },
+    { name: ".explicit.jpg", expected: ".explicit_stamped.jpg", jpeg: true },
+    { name: ".explicit.PNG", expected: ".explicit_stamped.PNG" },
+    { name: "__name__.PnG", expected: "__name___stamped.PnG" },
+    { name: " spaced .PNG", expected: " spaced _stamped.PNG" },
+    { name: "colon:one.PNG", expected: "colon:one_stamped.PNG" },
+    { name: "line\nbreak.PNG", expected: "line_break_stamped.PNG" },
     { name: "cafe\u0301.png", expected: "cafe\u0301_stamped.png" },
     { name: "photo.png", occupied: "PHOTO_stamped.png", expected: "photo_stamped 2.png" },
     { name: "rīga.png", occupied: "ri\u0304ga_stamped.png", expected: "rīga_stamped 2.png" },
     { name: `${"é".repeat(120)}.png` }
 ].entries()) {
     const directory = path.join(root, String(index)); fs.mkdirSync(directory, { recursive: true });
-    const input = path.join(directory, spec.name); fs.copyFileSync(source, input);
+    const input = path.join(directory, spec.name);
+    if (spec.jpeg) { execFileSync("vips", ["copy", source, input]); }
+    else { fs.copyFileSync(source, input); }
     const before = digest(input);
     if (spec.occupied) { fs.writeFileSync(path.join(directory, spec.occupied), "Occupied by somebody else."); }
     const output = execFileSync("/usr/bin/osascript", ["-l", "JavaScript", script, "--", "--headless", config, input], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
