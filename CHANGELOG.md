@@ -2,11 +2,15 @@
 
 ## [Unreleased]
 
+- The `empty-stamp` receipt issue now uses stage `settings` and field `customText`; update consumers that match its previous request stage.
+- Command-line typefaces are checked before tools and image inspection; invalid requests with missing tools now exit 2 instead of 3.
 - Licensed under AGPL-3.0-only instead of MPL-2.0: distributing the script or a modified version requires offering its corresponding source; see [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md).
+- Contributors must use Node 26.13.1 and npm 12.2.2; restore refreshed development dependencies with `npm ci --ignore-scripts`.
 - Contributions are accepted under the [contribution terms](CONTRIBUTING.md#contribution-terms), which also let Ervins Strauhmanis license them commercially.
+- Cancel from filesystem, tool and workspace probes now stops the run instead of being treated as a negative probe result.
+- Command-line help now declares Helvetica Neue as the typeface default; settings files still require `font`.
 - Ultra HDR JPEG photos are accepted and stamped as standard-range JPEG copies without gain maps; capture metadata and color profiles are retained.
 - Unsupported-content refusals use clearer wording and include the vips loader in receipt diagnostics and completion Details.
-- Contributors must use Node 26.13.1 and npm 12.2.2; restore refreshed development dependencies with `npm ci --ignore-scripts`.
 
 ## [2.0.0] - 2026-11-05
 

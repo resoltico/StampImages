@@ -72,6 +72,11 @@ defaults delete com.resoltico.StampImages
 | `position` | Position | `bottom-right`, `bottom-left`, `top-right`, `top-left`, `bottom-center`, `top-center` | `bottom-right` |
 | `margin` | Margin | 0–2000 px from the edges the position names | 24 |
 
+The form prefers Helvetica Neue when available, otherwise the first installed
+suggestion. Settings files always require `font`; declared defaults do not fill
+omitted fields. Command-line typefaces are checked before tools or image
+inspection. See [HEADLESS.md](HEADLESS.md) for receipts and exit precedence.
+
 The stamp says at least one thing: a date, coordinates or custom text. The date
 comes from the image's `DateTimeOriginal`, or `CreateDate` when that is absent,
 never from the file's modification time; coordinates come from its GPS tags.
