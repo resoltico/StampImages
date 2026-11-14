@@ -1,5 +1,6 @@
 "use strict";
 const { OperationError } = require("../core/errors.js");
+const { INTERPRETATION_BANDS } = require("../core/source-policy.js");
 
 const { buildSizeArgv } = require("../backend/queries.js");
 const { positiveIntegerFrom } = require("../core/numbers.js");
@@ -26,7 +27,6 @@ const { runArgv } = require("./shell.js");
  * the band count alone cannot tell them apart: a CMYK JPEG and a PNG with
  * transparency both report four.
  */
-const FAITHFUL = ["sRGB", "RGB", "RGB16", "B_W", "GRAY16"];
 const INTERPRETATION = /VIPS_INTERPRETATION_(?<kind>\w+)/u;
 
 /*
@@ -89,7 +89,7 @@ function pagesIn(job, path) {
 function refuseUnfaithful(job, source) {
     const kind = kindOf(job, source);
 
-    if (!FAITHFUL.includes(kind)) {
+    if (!Object.hasOwn(INTERPRETATION_BANDS, kind.toLowerCase().replace(/_/gu, "-"))) {
         throw new OperationError(
             "This image is not stored as color or gray, so a stamped " +
                 `copy of it would not be the colors it is (${kind || "unreadable"}).`

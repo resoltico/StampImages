@@ -31,7 +31,7 @@ function checking(settings) {
 }
 
 test("a color photograph and a gray one are both copied faithfully", () => {
-    for (const stored of ["color", "gray", "deep"]) {
+    for (const stored of ["color", "gray", "deep", "GREY16"]) {
         assert.doesNotThrow(checking({ stored }), stored);
     }
 });
@@ -92,4 +92,10 @@ test("the reason a file is refused says which file it is about", () => {
         checking({ stored: "print" }),
         /would not be the colors it is/u
     );
+});
+
+test("the native GREY16 enum is accepted without inventing a GRAY16 alias", () => {
+    assert.equal(kindOf(jobOn({ stored: "GREY16" }), "/a/one.tif"), "GREY16");
+    assert.doesNotThrow(checking({ stored: "GREY16" }));
+    assert.throws(checking({ stored: "GRAY16" }), /not stored as color or gray/u);
 });
