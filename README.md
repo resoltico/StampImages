@@ -43,8 +43,9 @@ installing and removing the action.
 3. Choose the settings and click **Create**. The note above the controls says
    how many stamped copies will be made and where they will be saved. If a
    setting is wrong, every problem is listed at once and your draft is kept.
-4. A progress panel shows the current image. **Stop** takes effect at the next
-   safe point and keeps every copy already saved.
+4. A progress panel shows the current image. **Stop** changes to disabled
+   **Stopping…** feedback immediately, takes effect at the next safe point and
+   keeps every copy already saved.
 5. Completion lists what was saved, where, and anything to know about each copy.
    **Show in Finder** reveals the copies; **Details** shows technical
    diagnostics and **Back** returns to the summary.

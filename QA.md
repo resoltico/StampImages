@@ -50,7 +50,9 @@ The integration scripts under `tests/integration/` exercise real stamp pixels,
 placement, supported formats, source hashes, date/GPS content, alpha, profiles,
 grayscale color expansion, fonts, damaged/multi-image refusal (including JPEG decoder warnings), selection,
 publication collisions, cross-volume/card behavior, measurement failures and
-native form geometry/accessibility in both appearances. Actual modal checks verify
+native form geometry/accessibility in both appearances. Stop exposes an actual
+accessibility button, acknowledges its action with disabled feedback and fits its
+full title; a toggle control is the negative control. Actual modal checks verify
 first-line initialization and later user scrolling for details, notes and multiline
 captions; caption documents use clip-local coordinates. Callback tests guard
 registration, teardown and reentrant native visibility getters. `resources.sh` checks

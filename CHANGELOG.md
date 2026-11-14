@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Stop is exposed as a button and immediately changes to disabled “Stopping…” feedback while waiting for a safe checkpoint.
+
 - Scrollable details and form text open at their first line, retain later user scrolling, and multiline captions scroll within their own editor.
 
 - Completion omits empty diagnostic values and no longer offers Details for a plain stop with no useful technical information.

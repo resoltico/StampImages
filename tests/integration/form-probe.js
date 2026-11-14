@@ -4,7 +4,7 @@ const { readAnswers } = require("../../src/host/quick-action/settings-model.js")
 const { defaultAnswers } = require("../../src/host/quick-action/settings-model.js");
 const { buildForm } = require("../../src/host/quick-action/appkit-form.js");
 const { detailsAlert, layoutDetails, runDetailsModal } = require("../../src/host/quick-action/details-dialog.js");
-const { allowWindows } = require("../../src/host/quick-action/panel.js");
+const { build: buildProgressPanel, allowWindows } = require("../../src/host/quick-action/panel.js");
 const { WIDGETS, readControls } = require("../../src/host/quick-action/appkit.js");
 const { unbindChoices } = require("../../src/host/quick-action/appkit-choice.js");
 
@@ -112,6 +112,20 @@ function stampFormSnapshot(folder, scenario, appearance) {
     }
 }
 
+function checkStopControl(appearance) {
+    const view = buildProgressPanel($, ObjC);
+    view.panel.appearance = $.NSAppearance.appearanceNamed(appearance);
+    const accessible = $.NSAccessibilityUnignoredDescendant(view.stop);
+    assertNativeStamp(String(ObjC.unwrap(accessible.accessibilityRole)) === "AXButton", "Stop is not an accessibility button.");
+    view.stop.setButtonType(1);
+    assertNativeStamp(String(ObjC.unwrap(accessible.accessibilityRole)) === "AXCheckBox", "The legacy toggle negative control did not expose a checkbox.");
+    view.stop.setButtonType(7);
+    assertNativeStamp($.NSApplication.sharedApplication.sendActionToFrom(view.stop.action, view.stop.target, view.stop), "Stop action was not handled.");
+    assertNativeStamp(!view.stop.enabled && String(ObjC.unwrap(view.stop.title)) === "Stopping…", "Stop request feedback is missing.");
+    assertNativeStamp(Number(view.stop.cell.cellSize.width) <= Number(view.stop.frame.size.width), "Stopping feedback is clipped.");
+    view.panel.close;
+}
+
 const MODAL_SCROLL_DELAY = 0.1;
 const SCROLL_TOLERANCE = 0.001;
 
@@ -212,6 +226,7 @@ function run(input) {
     ];
     for (const symbol of ["NSAppearanceNameAqua", "NSAppearanceNameDarkAqua"]) {
         const appearance = ObjC.unwrap($[symbol]);
+        checkStopControl(appearance);
         checkModalScroll(appearance, false);
         checkModalScroll(appearance, true);
         checkModalScroll(appearance, true, true);
