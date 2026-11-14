@@ -39,10 +39,8 @@ stamp() {
 
 # Where a copy that could not be published was put, as the message names it.
 #
-# Out of the receipt rather than the standard error: a photograph that failed
-# is a record in the receipt, and the run's own error says only how much of
-# the request went unhonoured. The message is JSON, so its newlines are two
-# characters and have to be made into one before a line can be read.
+# The structured receipt identifies recovered copies independently of the
+# human report. Unescape its message newlines for the cause assertions below.
 said() {
     awk '{ gsub(/\\n/, "\n"); print }' "$WORK/receipt"
 }
@@ -101,6 +99,10 @@ KEPT=$(kept_copy)
 test -n "$KEPT" || fail "no recovery path was named: $(cat "$WORK/receipt")"
 test -f "$KEPT" || fail "the copy is not where the message says it is: $KEPT"
 test "$(vipsheader -f width "$KEPT")" = 600 || fail "what was kept is not the copy"
+assert_contains "$(cat "$WORK/error.txt")" 'Saved elsewhere:' 'recovered work has its own heading'
+assert_contains "$(cat "$WORK/error.txt")" "$KEPT" 'the human report names the actual recovery'
+assert_contains "$(cat "$WORK/error.txt")" 'Permission denied' 'the human report includes the native cause'
+assert_not_contains "$(cat "$WORK/error.txt")" 'Could not stamp:' 'recovered work is not listed as failed'
 remove_test_recovery "$KEPT"
 assert_nothing_left_behind "$WORK/readonly"
 test -z "$(find "$WORK/readonly" -name '*_stamped*')" ||

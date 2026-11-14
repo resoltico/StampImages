@@ -147,7 +147,7 @@ test("recovery releases ownership only after confirmation and retains classified
     assert.throws(()=>publishImage(job,staged,target),(error)=>{
         assert.match(error.message,/The image could not be saved where it was meant to go\.\n\n/u);
         assert.match(error.message,/The finished image has been kept here:\n\n/u);
-        assert.deepEqual(error.issues[0],{code:"publication",stage:"publication",message:"The image could not be saved to its requested destination.",diagnostic:{code:13,domain:"NSPOSIXErrorDomain",state:"denied"}});
+        assert.deepEqual(error.issues[0],{code:"publication",stage:"publication",message:"The image could not be saved to its requested destination.",diagnostic:{code:13,domain:"NSPOSIXErrorDomain",state:"denied",message:"The image destination could not be claimed (denied)."}});
         return true;
     });
     assert.ok([...job.artifacts.values()].every(artifact=>artifact.state==="released"));
@@ -281,4 +281,34 @@ test("copied candidates require byte confirmation before publication or recovery
     assert.ok(app.files.has(staged));
     const rescue = setAside(app, staged, job.publication.facts, "recovered.png");
     assert.equal(rescue.path, staged); assert.ok(app.files.has(staged));
+});
+
+
+test("a collision cannot replace the actual cause of a later destination copy failure", () => {
+    const { job, app } = fixture({ files: [staged, target], failures: [["'/bin/mkdir'", new Error("Current destination copy is denied.")]] });
+    const { link } = job.publication;
+    let attempts = 0;
+    job.publication.link = (from, to) => {
+        if (!to.startsWith("/out/")) { return link(from, to); }
+        attempts += 1;
+        return attempts === 1 ? { state: "exists", diagnostic: { message: "Old collision." } } : { state: "cross-device" };
+    };
+    assert.throws(() => publishImage(job, staged, target), (error) => {
+        assert.match(error.issues[0].diagnostic.message, /Current destination copy is denied/u);
+        assert.doesNotMatch(error.issues[0].diagnostic.message, /Old collision/u);
+        assert.ok(error.recovery);
+        return true;
+    });
+    assert.ok(app.files.has(target), "the earlier occupied output remains untouched");
+});
+
+test("publication keeps useful native causes and fills only absent or blank causes", () => {
+    for (const message of ["Native permission detail.", "", " "]) {
+        const { job } = fixture();
+        job.publication.link = () => ({ state: "denied", diagnostic: { message } });
+        assert.throws(() => publishImage(job, staged, target), (error) => {
+            assert.equal(error.issues[0].diagnostic.message, message.trim() ? message : "The image destination could not be claimed (denied).");
+            return true;
+        });
+    }
 });

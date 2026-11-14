@@ -53,7 +53,7 @@ test("nothing made at all is still said plainly", () => {
 });
 
 test("the reason a folder refused the copy is in the words a person reads", () => {
-    assert.match(detailOf(runOutcome([recovered()])), /requested destination\. Its folder cannot be written \(permission denied\)\./u);
+    assert.match(detailOf(runOutcome([recovered()])), /Saved elsewhere:[\s\S]*Permission denied/u);
     const unknown = { ...DENIED, diagnostic: { state: "unknown" } };
 
     assert.match(detailOf(runOutcome([recovered([unknown])])), /requested destination\.\n\n/u);

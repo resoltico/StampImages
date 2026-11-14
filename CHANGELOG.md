@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Recovered copies have a “Saved elsewhere” section with the actual cause; failed-only headings and separate cleanup issues keep saved work clear.
+
 - Missing image paths are reported before format checks, and remote URL schemes are refused; prefix relative names containing a colon with `./`.
 
 - Invalid settings now use the same visible error tint across numeric, text, color, typeface and choice controls in both appearances.

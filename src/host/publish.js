@@ -33,6 +33,12 @@ function retainedAfterStop(context) {
     return new UserCanceled({ recovery: paths.staged, issues });
 }
 
+function publicationDiagnostic(context, error) {
+    const diagnostic = context.diagnostic ?? issuesOf(error, "publication")[0].diagnostic;
+    const message = typeof diagnostic?.message === "string" && diagnostic.message.trim() ? diagnostic.message : errorMessage(error);
+    return { ...diagnostic, message };
+}
+
 function failedPublication(context, error) {
     const { job, paths, claimed, area } = context;
     if (error?.recovery) { throw error; }
@@ -52,7 +58,7 @@ function failedPublication(context, error) {
     }
     const failure = keep(job, paths, { reasons: [errorMessage(error)], staging: area });
     throw new IssueError(failure.message, { cause: failure, recovery: failure.recovery, issues: [{ code: publicationCode(error), stage: "publication",
-        message: "The image could not be saved to its requested destination.", diagnostic: context.diagnostic ?? issuesOf(error, "publication")[0].diagnostic }, ...failure.issues.slice(1)] });
+        message: "The image could not be saved to its requested destination.", diagnostic: publicationDiagnostic(context, error) }, ...failure.issues.slice(1)] });
 }
 
 /** Exact native claims retry positively classified collisions using the same validated image. */

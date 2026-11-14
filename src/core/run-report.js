@@ -56,15 +56,27 @@ function describeRejections(rejected, heading = "Not included from your selectio
     return section(heading, rejected.map((entry) => `${entry.path || entry.name}: ${entry.reason}`));
 }
 
+function recoveryReason(cause) {
+    const diagnostic = cause?.diagnostic;
+    const reason = [diagnostic?.message, ...(Array.isArray(diagnostic) ? diagnostic : []), cause ? issueLines(cause)[0] : undefined]
+        .find((value) => typeof value === "string" && value.trim());
+    return reason ? reason.replace(/\s+/gu, " ").trim() : "The requested destination was not used.";
+}
+
+function problemLine({ source, issue }) {
+    return `${source ? `${source}: ` : ""}${issue.message}${issue.diagnostic?.path ? `\n${issue.diagnostic.path}` : ""}`;
+}
+
 function summaryText(summary, includeHeadline = true) {
     const saved = summary.saved.map((group) => `${group.folder}\n${group.outputs.map((output) => output.name).join("\n")}`).join("\n\n");
+    const problems = summary.problems.map(problemLine);
     return [includeHeadline ? headline(summary) : "", countsLine(summary), saved ? `Saved to:\n${saved}` : "",
         section("Notes:", summary.notes.flatMap((image) => notesOf(image).map((note) => `${basename(image.output ?? image.source)}: ${note}`))),
         section("Nothing to stamp:", summary.nothingToStamp.map((image) => `${image.source}: ${image.reason}`)),
         section("Could not stamp:", summary.failures.map((image) => `${image.source}: ${image.issues.flatMap(issueLines).join(" ") || image.state}`)),
-        section("Recovered copies:", summary.recoveries.map((image) => `${image.recovery}\n${[image.source, ...image.issues.flatMap(issueLines)].join("\n")}`)),
+        section("Saved elsewhere:", summary.recoveries.map((image) => `${image.recovery}\n${recoveryReason(image.cause)}`)),
         summary.notStarted > 0 ? `Not started: ${summary.notStarted}` : "", describeRejections(summary.refusals),
-        ...summary.issues.filter((issue) => issue.code !== "no-images").map((issue) => `${issue.message}${issue.diagnostic?.path ? `\n${issue.diagnostic.path}` : ""}`),
+        ["invalid", "setup"].includes(summary.kind) ? problems.join("\n\n") : section("Other issues:", problems),
         summary.excluded.length > 0 ? `Left alone: ${plural(summary.excluded.length, "stamped copy", "stamped copies")} from an earlier run.` : ""
     ].filter(Boolean).join("\n\n");
 }

@@ -41,8 +41,8 @@ test("core report sections and metadata notes are literal contracts", () => {
         "Saved to:\n/out/\na.jpg",
         "Notes:\na.jpg: Missing requested metadata: date/time.\na.jpg: Recorded but not valid, so left off: GPS coordinates.\na.jpg: The margin is larger than this image has room for, so the stamp was placed against the opposite edge.\na.jpg: Written in color to preserve the caption color.\na.jpg: Some characters are not in the chosen typeface and were drawn in another one.\na.jpg: The caption color could not be converted to the image's color profile.",
         "Nothing to stamp:\n/in/no-date.jpg: No date",
-        "Could not stamp:\n/in/bad.jpg: Failed\n/in/stopped.jpg: canceled",
-        "Not started: 1", "Not included from your selection:\nno.gif: Unsupported", "Kept work\n/workspace",
+        "Could not stamp:\n/in/bad.jpg: Failed",
+        "Not started: 1", "Not included from your selection:\nno.gif: Unsupported", "Other issues:\nKept work\n/workspace",
         "Left alone: 1 stamped copy from an earlier run.", "Elapsed: 1 second"
     ].join("\n\n"));
     assert.equal(summaryText(summarizeRun(result), false), reportText(result, false).replace(/\n\nElapsed: 1 second$/u, ""));
@@ -52,10 +52,10 @@ test("publication reasons and recovery details stay in the human report", () => 
     const reasons = { denied: "Its folder cannot be written (permission denied).", "cross-device": "Its folder is on a volume that could not take the finished copy.", unsupported: "Its folder's filesystem does not support saving the copy safely." };
     for (const [state, sentence] of Object.entries(reasons)) {
         const outcome = runOutcome([{ state: "recovered", source: "/in/a.jpg", recovery: "/kept/a.jpg", issues: [{ code: "publication", message: "Cannot save.", diagnostic: { state } }] }]);
-        assert.ok(reportText(outcome).endsWith(`Recovered copies:\n/kept/a.jpg\n/in/a.jpg\nCannot save. ${sentence}`));
+        assert.ok(reportText(outcome).endsWith(`Saved elsewhere:\n/kept/a.jpg\nCannot save. ${sentence}`));
     }
     const outcome = runOutcome([{ state: "recovered", source: "/in/a.jpg", recovery: "/kept/a.jpg", issues: [] }]);
-    assert.equal(reportText(outcome, false), "1 recovered.\n\nRecovered copies:\n/kept/a.jpg\n/in/a.jpg");
+    assert.equal(reportText(outcome, false), "1 recovered.\n\nSaved elsewhere:\n/kept/a.jpg\nThe requested destination was not used.");
 });
 
 test("no-image dialogs retain both headlines and Finder instructions", () => {
@@ -71,12 +71,12 @@ test("no-image dialogs retain both headlines and Finder instructions", () => {
 
 test("recovered metadata notes name the source and unknown publication reasons keep their own message", () => {
     const outcome = runOutcome([{ state: "recovered", source: "/in/a.jpg", recovery: "/kept/a.jpg", missingMetadata: ["date/time"], issues: [{ code: "publication", message: "Cannot save." }] }]);
-    assert.equal(reportText(outcome, false), "1 recovered; 1 copy missing requested metadata.\n\nNotes:\na.jpg: Missing requested metadata: date/time.\n\nRecovered copies:\n/kept/a.jpg\n/in/a.jpg\nCannot save.");
+    assert.equal(reportText(outcome, false), "1 recovered; 1 copy missing requested metadata.\n\nNotes:\na.jpg: Missing requested metadata: date/time.\n\nSaved elsewhere:\n/kept/a.jpg\nCannot save.");
     assert.equal(describeNoImages([]), "No images selected.\n\nSelect JPEG, PNG, HEIC, TIFF, WebP or AVIF files or folders in Finder, then run the action again.");
 });
 
 test("request diagnostics without a path do not add a blank location", () => {
-    assert.equal(reportText(runOutcome([], [], [], [{ code: "fault", message: "Failed", diagnostic: {} }]), false), "Failed");
+    assert.equal(reportText(runOutcome([], [], [], [{ code: "fault", message: "Failed", diagnostic: {} }]), false), "Other issues:\nFailed");
     assert.equal(describeNoImages([{ name: "no.gif", reason: "Unsupported" }], false), "no.gif: Unsupported");
 });
 
@@ -126,4 +126,52 @@ test("a setup-labelled issue cannot replace the account of already saved image w
     assert.equal(summary.kind, "some-saved");
     assert.match(summaryText(summary), /Created 1 stamped copy\./u);
     assert.doesNotMatch(summaryText(summary), /A required tool/u);
+});
+
+
+test("recovery causes are one line, paths stay exact and non-failure issues remain visible", () => {
+    const primary = { code: "publication", stage: "publication", message: "Generic failure.", diagnostic: { message: " \t Permission  denied.\n\tRead only. \t" } };
+    const cleanup = { code: "cleanup", stage: "cleanup", message: "Temporary folder could not be removed." };
+    const recovery = { state: "recovered", source: "/in/a.jpg", recovery: "/kept/a  b.jpg", issues: [primary, cleanup] };
+    const result = runOutcome([recovery, { ...saved, issues: [cleanup] }, { state: "failed", source: "/bad.jpg", issues: [{ code: "operation", message: "Broken pixels." }] }]);
+    const summary = summarizeRun(result);
+    assert.equal(summary.recoveries[0].cause, primary);
+    const text = reportText(result, false);
+    assert.ok(text.includes("Saved elsewhere:\n/kept/a  b.jpg\nPermission denied. Read only."));
+    assert.ok(text.includes("Could not stamp:\n/bad.jpg: Broken pixels."));
+    assert.ok(text.includes("Other issues:\n/in/a.jpg: Temporary folder could not be removed.\n/in/a.jpg: Temporary folder could not be removed."));
+    assert.doesNotMatch(text, /Could not stamp:\n\/in\/a/u);
+    assert.doesNotMatch(text, /Generic failure/u);
+    const array = { ...recovery, issues: [{ code: "publication", message: "Generic.", diagnostic: [" ", "Cross-device\nrename is unavailable."] }] };
+    assert.ok(reportText(runOutcome([array])).includes("Cross-device rename is unavailable."));
+});
+
+test("recovery primary issue selection preserves Stop and publication causality", () => {
+    const cleanup = { code: "cleanup", message: "Cleanup failed." };
+    const stopped = { code: "canceled", stage: "preparation", message: "Stopped before saving." };
+    const publication = { code: "publication", stage: "publication", message: "Destination failed." };
+    const record = (issues) => ({ state: "recovered", source: "/in/a.jpg", recovery: "/kept/a.jpg", issues });
+    for (const [issues, cause] of [[[stopped, cleanup], stopped], [[cleanup, publication], publication],
+        [[{ ...stopped, stage: "publication" }, publication], publication], [[{ ...stopped, stage: "publication" }, cleanup], null], [[cleanup, { ...stopped, stage: "publication" }], null]]) {
+        const summary = summarizeRun(runOutcome([record(issues)]));
+        assert.equal(summary.recoveries[0].cause, cause ?? issues.find((issue) => issue.stage === "publication"));
+    }
+    assert.ok(reportText(runOutcome([record([stopped, cleanup])])).includes("Saved elsewhere:\n/kept/a.jpg\nStopped before saving."));
+    assert.ok(reportText(runOutcome([record([{}])])).includes("The requested destination was not used."));
+    assert.doesNotMatch(reportText(runOutcome([{ state: "canceled", source: "/in/a.jpg", issues: [stopped] }], [], [], [stopped])), /Other issues|Could not stamp/u);
+});
+
+
+test("multiple request problems stay separated without a conversion failure heading", () => {
+    for (const issues of [
+        [{ code: "operation", stage: "setup", message: "Required tool is unavailable." }, { code: "fault", stage: "setup", message: "Setup detail failed." }],
+        [{ code: "text", stage: "settings", message: "Caption is invalid." }, { code: "integer", stage: "settings", message: "Size is invalid." }]
+    ]) {
+        const result = runOutcome([], [], [], issues);
+        assert.equal(reportText(result, false), issues.map((issue) => issue.message).join("\n\n"));
+        assert.doesNotMatch(reportText(result), /Other issues|Could not stamp/u);
+    }
+    assert.equal(summarizeRun(runOutcome([], [], [], [
+        { code: "operation", stage: "setup", message: "Tool missing." }, { code: "fault", stage: "setup", message: "Other setup detail." }
+    ])).kind, "setup");
 });
