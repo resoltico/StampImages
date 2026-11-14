@@ -3,7 +3,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { SETTINGS_SCHEMA, settingIssue, validateSettings, stampIssues } = require("../../../src/core/settings.js");
 const { defaultSettings, defaultAnswers } = require("../../../src/host/quick-action/settings-model.js");
-const { catalogOf } = require("../host/fake-typefaces.cjs");
+const { catalogOf } = require("./fake-typefaces.cjs");
 const KNOWN = catalogOf({ Menlo: ["Regular", "Bold"] });
 
 test("the schema declares field order and each setting kind", () => {

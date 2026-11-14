@@ -2,12 +2,16 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
-const path = require("node:path");
 const vm = require("node:vm");
 const { createRequire } = require("node:module");
 
+const MAIN_FILES = {
+    "quick-action": require.resolve("../../../src/host/quick-action/main.js"),
+    "command-line": require.resolve("../../../src/host/command-line/main.js")
+};
+
 function boundary(front, stage = "execute", fault = { errorNumber: -128 }) {
-    const file = path.resolve(__dirname, `../../../src/host/${front}/main.js`);
+    const file = MAIN_FILES[front];
     const normalRequire = createRequire(file);
     const shown = [];
     const progress = { diagnostics: [{ code: "observer-fault" }], close: () => undefined };
