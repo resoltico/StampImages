@@ -108,8 +108,6 @@ function produce(job, image, token, intermediates) {
         crowded: drawn.crowded,
         unconverted: drawn.unconverted,
         expanded: expandedColor(image.admission.image, saved),
-        missing: image.inscription.missing ?? [],
-        invalid: image.inscription.invalid ?? [],
         substituted: substituted(job, image.inscription.lines)
     };
 }
@@ -125,11 +123,12 @@ function inscribe(job, image) {
     return inscriptionFor(facts, job.settings);
 }
 
-function stampCaptured(job, image, token) {
+function stampCaptured(job, image, token, metadataReady) {
     const inscription = inscribe(job, image);
+    metadataReady(inscription);
 
     if (inscription.nothing) {
-        return { nothing: inscription.nothing, missing: inscription.missing ?? [], invalid: inscription.invalid ?? [] };
+        return { nothing: inscription.nothing };
     }
 
     const intermediates = [];
@@ -146,14 +145,14 @@ function stampCaptured(job, image, token) {
     }
 }
 
-function stampOne(job, image, token) {
+function stampOne(job, image, token, metadataReady) {
     const source = image.path;
     const capturedPath = `${job.workspace}/source-${token}${image.extension}`;
     try {
         const owned = job.sources.capture(source, capturedPath);
         const captured = inspectCaptured(job, owned, source);
         if (!matchesAdmission(image.admission, captured)) { throw new OperationError("The source changed after selection; try again when it is stable."); }
-        return stampCaptured(job, { ...image, source, path: captured.path, gainMap: captured.gainMap }, token);
+        return stampCaptured(job, { ...image, source, path: captured.path, gainMap: captured.gainMap }, token, metadataReady);
     } finally { removeOwned(job, capturedPath); }
 }
 

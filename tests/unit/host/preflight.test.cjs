@@ -89,7 +89,7 @@ test("an exiftool that cannot answer in JSON is reported the same way", () => {
 
         assert.throws(() => checkTools(app), (error) => {
             assert.match(error.message, /exiftool is installed but does not do/u);
-            assert.match(error.message, /answer -json -n with readable JSON/u);
+            assert.match(error.message, /structured raw capture projection with JSONQ/u);
 
             return true;
         }, answer);

@@ -1,4 +1,5 @@
 "use strict";
+const { parseArgv } = require("./fake-commands.cjs");
 
 const {
     readsFile,
@@ -67,9 +68,9 @@ function cannedAnswer(app, command) {
      * complaint. A fake that answered a complaint would be describing the
      * probe this program deliberately does not use.
      */
-    if (command.includes("exiftool") && command.includes("-json")) {
-        return app.exiftool ??
-            '[{"SourceFile": "/opt/homebrew/bin/exiftool", "FileType": "perl5 script"}]';
+    if (command.includes("StructFormat=JSONQ") && command.includes("-System:FileName")) {
+        const argv = parseArgv(command);
+        return app.exiftool ?? JSON.stringify([{ SourceFile: argv.at(-1), FileName: { ExifToolVersion: "13.55" } }]);
     }
 
     return undefined;

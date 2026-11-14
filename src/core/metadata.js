@@ -50,44 +50,106 @@ function captureMomentRecorded(facts) {
     return MOMENT_TAGS.some((tag) => isRecordedMoment(facts[tag]));
 }
 
-const LATITUDE_LIMIT = 90;
-const LONGITUDE_LIMIT = 180;
-const DECIMAL_DEGREES = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/u;
+const owns = (record, key) => Object.hasOwn(record, key);
+const AXES = ["latitude", "longitude"];
+const INTEGER = /^\d+$/u;
+const MINUTES_IN_DEGREE = 60;
+const SECONDS_IN_DEGREE = 3600;
+const DMS_PARTS = 3;
+const FRACTION_PARTS = 2;
+const LATITUDE = { limit: 90, positive: "N", negative: "S" };
+const LONGITUDE = { limit: 180, positive: "E", negative: "W" };
 
-/*
- * Accept a number or numeric text within geographic bounds. Reject coercible
- * non-numbers explicitly: Number() turns true into 1 and empty strings or arrays
- * into 0, which would invent coordinates rather than read recorded ones.
- */
-function boundedDegrees(value, limit) {
-    const text = typeof value === "number" || typeof value === "string"
-        ? String(value).trim()
-        : "";
-    const numeric = Number(text);
+// Keep the selected source's whole pair. Invalid EXIF is not permission to mix
+// it with XMP or substitute a different recorded location.
+function selectedGPS(facts) {
+    const gps = facts.gps || {};
 
-    return (typeof value === "number" || DECIMAL_DEGREES.test(text)) &&
-        isFinite(numeric) && Math.abs(numeric) <= limit
-        ? numeric
+    if (gps.exif && AXES.some((axis) => owns(gps.exif, axis))) {
+        return { source: "exif", value: gps.exif };
+    }
+
+    return gps.xmp && AXES.some((axis) => owns(gps.xmp, axis))
+        ? { source: "xmp", value: gps.xmp }
         : null;
 }
 
-/*
- * Both halves or neither. A latitude alone is not a place, and stamping one
- * would be stamping half a coordinate as though it were a location.
- *
- * Asked for with -n, so these arrive as signed decimal degrees rather than as
- * "56 deg 56' 58.63\" N". Measured: a photograph tagged 33.8688 S comes back
- * as -33.8688, the sign already applied from the reference. Applying
- * GPSLatitudeRef again here is the mistake this comment exists to prevent --
- * it would put every southern and western coordinate in the wrong hemisphere.
- */
-function coordinates(facts) {
-    const latitude = boundedDegrees(facts.GPSLatitude, LATITUDE_LIMIT);
-    const longitude = boundedDegrees(facts.GPSLongitude, LONGITUDE_LIMIT);
-
-    return latitude === null || longitude === null
-        ? null
-        : { latitude, longitude };
+function coordinatesRecorded(facts) {
+    return selectedGPS(facts) !== null;
 }
 
-module.exports = { captureMoment, captureMomentRecorded, coordinates, MONTHS, MOMENT_TAGS };
+function signedDMS(parts, reference, { limit, positive, negative }) {
+    if (reference !== positive && reference !== negative) {
+        return null;
+    }
+
+    const [degrees, minutes, seconds] = parts;
+    const magnitude = degrees + minutes / MINUTES_IN_DEGREE + seconds / SECONDS_IN_DEGREE;
+
+    return minutes >= MINUTES_IN_DEGREE || seconds >= MINUTES_IN_DEGREE || degrees > limit ||
+        (degrees === limit && (minutes !== 0 || seconds !== 0)) || magnitude > limit
+        ? null
+        : (reference === negative ? -1 : 1) * magnitude;
+}
+
+function exifDegrees(components, reference, axis) {
+    if (!Array.isArray(components) || components.length !== DMS_PARTS) {
+        return null;
+    }
+
+    // Validate each original fraction before division; zero denominators and
+    // negative components must not become a normalized scalar coordinate.
+    const valid = components.every((pair) => Array.isArray(pair) && pair.length === FRACTION_PARTS &&
+        pair.every((part) => typeof part === "string" && INTEGER.test(part) &&
+            Number.isSafeInteger(Number(part))) && Number(pair[1]) > 0);
+
+    if (!valid) {
+        return null;
+    }
+
+    return signedDMS(components.map(([numerator, denominator]) =>
+        Number(numerator) / Number(denominator)), reference, axis);
+}
+
+function xmpDegrees(value, axis) {
+    if (typeof value !== "string") {
+        return null;
+    }
+
+    // XMP embeds its own reference: DDD,MM.mmk or DDD,MM,SSk. Accept spaces
+    // around commas, not sign guessing, unknown reference letters or suffixes.
+    const match = /^ *(?<degrees>\d+) *, *(?<minutes>\d+(?:\.\d+)?)(?: *, *(?<seconds>\d+(?:\.\d+)?))?(?<reference>[NSEW]) *$/u.exec(value);
+
+    if (!match || (match.groups.seconds !== undefined && match.groups.minutes.includes("."))) {
+        return null;
+    }
+
+    const { degrees, minutes, seconds, reference } = match.groups;
+    const parts = [Number(degrees), Number(minutes), Number(seconds || 0)];
+
+    return parts.every(Number.isFinite) &&
+        !(parts[0] === axis.limit && /[1-9]/u.test(minutes + (seconds || "")))
+        ? signedDMS(parts, reference, axis)
+        : null;
+}
+
+function coordinates(facts) {
+    const selected = selectedGPS(facts);
+
+    if (!selected) {
+        return null;
+    }
+
+    const { source, value } = selected;
+    const latitude = source === "exif"
+        ? exifDegrees(value.latitude, value.latitudeRef, LATITUDE)
+        : xmpDegrees(value.latitude, LATITUDE);
+    const longitude = source === "exif"
+        ? exifDegrees(value.longitude, value.longitudeRef, LONGITUDE)
+        : xmpDegrees(value.longitude, LONGITUDE);
+
+    return latitude === null || longitude === null ? null : { latitude, longitude };
+}
+
+
+module.exports = { captureMoment, captureMomentRecorded, coordinates, coordinatesRecorded, MONTHS, MOMENT_TAGS };

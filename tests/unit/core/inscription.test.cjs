@@ -15,10 +15,11 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const { inscriptionFor } = require("../../../src/core/inscription.js");
 
+const { rigaFacts, wholeDegrees } = require("./gps-fixtures.cjs");
+
 const TAKEN = {
     DateTimeOriginal: "2026:09:09 14:30:05",
-    GPSLatitude: 56.9496,
-    GPSLongitude: 24.1052
+    ...rigaFacts()
 };
 
 function settings(overrides = {}) {
@@ -77,7 +78,7 @@ test("a line nobody asked for is not a line", () => {
 test("a line the photograph cannot supply is left out, not stood in for", () => {
     // Never a line reading "unknown", which looks like a record of something.
     assert.deepEqual(
-        inscriptionFor({ GPSLatitude: 1, GPSLongitude: 2 }, settings()).lines,
+        inscriptionFor(wholeDegrees(1, 2), settings()).lines,
         ["1.0000, 2.0000"]
     );
     assert.deepEqual(
@@ -121,5 +122,5 @@ test("an unrecognized format writes nothing rather than something wrong", () => 
 
 test("each requested fact a photograph lacks is named as missing", () => {
     assert.deepEqual(inscriptionFor({}, settings({ customText: "Riga" })).missing, ["date/time", "GPS coordinates"]);
-    assert.deepEqual(inscriptionFor({ GPSLatitude: 56.9496, GPSLongitude: 24.1052 }, settings({ customText: "Riga" })).missing, ["date/time"]);
+    assert.deepEqual(inscriptionFor(rigaFacts(), settings({ customText: "Riga" })).missing, ["date/time"]);
 });

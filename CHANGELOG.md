@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- ExifTool must support typed JSONQ metadata projections; incompatible installations or overrides are refused at setup.
+- GPS with invalid references or components is reported and left off the stamp; copies preserve original GPS values without normalization or fail safely.
+- Known missing or invalid metadata remains reported when a later rendering or metadata-copy step fails.
+
 - Mixed-direction captions keep paragraph-local direction and left alignment; excessive margins stay on the selected side, and nothing-to-stamp reasons are complete sentences.
 - Color emoji use monochrome coverage masks and can lose internal colored detail; this rendering limitation is documented.
 

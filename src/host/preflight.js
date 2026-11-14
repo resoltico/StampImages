@@ -55,7 +55,7 @@ const CAPABILITY_PROBES = {
     exiftool: {
         build: buildExiftoolProbeArgv,
         usable: isExiftoolUsable,
-        flags: "answer -json -n with readable JSON"
+        flags: "return a structured raw capture projection with JSONQ"
     }
 };
 
@@ -68,7 +68,7 @@ function inspectTool(app, name) {
 
     const capability = CAPABILITY_PROBES[name];
 
-    if (capability && !capability.usable(probe(app, capability.build(found.path), capability.image))) {
+    if (capability && !capability.usable(probe(app, capability.build(found.path), capability.image), found.path)) {
         return {
             tool: name,
             kind: "unusable",

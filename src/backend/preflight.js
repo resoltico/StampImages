@@ -1,5 +1,6 @@
 "use strict";
 const { FAIL_ON_DAMAGE } = require("./commands.js");
+const { buildMetadataArgv, captureProjection } = require("./queries.js");
 
 /*
  * Verify behavior, not presence alone. vips must accept the required flags
@@ -39,7 +40,7 @@ function isVipsheaderUsable(probeOutput) { return String(probeOutput).trim() ===
  * photograph and a probe needs a file that exists.
  */
 function buildExiftoolProbeArgv(exiftoolPath) {
-    return [exiftoolPath, "-json", "-n", "-FileType", exiftoolPath];
+    return buildMetadataArgv(exiftoolPath, exiftoolPath, { dateFormat: "iso-minutes", coordinateFormat: "decimal" });
 }
 
 /*
@@ -58,21 +59,9 @@ function isVipsUsable(probeOutput) {
  * that printed a warning, an empty list, or JSON of some other shape has not
  * shown it can answer the questions this program asks.
  */
-function isExiftoolUsable(probeOutput) {
-    try {
-        const answered = JSON.parse(String(probeOutput));
-
-        return Array.isArray(answered) &&
-            answered.length > 0 &&
-            Boolean(answered[0]) &&
-            typeof answered[0].SourceFile === "string" &&
-            // A record carrying an error is carrying an error. A build that
-            // answers that way about its own executable will answer that way
-            // about every photograph.
-            !answered[0].Error;
-    } catch {
-        return false;
-    }
+function isExiftoolUsable(probeOutput, source) {
+    try { captureProjection(probeOutput, source); return true; }
+    catch { return false; }
 }
 
 const INSTALL_COMMAND = "brew install exiftool vips";

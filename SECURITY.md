@@ -85,3 +85,10 @@ installation instructions and license are attestation subjects.
 [README.md](README.md#verify-a-download) describes download verification.
 Checksums and attestations do not verify a copy pasted into Shortcuts; replace it
 with the complete verified file when installing a build.
+
+ExifTool's raw-copy program is fixed source; paths are passed as UserParam data,
+never interpolated into native code. It writes only the private candidate. Any
+scoped metadata-reader view or legacy WebP reader repair is memory-only: it does
+not replace source pixels, source files, or the actual target profile/maker data.
+Raw GPS must match a fresh target readback before publication. Unsupported physical
+GPS structures or a failed required setter/readback refuse the copy.

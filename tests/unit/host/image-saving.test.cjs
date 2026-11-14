@@ -116,9 +116,21 @@ test("either dimension is enough to say the copy is not the photograph", () => {
 test("ordinary TIFF copies retain capture metadata before validation, and failed retention cannot report success", () => {
     const { host, job } = jobOn();
     saveCopy(job, "/owned/stamped.v", "/owned/copy.tif", { metadataSource: "/owned/source.tif", hasAlpha: false, size: { width: 600, height: 400 } });
-    const command = host.commands.find((entry) => entry.includes("'-TagsFromFile'"));
-    assert.match(command, /'-TagsFromFile' '\/owned\/source\.tif'/u);
-    assert.match(command, /'-ExifIFD:All' '-GPS:All'/u);
-    const broken = jobOn({ failures: [["'-TagsFromFile'", new Error("metadata retention refused")]] });
+    const command = host.commands.find((entry) => entry.includes("'-userParam'"));
+    assert.ok(command.includes("'source=/owned/source.tif'"));
+    assert.ok(command.includes("'target=/owned/copy.tif'"));
+    assert.match(command, /SetNewValuesFromFile/u);
+    const broken = jobOn({ failures: [["'-userParam'", new Error("metadata retention refused")]] });
     assert.throws(() => saveCopy(broken.job, "/owned/stamped.v", "/owned/copy.tif", { metadataSource: "/owned/source.tif", hasAlpha: false, size: { width: 600, height: 400 } }), /metadata retention refused/u);
+});
+
+test("a successful process cannot validate an unassociated or failed metadata write", () => {
+    const packet = { ExifToolVersion: "13.55", TargetFile: "/owned/copy.tif", WriteStatus: "1", RawWriteStatus: "1", VerifiedGPS: "1", GPSInputCount: "4", RequiredSetCount: "13", FailureCount: "0", FailureText: "", RebuiltTargetWebPExif: "0" };
+    for (const changes of [{ TargetFile: "/other.tif" }, { TargetFile: undefined }, { WriteStatus: "0", RawWriteStatus: "1", VerifiedGPS: "0", FailureCount: "1", FailureText: "Raw GPS read-back differs." }]) {
+        const response = JSON.stringify([{ SourceFile: "/owned/source.tif", FileName: { ...packet, ...changes } }]);
+        const { host, job } = jobOn({ failures: [["'-userParam'", response]] });
+        assert.throws(() => saveCopy(job, "/owned/stamped.v", "/owned/copy.tif", { metadataSource: "/owned/source.tif", hasAlpha: false, size: { width: 600, height: 400 } }));
+        assert.ok(host.commands.some((command) => command.includes("'flatten'")), "the candidate exists before the metadata refusal");
+        assert.equal(host.commands.some((command) => command.includes("vipsheader")), false, "an invalid metadata write never reaches final candidate validation");
+    }
 });

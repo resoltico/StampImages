@@ -5,7 +5,7 @@ const {
     sameContents,
     drawingToken
 } = require("./fake-contents.cjs");
-const { describe, extractProfile } = require("./fake-exiftool.cjs");
+const { describe, extractProfile, copied } = require("./fake-exiftool.cjs");
 
 /*
  * What the tools leave behind.
@@ -110,11 +110,13 @@ function produceOutput(state, argv, command) {
         return compare(state, argv);
     }
 
-    if (command.includes("-icc_profile")) {
+    if (argv.includes("-userParam")) { return copied(state, argv); }
+
+    if (argv.includes("-icc_profile")) {
         return extractProfile(state, argv);
     }
 
-    if (command.includes("exiftool")) {
+    if (argv.includes("-System:FileName")) {
         return describe(state, argv);
     }
 

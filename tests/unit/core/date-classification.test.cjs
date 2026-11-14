@@ -6,6 +6,7 @@ const { captureMoment, captureMomentRecorded } = require("../../../src/core/meta
 const { inscriptionFor } = require("../../../src/core/inscription.js");
 const { reportText } = require("../../../src/core/run-report.js");
 const { runOutcome } = require("../../../src/core/outcomes.js");
+const { wholeDegrees } = require("./gps-fixtures.cjs");
 const settings = { dateFormat: "iso-date", coordinateFormat: "decimal", customText: "Caption" };
 
 function report(facts) {
@@ -49,7 +50,7 @@ test("capture date keeps first-valid fallback and its provenance", () => {
 
 test("human Missing notes include only absent fields while receipt omissions stay inclusive", () => {
     const invalidDate = { DateTimeOriginal: "2026:02:30 12:00" };
-    const invalidGps = { GPSLatitude: 999, GPSLongitude: 20 };
+    const invalidGps = wholeDegrees(999, 20);
     const dateText = report(invalidDate);
     assert.ok(dateText.includes("Missing requested metadata: GPS coordinates."));
     assert.ok(dateText.includes("Recorded but not valid, so left off: date/time."));
@@ -68,9 +69,9 @@ test("nothing-to-stamp reasons do not call invalid fields absent or read disable
     const noText = { ...settings, customText: "" };
     const date = inscriptionFor({ DateTimeOriginal: "2026:02:30 12:00" }, noText).nothing;
     assert.match(date, /does not say where/u); assert.doesNotMatch(date, /does not say when/u);
-    const gps = inscriptionFor({ GPSLatitude: 999, GPSLongitude: 20 }, noText).nothing;
+    const gps = inscriptionFor(wholeDegrees(999, 20), noText).nothing;
     assert.match(gps, /does not say when/u); assert.doesNotMatch(gps, /does not say where/u);
-    const invalid = inscriptionFor({ DateTimeOriginal: "2026:02:30 12:00", GPSLatitude: 999, GPSLongitude: 20 }, noText).nothing;
+    const invalid = inscriptionFor({ DateTimeOriginal: "2026:02:30 12:00", ...wholeDegrees(999, 20) }, noText).nothing;
     assert.doesNotMatch(invalid, /does not say/u);
     assert.match(invalid, /recorded but not valid/u);
     const facts = { get DateTimeOriginal() { throw new Error("disabled date read"); } };
@@ -83,9 +84,9 @@ test("nothing reasons are complete sentences about the requested absent or inval
     const ending = ", and there is no text of your own to put on it.";
     assert.equal(inscriptionFor({ DateTimeOriginal: "2026:02:30 12:00" }, request).nothing,
         `It does not say where it was taken; its date/time is recorded but not valid${ending}`);
-    assert.equal(inscriptionFor({ GPSLatitude: 999, GPSLongitude: 20 }, request).nothing,
+    assert.equal(inscriptionFor(wholeDegrees(999, 20), request).nothing,
         `It does not say when it was taken; its GPS coordinates are recorded but not valid${ending}`);
-    assert.equal(inscriptionFor({ DateTimeOriginal: "2026:02:30 12:00", GPSLatitude: 999, GPSLongitude: 20 }, request).nothing,
+    assert.equal(inscriptionFor({ DateTimeOriginal: "2026:02:30 12:00", ...wholeDegrees(999, 20) }, request).nothing,
         `Its date/time and GPS coordinates are recorded but not valid${ending}`);
     assert.equal(inscriptionFor({}, request).nothing, `It does not say when or where it was taken${ending}`);
     assert.equal(inscriptionFor({}, { dateFormat: "none", coordinateFormat: "none", customText: "" }).nothing,

@@ -58,4 +58,5 @@ for file in animated.png animated.webp multiple.tif; do
     test ! -e "$WORK/${file%.*}_stamped.${file##*.}"
 done
 node "$ROOT/tests/integration/metadata-contract.cjs" "$SCRIPT" "$WORK"
+node "$ROOT/tests/integration/gps-contract.cjs" "$SCRIPT" "$WORK/gps-regressions"
 printf 'macOS format and animation integration passed\n'

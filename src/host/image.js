@@ -4,7 +4,7 @@ const { colorFacts } = require("./fidelity.js");
 const { OperationError } = require("../core/errors.js");
 
 const { buildCompositeArgv, buildFlattenArgv } = require("../backend/commands.js");
-const { buildMetadataCopyArgv } = require("../backend/metadata-copy.js");
+const { buildMetadataCopyArgv, metadataCopyResult } = require("../backend/metadata-copy.js");
 const { savingPath } = require("../core/output-format.js");
 const { runArgv } = require("./shell.js");
 const { verifyFileWritten } = require("./filesystem-probes.js");
@@ -63,7 +63,9 @@ function saveCopy(job, stamped, target, source) {
             : buildFlattenArgv(job.tools.vips, stamped, written),
         "saving the stamped copy"
     );
-    runArgv(job.app, buildMetadataCopyArgv(job.tools.exiftool, source.metadataSource, target, source.size), "retaining image metadata");
+    verifyFileWritten(job.app, target, "the stamped copy");
+    const copied = runArgv(job.app, buildMetadataCopyArgv(job.tools.exiftool, source.metadataSource, target, source.size), "retaining image metadata");
+    const metadata = metadataCopyResult(copied, source.metadataSource, target);
     verifyFileWritten(job.app, target, "the stamped copy");
 
     /*
@@ -82,7 +84,7 @@ function saveCopy(job, stamped, target, source) {
                 `expected:\n\n${target}`
         );
     }
-    return colorFacts(job, target);
+    return { ...colorFacts(job, target), ...metadata };
 }
 
 module.exports = { composite, saveCopy };

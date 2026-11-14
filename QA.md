@@ -150,3 +150,10 @@ Mixed-direction layout checks compare complete RTL punctuation/number rasters wi
 single-line controls for LF and Unicode paragraph separators, while checking left
 alignment. Oversized-margin checks compare actual stamp pixel bounds with native
 mask geometry at all six positions, including whole-pixel selected-half limits.
+
+Raw-GPS regressions generate thirteen malformed/valid cases in all six supported
+formats without Python, downloads or field fixtures. Independent native Raw/Rational
+and physical TIFF tag checks verify the inputs and unchanged decoded pixels. Actual
+copy builders retain raw values or refuse unsupported wire structures; product
+copies omit invalid visible coordinates while retaining known input classifications.
+Live native setter/readback failures and missing/wrong target echoes publish nothing.

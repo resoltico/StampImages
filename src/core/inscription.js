@@ -1,6 +1,6 @@
 "use strict";
 
-const { MONTHS, captureMoment, captureMomentRecorded, coordinates } = require("./metadata.js");
+const { MONTHS, captureMoment, captureMomentRecorded, coordinates, coordinatesRecorded } = require("./metadata.js");
 const { normalizeCustomText, hasVisibleText } = require("./stamp-content.js");
 const { decimalPlace, sexagesimalPlace } = require("./place.js");
 
@@ -67,18 +67,10 @@ function describeNothing(settings, invalid) {
     return `${explanation[0].toUpperCase()}${explanation.slice(1)}.`;
 }
 
-/*
- * Present but unusable is not absent: a tag that is there and cannot be read
- * as a date or a place on the globe.
- */
-function isRecorded(value) {
-    return value !== undefined && value !== null && String(value).trim() !== "";
-}
-
 // Asked only of what was requested and is missing: what was not requested is not read.
 const RECORDED = {
     "date/time": captureMomentRecorded,
-    "GPS coordinates": (facts) => isRecorded(facts.GPSLatitude) || isRecorded(facts.GPSLongitude)
+    "GPS coordinates": coordinatesRecorded
 };
 
 function invalidOf(facts, missing) {

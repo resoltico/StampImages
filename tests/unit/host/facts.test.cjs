@@ -17,8 +17,8 @@ const { makeJob } = require("./fake-job.cjs");
 
 const TAKEN = {
     DateTimeOriginal: "2026:09:09 14:30:05",
-    GPSLatitude: 56.9496,
-    GPSLongitude: 24.1052
+    EXIFGPSLatitude: "56/1 56/1 1464/25", EXIFGPSLatitudeRef: "N",
+    EXIFGPSLongitude: "24/1 6/1 468/25", EXIFGPSLongitudeRef: "E"
 };
 
 function jobOn(settings = {}) {
@@ -38,7 +38,7 @@ test("the one entry exiftool answers with is the photograph's facts", () => {
     const facts = factsFor(job, "/a/one.jpg");
 
     assert.equal(facts.DateTimeOriginal, TAKEN.DateTimeOriginal);
-    assert.equal(facts.GPSLatitude, TAKEN.GPSLatitude);
+    assert.deepEqual(facts.gps.exif.latitude, [["56", "1"], ["56", "1"], ["1464", "25"]]);
 });
 
 test("exiftool is asked once, for the tags this program reads", () => {
@@ -49,8 +49,9 @@ test("exiftool is asked once, for the tags this program reads", () => {
     const asked = host.commands.filter((command) => command.includes("exiftool"));
 
     assert.equal(asked.length, 1);
-    assert.match(asked[0], /'-json' '-n'/u);
-    assert.match(asked[0], /'-GPSLatitude'/u);
+    assert.match(asked[0], /StructFormat=JSONQ/u);
+    assert.match(asked[0], /EXIFGPSLatitude/u);
+    assert.match(asked[0], /Rational/u);
 });
 
 test("a photograph that carries none of the tags is still answered for", () => {
@@ -58,7 +59,7 @@ test("a photograph that carries none of the tags is still answered for", () => {
     // knows nothing about, which can still be stamped with what was typed.
     const { job } = jobOn({ files: ["/a/one.jpg"], metadata: [] });
 
-    assert.deepEqual(Object.keys(factsFor(job, "/a/one.jpg")), ["SourceFile"]);
+    assert.deepEqual(Object.keys(factsFor(job, "/a/one.jpg")), []);
 });
 
 test("a tool that will not run is a question that could not be put", () => {
@@ -102,7 +103,7 @@ test("every shape that is not one record is not an answer", () => {
 
         assert.throws(
             () => factsFor(job, "/a/one.jpg"),
-            /answered with nothing about this image/u,
+            /did not return one metadata record/u,
             answered
         );
     }

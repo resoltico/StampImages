@@ -9,6 +9,7 @@ const {
     isExiftoolUsable,
     describeSetupProblems
 } = require("../../../src/backend/preflight.js");
+function usable(answer) { return isExiftoolUsable(answer, "/x"); }
 
 test("the vips probe uses the flags the pipeline depends on", () => {
     const argv = buildVipsProbeArgv("/opt/homebrew/bin/vips");
@@ -30,7 +31,8 @@ test("the exiftool probe asks a question it can answer", () => {
     const argv = buildExiftoolProbeArgv("/opt/homebrew/bin/exiftool");
 
     assert.ok(argv.includes("-json"));
-    assert.ok(argv.includes("-n"));
+    assert.ok(argv.includes("StructFormat=JSONQ"));
+    assert.equal(argv.includes("-n"), false);
     assert.equal(argv[0], "/opt/homebrew/bin/exiftool");
     assert.equal(argv.at(-1), "/opt/homebrew/bin/exiftool", "asked about itself");
 });
@@ -55,15 +57,15 @@ test("exiftool is usable only when it answers in the shape that is read", () => 
     // Not a substring of the output but the thing the adapter will do with
     // it: a list, with an entry, naming the file it was asked about.
     assert.equal(
-        isExiftoolUsable('[{"SourceFile": "/opt/homebrew/bin/exiftool"}]'),
+        usable('[{"SourceFile":"/x","FileName":{"ExifToolVersion":"13.55"}}]'),
         true
     );
-    assert.equal(isExiftoolUsable("Error: File not found - /x.jpg"), false);
-    assert.equal(isExiftoolUsable("[]"), false, "an empty list answers nothing");
-    assert.equal(isExiftoolUsable('{"SourceFile": "/x"}'), false, "not a list");
-    assert.equal(isExiftoolUsable('[{"FileType": "JPEG"}]'), false, "no source named");
-    assert.equal(isExiftoolUsable(""), false);
-    assert.equal(isExiftoolUsable("warning\n[{}]"), false, "not parseable");
+    assert.equal(usable("Error: File not found - /x.jpg"), false);
+    assert.equal(usable("[]"), false, "an empty list answers nothing");
+    assert.equal(usable('{"SourceFile": "/x"}'), false, "not a list");
+    assert.equal(usable('[{"FileType": "JPEG"}]'), false, "no source named");
+    assert.equal(usable(""), false);
+    assert.equal(usable("warning\n[{}]"), false, "not parseable");
 });
 
 test("a missing tool is described plainly, with the command that fixes it", () => {

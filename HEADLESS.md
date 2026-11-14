@@ -163,6 +163,17 @@ only when non-empty, names that subset: February 30, hour 24, year 0000 with non
 date fields, or a latitude beyond 90°. Blank/all-zero dates are absent. Either kind
 of omission makes the run incomplete; other requested content can still make a copy.
 Human Missing notes name only absent fields, separately from recorded-invalid ones.
+Input omissions/classification are retained once metadata inspection completes, even
+if rendering or metadata copying later fails. Early failures make no invalid-field
+claim. Appearance notes describe only a fully validated finished copy.
+
+GPS validation uses original unsigned EXIF rational components and explicit N/S/E/W
+references. Minutes and seconds must be below 60, denominators positive, and poles
+within bounds. If either EXIF coordinate is recorded, its whole pair takes precedence;
+invalid or incomplete EXIF never falls back to XMP or mixes namespaces. XMP-only
+coordinates need their intrinsic hemisphere. Invalid recorded GPS is listed in
+`invalidMetadata` and omitted from visible text. A copy that cannot retain the
+original GPS metadata without normalization fails instead of publishing changed data.
 
 Saved and recovered records also carry appearance notes, each `true` or `false`:
 
@@ -213,3 +224,5 @@ explicit executables. An override that is missing, relative or unusable fails
 setup with state `invalid` and exit status 3; another executable is never silently
 substituted. Errors name the variable and its value. Setup probes all three tools,
 including a real width read by `vipsheader` from a built-in PNG.
+ExifTool must support typed JSONQ raw-metadata projections; setup checks the actual
+structured capture protocol rather than accepting legacy scalar JSON.

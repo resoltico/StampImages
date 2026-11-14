@@ -33,7 +33,7 @@ function fixture(original, saved, failure = null, planned = false) {
     // eslint-disable-next-line no-underscore-dangle -- Node's compiler isolates the actual stamping module with measurement ports.
     loaded._compile(fs.readFileSync(filename, "utf8"), filename);
     const image = { path: "/in/source.png", extension: ".png", admission: { identity: "original", version: "1", image: descriptor } };
-    return { job, removed, make: () => loaded.exports.stampOne(job, image, "1") };
+    return { job, removed, make: () => loaded.exports.stampOne(job, image, "1", () => undefined) };
 }
 
 test("expanded is observed from saved facts rather than a neutral palette or preparation plan", () => {

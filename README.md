@@ -95,6 +95,10 @@ uses the first valid `DateTimeOriginal` or `CreateDate`, in that order, never th
 file's modification time; coordinates come from its GPS tags. Blank/all-zero dates
 are absent; impossible recorded dates, including nonzero dates in year 0000, are
 left off as invalid.
+GPS requires complete coordinate pairs, explicit valid references and valid original
+components. Invalid or incomplete EXIF coordinates are left off rather than replaced
+with XMP; XMP coordinates carry their own hemisphere when no EXIF pair is recorded.
+Copies retain original GPS values without normalization, or the copy is refused.
 Both describe what the camera recorded, not an independently verified time or
 place. An image that lacks a requested field is still stamped with what it has,
 and completion says which field was missing or recorded but not valid. An image

@@ -15,10 +15,11 @@ const {
     wantsMetadata
 } = require("../../../src/core/inscription.js");
 
+const { rigaFacts } = require("./gps-fixtures.cjs");
+
 const TAKEN = {
     DateTimeOriginal: "2026:09:09 14:30:05",
-    GPSLatitude: 56.9496,
-    GPSLongitude: 24.1052
+    ...rigaFacts()
 };
 
 function settings(overrides = {}) {
