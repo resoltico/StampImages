@@ -75,3 +75,9 @@ test("a caption of your own is not a question for the photograph", () => {
         false
     );
 });
+
+test("caption line endings and trailing invisible lines do not add empty rendered paragraphs", () => {
+    const result = inscriptionFor({}, { dateFormat: "none", coordinateFormat: "none", customText: "A\r\nB\rC\r\n\u200b" });
+    assert.deepEqual(result.lines, ["A", "B", "C"]);
+    assert.doesNotMatch(result.text, /\r/u);
+});

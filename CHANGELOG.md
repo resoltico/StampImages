@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Invisible-only captions are refused before processing; Windows line endings no longer add blank lines to stamps.
+
 - 16-bit grayscale images are now stamped instead of being refused during preparation.
 
 - Command-line runs use a fixed tool-message locale, so image inspection and stamping also work from non-English terminal environments.

@@ -49,7 +49,7 @@ including when the configured typeface is unavailable.
 | --- | --- | --- |
 | `dateFormat` | Date/time format | `iso-minutes`, `iso-date`, `long-date` or `none` |
 | `coordinateFormat` | Coordinate format | `none`, `decimal` or `sexagesimal` |
-| `customText` | Custom text | String of up to 500 UTF-16 code units; may contain newlines; NUL and unpaired surrogates are refused |
+| `customText` | Custom text | String of up to 500 UTF-16 code units; may contain newlines; CRLF and CR normalize to LF before counting; NUL and unpaired surrogates are refused |
 | `font` | Typeface | Nonblank name of an installed face, as in Font Book; trimmed |
 | `size` | Text size | Integer 8–400 (points at the image's scale) |
 | `textColor` | Text color | Six hexadecimal digits, optional `#`; normalized to uppercase `#RRGGBB` |
@@ -58,8 +58,9 @@ including when the configured typeface is unavailable.
 | `position` | Position | `bottom-right`, `bottom-left`, `top-right`, `top-left`, `bottom-center` or `top-center` |
 | `margin` | Margin | Integer 0–2000 (pixels) |
 
-A request must stamp something: a date format, a coordinate format or nonblank
-custom text. `coordinateFormat` controls only what the stamp shows; copies keep the
+A request must stamp something: a date format, a coordinate format or visible
+custom text. Whitespace, Unicode control/format characters and blank fillers alone
+are empty text; combining sequences, emoji and right-to-left scripts remain valid. `coordinateFormat` controls only what the stamp shows; copies keep the
 location metadata their originals carry. Ultra HDR JPEGs produce standard-range
 JPEG copies without gain maps; capture metadata and color profiles are retained.
 

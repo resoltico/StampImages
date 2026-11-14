@@ -1,6 +1,7 @@
 "use strict";
 
 const { MONTHS, MOMENT_TAGS, captureMoment, coordinates } = require("./metadata.js");
+const { normalizeCustomText, hasVisibleText } = require("./stamp-content.js");
 const { decimalPlace, sexagesimalPlace } = require("./place.js");
 
 /*
@@ -38,9 +39,9 @@ function wrote(facts, format, read, writers) {
  * so they do not create empty space below the caption.
  */
 function customLines(text) {
-    const lines = String(text ?? "").split("\n");
+    const lines = normalizeCustomText(String(text ?? "")).split("\n");
 
-    while (lines.length > 0 && lines.at(-1).trim() === "") {
+    while (lines.length > 0 && !hasVisibleText(lines.at(-1))) {
         lines.pop();
     }
 

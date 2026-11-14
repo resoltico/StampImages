@@ -1,7 +1,7 @@
 "use strict";
 const { IssueError } = require("./errors.js");
 const { normalizeColor } = require("./color.js");
-const { contentProblem } = require("./stamp-content.js");
+const { contentProblem, normalizeCustomText } = require("./stamp-content.js");
 const { resolved } = require("./typeface-refusal.js");
 const CUSTOM_TEXT_LIMIT = 500;
 // A NUL cannot cross argv; unpaired surrogates are incomplete Unicode, not caption text.
@@ -28,8 +28,9 @@ function isSettingsRecord(value) { return Boolean(value) && typeof value === "ob
 function textIssue(rule, value) {
     if (typeof value !== "string") { return `${rule.name} must be text.`; }
     if (rule.kind === "typeface") { return value.trim() === "" ? `${rule.name}: name a face to draw with.` : ""; }
-    if (UNRENDERABLE_TEXT.test(value)) { return "Custom text contains a null character or incomplete Unicode text. Remove it or paste the text again."; }
-    return value.length > rule.maximumLength ? `${rule.name} must be ${rule.maximumLength} characters or fewer.` : "";
+    const text = normalizeCustomText(value);
+    if (UNRENDERABLE_TEXT.test(text)) { return "Custom text contains a null character or incomplete Unicode text. Remove it or paste the text again."; }
+    return text.length > rule.maximumLength ? `${rule.name} must be ${rule.maximumLength} characters or fewer.` : "";
 }
 function settingIssue(field, value) {
     const rule = Object.hasOwn(SETTINGS_SCHEMA, field) ? SETTINGS_SCHEMA[field] : null;
@@ -48,6 +49,7 @@ function settingIssue(field, value) {
 function normalizedValue(field, value) {
     const rule = SETTINGS_SCHEMA[field];
     if (rule.kind === "color") { return normalizeColor(value, rule.name); }
+    if (rule.kind === "text") { return normalizeCustomText(value); }
     return rule.kind === "typeface" ? value.trim() : value;
 }
 function readSetting(field, value) {
