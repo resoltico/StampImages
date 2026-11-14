@@ -99,11 +99,12 @@ function tabNavigation(objc, ns) {
 
 function makeCaption(ns, text, rect, objc = null) {
     const scroll = ns.NSScrollView.alloc.initWithFrame(rectOf(ns, rect));
-    const view = plainTextView(ns, text, rect);
-
-    scroll.documentView = view;
     scroll.hasVerticalScroller = true;
     scroll.borderType = BEZEL_BORDER;
+    const size = scroll.contentSize;
+    // The editor is local to the clip; only its outer scroll view uses form coordinates.
+    const view = plainTextView(ns, text, { left: 0, bottom: 0, width: size.width, height: size.height });
+    scroll.documentView = view;
     const navigation = objc ? tabNavigation(objc, ns) : null;
     if (navigation) { view.delegate = navigation; }
 

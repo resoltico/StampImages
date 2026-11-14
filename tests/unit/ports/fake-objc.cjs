@@ -47,12 +47,31 @@ function installClasses(ns, state, application) {
     Object.assign(ns, {
         NSMakeRect: (left, bottom, width, height) => ({ left, bottom, width, height }),
         NSMakeSize: (width, height) => ({ width, height }),
+        NSMakePoint: (left, top) => ({ left, top }),
+        NSMakeRange: (location, length) => ({ location, length }),
+        NSWindowDidUpdateNotification: "NSWindowDidUpdateNotification",
+        NSNotificationCenter: { defaultCenter: {
+            addObserverForNameObjectQueueUsingBlock(name, object, queue, callback) {
+                const token = { name, object, queue, callback };
+                state.observers.push(token); return token;
+            },
+            removeObserver(token) { state.observers = state.observers.filter((entry) => entry !== token); state.removedObservers.push(token); }
+        } },
         NSSelectorFromString: (name) => `sel:${name}`,
         NSModalPanelRunLoopMode: "NSModalPanelRunLoopMode",
         NSButton: { alloc: { initWithFrame: (rect) => ({...makeView(rect), state: 0, setButtonType(type) {this.buttonType=type;}}) } },
         NSView: { alloc: { initWithFrame: makeView } },
-        NSScrollView: { alloc: { initWithFrame: (rect) => ({ ...makeView(rect), contentSize: { width: rect.width - 15, height: rect.height } }) } },
-        NSTextView: { alloc: { initWithFrame: (rect) => ({ ...makeField(rect), textContainer: {} }) } },
+        NSScrollView: { alloc: { initWithFrame: (rect) => {
+            const scroll = { ...makeView(rect), contentSize: { width: rect.width - 15, height: rect.height }, reflected: 0 };
+            scroll.contentView = { scrollToPoint(point) { scroll.scrolledTo = point; } };
+            scroll.reflectScrolledClipView = () => { scroll.reflected += 1; };
+            return scroll;
+        } } },
+        NSTextView: { alloc: { initWithFrame(rect) {
+            const field = { ...makeField(rect), textContainer: {} };
+            field.scrollRangeToVisible = (range) => { field.scrolledRange = range; };
+            return field;
+        } } },
         NSTextField: { alloc: { initWithFrame: makeField } },
         NSPopUpButton: { alloc: { initWithFramePullsDown: makePopup } },
         NSComboBox: { alloc: { initWithFrame: makeCombo } },
@@ -96,6 +115,7 @@ function createFakeObjC(settings = {}) {
         disarmed: [],
         pumped: [],
         policies: [],
+        observers: [], removedObservers: [], aborted: 0,
         duringModal: settings.duringModal ?? (() => undefined),
         // NSApplicationActivationPolicyAccessory unless a test says otherwise;
         // 2 is prohibited, which cannot put a window on screen.
@@ -114,6 +134,7 @@ function createFakeObjC(settings = {}) {
         }
     };
 
+    Object.defineProperty(application, "abortModal", { get() { state.aborted += 1; if (settings.abortFailure) { throw settings.abortFailure; } return undefined; } });
     Object.defineProperty(application, "activationPolicy", {
         get: () => state.policy
     });
@@ -133,7 +154,7 @@ function createFakeObjC(settings = {}) {
 
     installClasses(ns, state, application);
 
-    return { ns, objc: { unwrap: (value) => value, import: () => true, registerSubclass }, state };
+    return { ns, objc: { unwrap: (value) => value, import: () => true, block: (types, callback) => callback, registerSubclass }, state };
 }
 
 module.exports = { createFakeObjC };

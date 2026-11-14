@@ -50,6 +50,15 @@ function installClasses(ns, state, application) {
     Object.assign(ns, {
         NSMakeRect: (left, bottom, width, height) => ({ left, bottom, width, height }),
         NSMakeSize: (width, height) => ({ width, height }),
+        NSMakeRange: (location, length) => ({ location, length }),
+        NSWindowDidUpdateNotification: "NSWindowDidUpdateNotification",
+        NSNotificationCenter: { defaultCenter: {
+            addObserverForNameObjectQueueUsingBlock(name, object, queue, callback) {
+                const token = { name, object, queue, callback };
+                state.observers.push(token); return token;
+            },
+            removeObserver(token) { state.observers = state.observers.filter((entry) => entry !== token); state.removedObservers.push(token); }
+        } },
         NSMakePoint: (left, top) => ({ left, top }),
         NSSelectorFromString: (name) => `sel:${name}`,
         NSModalPanelRunLoopMode: "NSModalPanelRunLoopMode",
@@ -103,6 +112,7 @@ function createFakeObjC(settings = {}) {
         disarmed: [],
         pumped: [],
         policies: [],
+        observers: [], removedObservers: [], aborted: 0,
         duringModal: settings.duringModal ?? (() => undefined),
         // NSApplicationActivationPolicyAccessory unless a test says otherwise;
         // 2 is prohibited, which cannot put a window on screen.
@@ -122,6 +132,7 @@ function createFakeObjC(settings = {}) {
         }
     };
 
+    Object.defineProperty(application, "abortModal", { get() { state.aborted += 1; if (settings.abortFailure) { throw settings.abortFailure; } return undefined; } });
     Object.defineProperty(application, "activationPolicy", {
         get: () => state.policy
     });
@@ -135,7 +146,7 @@ function createFakeObjC(settings = {}) {
     ns.NSClassFromString = (name) => ({ isNil: () => !state.registered.some((each) => each.name === name) });
     const objc = {
         unwrap: (value) => value,
-        import: () => true,
+        import: () => true, block: (types, callback) => callback,
         registerSubclass(definition) {
             state.registered.push(definition);
             ns[definition.name] = { alloc: { get init() { return { kind: "delegate", of: definition.name }; } } };

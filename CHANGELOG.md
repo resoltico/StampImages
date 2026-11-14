@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Scrollable details and form text open at their first line, retain later user scrolling, and multiline captions scroll within their own editor.
+
 - Completion omits empty diagnostic values and no longer offers Details for a plain stop with no useful technical information.
 
 - `elapsed` now measures image processing time, excluding setup, source inspection and time spent in settings or review dialogs.

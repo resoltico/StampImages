@@ -48,7 +48,9 @@ function makeField(rect) {
  * `stringValue`, which is the distinction the form has to get right.
  */
 function makeTextView(rect) {
-    return accessible({ kind: "textview", rect, string: "", textContainer: {} });
+    const view = accessible({ kind: "textview", rect, string: "", textContainer: {} });
+    view.scrollRangeToVisible = (range) => { view.scrolledRange = range; };
+    return view;
 }
 
 function makeScrollView(rect) {
@@ -106,7 +108,8 @@ function makePopup(rect, pullsDown) {
 function makeAlert(state) {
     const alert = {
         kind: "alert",
-        window: {},
+        window: { contentView: {} },
+        layoutPasses: 0,
         buttons: [],
         accessoryView: null,
         messageText: "",
@@ -114,6 +117,7 @@ function makeAlert(state) {
     };
 
     alert.addButtonWithTitle = (title) => alert.buttons.push(title);
+    Object.defineProperty(alert, "layout", { get: () => { alert.layoutPasses += 1; return undefined; } });
     Object.defineProperty(alert, "runModal", {
         get: () => {
             state.alerts.push(alert);

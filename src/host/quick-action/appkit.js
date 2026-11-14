@@ -11,11 +11,10 @@ const {
 } = require("./appkit-widgets.js");
 const { makeField, makeCombo, makeCaption } = require("./appkit-fields.js");
 const { buildForm } = require("./appkit-form.js");
-const { perform } = require("./appkit-bridge.js");
 const { optionalAnswer, unbindChoices } = require("./appkit-choice.js");
 
 // Gathered into one object so a test can substitute the whole widget layer.
-const { makeDetails } = require("./details-dialog.js");
+const { makeDetails, runDetailsModal } = require("./details-dialog.js");
 const WIDGETS = {
     makeDetails,
     makeView,
@@ -114,14 +113,8 @@ function presentForm(bridge, spec, widgets = WIDGETS) {
         alert.accessoryView = view;
         const focus = spec.rows.find((row) => row.invalid) ?? spec.rows[0];
         alert.window.initialFirstResponder = editorFor(focus, controls[focus.key]);
-        // Measured: laid out inside a running alert, the note opened two lines
-        // down, hiding the outcome line that leads it. It is laid out first and
-        // put back at its start.
-        perform(alert, "layout");
-        details.contentView.scrollToPoint(bridge.ns.NSMakePoint(0, 0));
-        details.reflectScrolledClipView(details.contentView);
-
-        const response = Number(alert.runModal);
+        const scrolls = [details, ...spec.rows.filter((row) => row.kind === "text").map((row) => controls[row.key].control)];
+        const response = runDetailsModal(bridge, alert, scrolls);
 
         if (response === RESPONSE_ABORT) {
             return null;

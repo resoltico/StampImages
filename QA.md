@@ -50,7 +50,10 @@ The integration scripts under `tests/integration/` exercise real stamp pixels,
 placement, supported formats, source hashes, date/GPS content, alpha, profiles,
 grayscale color expansion, fonts, damaged/multi-image refusal (including JPEG decoder warnings), selection,
 publication collisions, cross-volume/card behavior, measurement failures and
-native form geometry/accessibility in both appearances. `resources.sh` checks
+native form geometry/accessibility in both appearances. Actual modal checks verify
+first-line initialization and later user scrolling for details, notes and multiline
+captions; caption documents use clip-local coordinates. Callback tests guard
+registration, teardown and reentrant native visibility getters. `resources.sh` checks
 confirmed temporary recovery and dead/live/retained/unreadable workspace ownership;
 `concurrency.sh` checks 12 two-process publication rounds. CLI and lifecycle probes
 also cover strict settings, statuses, source capture, recovery and cancellation.
@@ -59,7 +62,9 @@ report `invalid` with exit 2 before source admission.
 `hdr.sh` checks synthetic Ultra HDR admission, visible stamped SDR JPEGs with no
 gain map/MPF or stale HDR XMP declarations, retained EXIF/GPS, ICC, XMP and IPTC,
 orientations 6/8, damaged HDR
-and unmapped-loader diagnostics. A metadata-write failure must publish no copy.
+and unmapped-loader diagnostics. A metadata-write failure must publish no copy. `formats.sh` also checks EXIF/GPS
+and ICC across six encoder families, upright 6/8 JPEG/TIFF pixels and EXIF/XMP
+dimensions, opaque alpha and an independent unmarked-source caption control.
 
 Probe entrypoints import production modules and are built by
 `tools/build-probe.mjs` using the production scoped bundler. Ordinary end-to-end tests invoke
