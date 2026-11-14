@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Invalid settings now use the same visible error tint across numeric, text, color, typeface and choice controls in both appearances.
+
 - Stop is exposed as a button and immediately changes to disabled “Stopping…” feedback while waiting for a safe checkpoint.
 
 - Scrollable details and form text open at their first line, retain later user scrolling, and multiline captions scroll within their own editor.

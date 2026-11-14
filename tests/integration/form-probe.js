@@ -6,12 +6,45 @@ const { buildForm } = require("../../src/host/quick-action/appkit-form.js");
 const { detailsAlert, layoutDetails, runDetailsModal } = require("../../src/host/quick-action/details-dialog.js");
 const { build: buildProgressPanel, allowWindows } = require("../../src/host/quick-action/panel.js");
 const { WIDGETS, readControls } = require("../../src/host/quick-action/appkit.js");
+const { appkitBridge } = require("../../src/host/quick-action/appkit-bridge.js");
 const { unbindChoices } = require("../../src/host/quick-action/appkit-choice.js");
 
 const SMALLEST_VISIBLE_HEIGHT = 744;
 
 function assertNativeStamp(condition, message) {
     if (!condition) { throw new Error(message); }
+}
+
+const MINIMUM_TINT_DIFFERENCE = 0.005;
+
+function redExcess(control) {
+    const bitmap = control.bitmapImageRepForCachingDisplayInRect(control.bounds);
+    control.cacheDisplayInRectToBitmapImageRep(control.bounds, bitmap);
+    const color = bitmap.colorAtXY(Math.floor(Number(bitmap.pixelsWide) * 0.75), Math.floor(Number(bitmap.pixelsHigh) * 0.5))
+        .colorUsingColorSpace($.NSColorSpace.deviceRGBColorSpace);
+    return Number(color.redComponent) - Number(color.blueComponent);
+}
+
+function checkInvalidTint(control, key) {
+    const layers = control.layer.sublayers;
+    const fill = Array.from({ length: Number(layers.count) }, (ignored, index) => layers.objectAtIndex(index))
+        .find((layer) => String(ObjC.unwrap(layer.name)) === "InvalidSettingFill");
+    assertNativeStamp(Boolean(fill), `${key}: missing invalid fill layer`);
+    const marked = redExcess(control);
+    // The same native control without only its error fill is the negative control.
+    fill.removeFromSuperlayer;
+    const plain = redExcess(control);
+    control.layer.addSublayer(fill);
+    assertNativeStamp(marked - plain > MINIMUM_TINT_DIFFERENCE, `${key}: invalid tint is hidden by the native control (${marked}, ${plain})`);
+}
+
+function checkInvalidControls(built, spec) {
+    for (const row of spec.rows) {
+        if (row.invalid) {
+            const entry = built.controls[row.key];
+            checkInvalidTint(row.optional ? entry.popup : entry.text ?? entry, row.key);
+        }
+    }
 }
 
 function measureStampForm(built, spec) {
@@ -43,6 +76,7 @@ function measureStampForm(built, spec) {
                 `Clipped native label or control at index ${index}`);
         }
     }
+    checkInvalidControls(built, spec);
 }
 
 function checkStampToggle(bridge, spec, built) {
@@ -79,7 +113,7 @@ function checkScrollPositions(view) {
 }
 
 function stampFormSnapshot(folder, scenario, appearance) {
-    const bridge = { objc: ObjC, ns: $ };
+    const bridge = appkitBridge(ObjC, $);
     const spec = formSpec(scenario.answers, scenario.problems, scenario.context);
     const built = buildForm(bridge, spec, WIDGETS);
     const alert = WIDGETS.makeAlert($, spec);
@@ -221,6 +255,8 @@ function run(input) {
             problems: [], context: { ...context, count: 12 } },
         { name: "folders", answers, problems: [], context: { ...context, count: 231, selectedFolders: 2 } },
         { name: "corrections", answers: invalid, problems: readAnswers(invalid, fonts).problems, context },
+        { name: "all-invalid-controls", answers: { ...answers, coordinateFormat: "56.9496, 24.1052", customText: "Caption" },
+            problems: Object.keys(answers).map((key) => ({ key, message: "Correct this setting." })), context },
         { name: "caption-only", answers: { ...answers, dateFormat: "Do not stamp the date", customText: "A caption\nAnother line" },
             problems: [], context }
     ];

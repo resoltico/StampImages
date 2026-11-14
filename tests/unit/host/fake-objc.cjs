@@ -40,7 +40,8 @@ function colorClass() {
             colorWithAlphaComponent: (alpha) => ({
                 kind: "color",
                 name: "systemRed",
-                alpha
+                alpha,
+                CGColor: { name: "systemRed", alpha }
             })
         }
     };
@@ -71,6 +72,7 @@ function installClasses(ns, state, application) {
         NSTextView: { alloc: { initWithFrame: makeTextView } },
         NSScrollView: { alloc: { initWithFrame: makeScrollView } },
         NSColor: colorClass(),
+        CALayer: { get layer() { return {}; } },
         NSFont: {
             systemFontOfSize: (size) => ({ kind: "font", size }),
             boldSystemFontOfSize: (size) => ({ kind: "font", size, bold: true })

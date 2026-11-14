@@ -43,16 +43,20 @@ test("a row named in the problems is marked, and the others are not", () => {
     const bridge = createFakeObjC();
     const { controls } = buildForm(bridge, spec, WIDGETS);
 
-    assert.equal(controls.size.drawsBackground, true);
-    assert.equal(controls.size.backgroundColor.name, "systemRed");
+    assert.equal(controls.size.wantsLayer, true);
+    assert.equal(controls.size.layer.sublayers[0].name, "InvalidSettingFill");
+    assert.deepEqual(controls.size.layer.sublayers[0].frame, controls.size.bounds);
+    assert.equal(controls.size.layer.sublayers[0].zPosition, 1);
+    assert.equal(controls.size.layer.sublayers[0].cornerRadius, 4);
+    assert.equal(controls.size.layer.sublayers[0].backgroundColor.name, "systemRed");
     assert.ok(
-        controls.size.backgroundColor.alpha < 0.5,
+        controls.size.layer.sublayers[0].backgroundColor.alpha < 0.5,
         "a tint, not a fill: the value must stay readable"
     );
 
     for (const key of ["margin", "position", "textColor"]) {
         assert.notEqual(
-            controls[key].drawsBackground,
+            controls[key].wantsLayer,
             true,
             `${key} is not in the problem list and must not be marked`
         );
@@ -77,8 +81,8 @@ test("a choice row can be marked too, not only a typed one", () => {
     const spec = specFor({ ...defaultAnswers(FONTS), position: "Sideways" }, [{ key: "position", message: 'Position: "Sideways" is not one of the choices.' }]);
     const { controls } = buildForm(createFakeObjC(), spec, WIDGETS);
 
-    assert.equal(controls.position.drawsBackground, true);
-    assert.equal(controls.position.backgroundColor.name, "systemRed");
+    assert.equal(controls.position.wantsLayer, true);
+    assert.equal(controls.position.layer.sublayers[0].backgroundColor.name, "systemRed");
 });
 
 test("a hint that offers is not marked with the value it did not rule out", () => {

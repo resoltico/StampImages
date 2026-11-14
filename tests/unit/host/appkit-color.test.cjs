@@ -60,8 +60,8 @@ test("a color that could not be read is marked, keeping what was typed", () => {
     const { controls } = build(spec);
 
     assert.equal(controls.outlineColor.stringValue, "c7dae", "what was typed");
-    assert.equal(controls.outlineColor.drawsBackground, true);
-    assert.equal(controls.outlineColor.backgroundColor.name, "systemRed");
+    assert.equal(controls.outlineColor.wantsLayer, true);
+    assert.equal(controls.outlineColor.layer.sublayers[0].backgroundColor.name, "systemRed");
 });
 
 test("the text row is marked too, when there is too much of it", () => {
@@ -70,6 +70,6 @@ test("the text row is marked too, when there is too much of it", () => {
     const spec = specFor({ ...defaultAnswers(FONTS), customText: "x".repeat(501) }, [{ key: "customText", message: "Your own text: 500 characters or fewer." }]);
     const { controls } = build(spec);
 
-    assert.equal(controls.customText.text.drawsBackground, true);
-    assert.equal(controls.customText.text.backgroundColor.name, "systemRed");
+    assert.equal(controls.customText.text.wantsLayer, true);
+    assert.equal(controls.customText.text.layer.sublayers[0].backgroundColor.name, "systemRed");
 });

@@ -52,7 +52,8 @@ grayscale color expansion, fonts, damaged/multi-image refusal (including JPEG de
 publication collisions, cross-volume/card behavior, measurement failures and
 native form geometry/accessibility in both appearances. Stop exposes an actual
 accessibility button, acknowledges its action with disabled feedback and fits its
-full title; a toggle control is the negative control. Actual modal checks verify
+full title; a toggle control is the negative control. Invalid controls are checked
+with native pixels against the same controls with only their error tint removed. Actual modal checks verify
 first-line initialization and later user scrolling for details, notes and multiline
 captions; caption documents use clip-local coordinates. Callback tests guard
 registration, teardown and reentrant native visibility getters. `resources.sh` checks

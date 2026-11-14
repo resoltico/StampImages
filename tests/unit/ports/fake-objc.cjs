@@ -37,7 +37,8 @@ function colorClass() {
             colorWithAlphaComponent: (alpha) => ({
                 kind: "color",
                 name: "systemRed",
-                alpha
+                alpha,
+                CGColor: { name: "systemRed", alpha }
             })
         }
     };
@@ -76,6 +77,7 @@ function installClasses(ns, state, application) {
         NSPopUpButton: { alloc: { initWithFramePullsDown: makePopup } },
         NSComboBox: { alloc: { initWithFrame: makeCombo } },
         NSColor: colorClass(),
+        CALayer: { get layer() { return {}; } },
         NSFont: {
             systemFontSize: 13,
             systemFontOfSize: (size) => ({ kind: "font", size }),
