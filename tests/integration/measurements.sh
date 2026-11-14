@@ -25,7 +25,9 @@ case "\${STAMP_MEASUREMENT_CASE:-}:\$2" in
     bad-pages:n-pages) printf '2junk\\n'; exit 0 ;;
     failed-pages:n-pages) printf 'Injected page-count read failure\\n' >&2; exit 1 ;;
     bad-bands:bands) printf '4junk\\n'; exit 0 ;;
-    bad-size:width) printf '900.5\\n'; exit 0 ;;
+    bad-size:width)
+        # Target image measurement, not setup's valid built-in PNG probe.
+        if [ "\$3" = '$WORK/alpha.png' ]; then printf '900.5\\n'; exit 0; fi ;;
 esac
 if [ "\$1" = '-a' ]; then
     case "\${STAMP_MEASUREMENT_CASE:-}" in
@@ -88,4 +90,5 @@ assert_not_contains "$MIXED" '"not-started"' "and it stops nothing after it"
 test -f "$WORK/mixed/b-large_stamped.png" && test -f "$WORK/mixed/c-large_stamped.png" ||
     fail "the photographs after a small one were not stamped"
 
+node "$ROOT/tests/integration/layout.cjs" "$SCRIPT" "$WORK/layout" "$WORK/one.png" "$WORK/settings.json"
 printf 'macOS measurement integrity integration passed\n'

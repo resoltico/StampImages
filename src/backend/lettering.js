@@ -76,12 +76,16 @@ function fontDescription(typeface, size) {
     return `${typeface.family}, ${typeface.face ? `${typeface.face} ` : ""}${size}`;
 }
 
+// Fix physical left alignment per paragraph; core owns content isolation.
+const LEFT_TO_RIGHT_MARK = "\u200e";
 function buildTextArgv(vipsPath, outputPath, text, font) {
+    const aligned = LEFT_TO_RIGHT_MARK + String(text).replace(/\r\n|[\r\n\u2029]/gu,
+        (boundary) => boundary + LEFT_TO_RIGHT_MARK);
     return [
         vipsPath,
         "text",
         outputPath,
-        asMarkup(text),
+        asMarkup(aligned),
         "--font",
         font,
         "--dpi",

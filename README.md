@@ -100,12 +100,15 @@ place. An image that lacks a requested field is still stamped with what it has,
 and completion says which field was missing or recorded but not valid. An image
 with nothing to stamp gets no copy.
 
-Every character uses the chosen text color, including emoji, which are drawn as
-silhouettes. Characters the typeface lacks are drawn in another face, and the copy
-says so. Each line keeps its own writing direction, so a right-to-left caption
-does not reorder the date or coordinates. A stamp larger than an image is refused
-for that image; a margin larger than the room available places the stamp against
-the opposite edge, and the copy says so.
+Every character uses the chosen text color. Color emoji become monochrome
+coverage masks and can appear as solid silhouettes without their colored internal
+detail; use plain symbols or text when that distinction matters. Characters the
+typeface lacks are drawn in another face, and the copy says so. Each paragraph
+keeps its own writing direction and physical left alignment, so mixed directions
+do not reorder dates or coordinates. Hex color text accepts outer whitespace.
+A stamp larger than an image is refused for that image. Excessive margins are
+reduced at each selected edge to keep the stamp in the selected half of the image;
+centered axes stay centered, and completion explains a reduced margin.
 
 ## Images and copies
 

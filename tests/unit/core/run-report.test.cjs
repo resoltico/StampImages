@@ -39,7 +39,7 @@ test("core report sections and metadata notes are literal contracts", () => {
         "Stopped. Created 1 stamped copy.",
         "1 saved; 1 failed; 1 with nothing to stamp; 1 canceled; 1 not started; 1 not included; 1 copy with requested metadata left off.",
         "Saved to:\n/out/\na.jpg",
-        "Notes:\na.jpg: Missing requested metadata: date/time.\na.jpg: Recorded but not valid, so left off: GPS coordinates.\na.jpg: The margin is larger than this image has room for, so the stamp was placed against the opposite edge.\na.jpg: Written in color from a grayscale original.\na.jpg: Some characters are not in the chosen typeface and were drawn in another one.\na.jpg: The caption color could not be converted to the image's color profile.",
+        "Notes:\na.jpg: Missing requested metadata: date/time.\na.jpg: Recorded but not valid, so left off: GPS coordinates.\na.jpg: The margin was reduced to keep the stamp on the selected side of the image.\na.jpg: Written in color from a grayscale original.\na.jpg: Some characters are not in the chosen typeface and were drawn in another one.\na.jpg: The caption color could not be converted to the image's color profile.",
         "Nothing to stamp:\n/in/no-date.jpg: No date",
         "Could not stamp:\n/in/bad.jpg: Failed",
         "Not started: 1", "Not included from your selection:\nno.gif: Unsupported", "Other issues:\nKept work\n/workspace",

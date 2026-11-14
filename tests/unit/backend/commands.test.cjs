@@ -51,7 +51,7 @@ test("text is drawn as a coverage mask at a fixed DPI", () => {
             VIPS,
             "text",
             "/w/mask.png",
-            "Riga",
+            "\u200eRiga",
             "--font",
             "Helvetica Neue 24",
             "--dpi",
@@ -61,11 +61,11 @@ test("text is drawn as a coverage mask at a fixed DPI", () => {
 });
 
 test("the text is an argument, never part of a command", () => {
-    // Whatever somebody typed is passed through unchanged: quoting happens
-    // once, where the command is run.
+    // Alignment marks do not turn caption content into shell syntax;
+    // quoting happens once, where the command is run.
     const argv = buildTextArgv(VIPS, "/w/m.png", "'; rm -rf /\nRiga", "Menlo 12");
 
-    assert.equal(argv[3], "'; rm -rf /\nRiga");
+    assert.equal(argv[3], "\u200e'; rm -rf /\n\u200eRiga");
 });
 
 test("an outline is the mask grown by a maximum filter", () => {
@@ -88,14 +88,14 @@ test("a caption is text, and reaches the renderer as itself", () => {
     // and "<b>x</b>" is silently drawn in bold.
     const argv = buildTextArgv(VIPS, "/w/m.png", "Mum & Dad <b>x</b>", "Menlo 24");
 
-    assert.equal(argv[3], "Mum &amp; Dad &lt;b&gt;x&lt;/b&gt;");
+    assert.equal(argv[3], "\u200eMum &amp; Dad &lt;b&gt;x&lt;/b&gt;");
 });
 
 test("a quote and an apostrophe are content, and are left alone", () => {
     // A coordinate written 56°56'58.6"N is full of them.
     const argv = buildTextArgv(VIPS, "/w/m.png", `56°56'58.6"N`, "Menlo 24");
 
-    assert.equal(argv[3], `56°56'58.6"N`);
+    assert.equal(argv[3], `\u200e56°56'58.6"N`);
 });
 
 test("the mask is given the room the outline will grow into", () => {

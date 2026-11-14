@@ -43,7 +43,7 @@ function notesOf(image) {
     return [
         absent.length ? `Missing requested metadata: ${absent.join(", ")}.` : "",
         image.invalidMetadata?.length ? `Recorded but not valid, so left off: ${image.invalidMetadata.join(", ")}.` : "",
-        image.crowded ? "The margin is larger than this image has room for, so the stamp was placed against the opposite edge." : "",
+        image.crowded ? "The margin was reduced to keep the stamp on the selected side of the image." : "",
         image.expanded ? "Written in color from a grayscale original." : "",
         image.substituted ? "Some characters are not in the chosen typeface and were drawn in another one." : "",
         image.unconverted ? "The caption color could not be converted to the image's color profile." : ""

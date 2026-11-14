@@ -62,8 +62,9 @@ function describeNothing(settings, invalid) {
     const unreadable = invalid.length
         ? `its ${invalid.join(" and ")} ${invalid.length === 1 && invalid[0] === "date/time" ? "is" : "are"} recorded but not valid`
         : "";
-    return [[missing, unreadable].filter(Boolean).join("; "),
+    const explanation = [[missing, unreadable].filter(Boolean).join("; "),
         "there is no text of your own to put on it"].filter(Boolean).join(", and ");
+    return `${explanation[0].toUpperCase()}${explanation.slice(1)}.`;
 }
 
 /*
@@ -94,20 +95,18 @@ function wantsMetadata(settings) {
 }
 
 /*
- * Every line is drawn as its own bidirectional isolate. All lines reach the
- * renderer as one paragraph layout, and measured with vips 8.18 a Hebrew or
- * Arabic caption set the direction of the neutral lines above it: the stamp
- * read "18:42 2021-07-14" and "24.1052 ,56.9496" -- the place apparently
- * swapped and its comma moved. Date and place are written left to right
- * (LRI ... PDI), whatever else is on the photograph; a caption takes its own
- * direction from its first strong character (FSI ... PDI), and an override
- * typed into one caption line cannot reach past that line.
+ * Each paragraph owns a bidirectional isolate: date/place stay left-to-right,
+ * while custom text takes its direction from its own first strong character.
+ * Paragraph boundaries reset the renderer's isolate state, so a separator
+ * inside a custom line closes and reopens the same content frame.
  */
 const LEFT_TO_RIGHT = ["\u2066", "\u2069"];
 const OWN_DIRECTION = ["\u2068", "\u2069"];
 
 function isolated(line, [open, close]) {
-    return `${open}${line}${close}`;
+    const paragraphs = line.replace(/\r\n|[\r\n\u2029]/gu,
+        (boundary) => close + boundary + open);
+    return `${open}${paragraphs}${close}`;
 }
 
 /*

@@ -50,10 +50,10 @@ test("centered is centered across, and still margined down", () => {
 
 
 
-test("a margin with no room for it is the edge, and it is said", () => {
+test("an excessive margin stops at the center and is reported", () => {
     // The whole stamp is still visible, and a margin is a request rather than
     // a promise -- but a run that quietly did something else should say so.
-    assert.deepEqual(place("bottom-right", 5000), { left: 0, top: 0 });
+    assert.deepEqual(place("bottom-right", 5000), { left: 400, top: 350 });
     assert.equal(
         placeStamp(IMAGE, STAMP, { position: "bottom-right", margin: 20 }).crowded,
         false
@@ -64,22 +64,18 @@ test("a margin with no room for it is the edge, and it is said", () => {
     );
 });
 
-test("a margin measured from two edges is not measured from four", () => {
-    // An eighty-pixel stamp fifteen pixels in from the corner of a
-    // hundred-pixel photograph has its margin: the other two edges get
-    // whatever is left, and asking for room on all four reported it as
-    // sitting against the edge.
+test("a margin that would cross the center is reduced at each active edge", () => {
     const placed = placeStamp(
         { width: 100, height: 100 },
         { width: 80, height: 80 },
         { position: "bottom-right", margin: 15 }
     );
 
-    assert.deepEqual(placed, { left: 5, top: 5, crowded: false });
+    assert.deepEqual(placed, { left: 10, top: 10, crowded: true });
 });
 
-test("a margin larger than the room there is stops at the edge", () => {
-    assert.deepEqual(place("top-left", 5000), { left: 800, top: 700 });
+test("an excessive top-left margin stays in the top-left half", () => {
+    assert.deepEqual(place("top-left", 5000), { left: 400, top: 350 });
 });
 
 test("an odd number of pixels to share is a whole pixel", () => {
@@ -98,8 +94,8 @@ test("the margin is honored when there is room for it at the named edges", () =>
     const crowdedAt = (margin) =>
         placeStamp(IMAGE, stamp, { position: "bottom-right", margin }).crowded;
 
-    assert.equal(crowdedAt(200), false, "exactly the room there is");
-    assert.equal(crowdedAt(201), true, "one pixel more than there is");
+    assert.equal(crowdedAt(100), false, "exactly half the remaining room");
+    assert.equal(crowdedAt(101), true, "one pixel past the center boundary");
 });
 
 test("the tighter of the two directions decides", () => {
@@ -109,8 +105,8 @@ test("the tighter of the two directions decides", () => {
         { position: "bottom-right", margin }
     ).crowded;
 
-    assert.equal(crowdedAt(11), true, "wide enough across, nothing to spare down");
-    assert.equal(crowdedAt(10), false);
+    assert.equal(crowdedAt(6), true, "wide enough across, nothing to spare down");
+    assert.equal(crowdedAt(5), false);
 });
 
 test("crowding is either direction, on its own", () => {
@@ -120,4 +116,21 @@ test("crowding is either direction, on its own", () => {
     assert.equal(crowded("bottom-right", 300, { width: 100, height: 790 }), true);
     assert.equal(crowded("bottom-right", 300, { width: 790, height: 100 }), true);
     assert.equal(crowded("bottom-right", 5, { width: 790, height: 790 }), false);
+});
+
+
+test("odd remaining room keeps every selected half with whole-pixel offsets", () => {
+    const image = { width: 1001, height: 801 };
+    for (const [position, expected] of [
+        ["top-left", { left: 400, top: 350 }], ["top-right", { left: 401, top: 350 }],
+        ["bottom-left", { left: 400, top: 351 }], ["bottom-right", { left: 401, top: 351 }],
+        ["top-center", { left: 401, top: 350 }], ["bottom-center", { left: 401, top: 351 }]
+    ]) {
+        assert.deepEqual(placeStamp(image, STAMP, { position, margin: 2000 }), { ...expected, crowded: true });
+    }
+});
+
+test("a centered axis never reports crowding from unused horizontal margin", () => {
+    assert.deepEqual(placeStamp({ width: 201, height: 1000 }, STAMP, { position: "bottom-center", margin: 30 }),
+        { left: 1, top: 870, crowded: false });
 });

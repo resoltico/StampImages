@@ -83,7 +83,7 @@ test("each rejection is printed once", () => {
 test("a crowded stamp says where it went", () => {
     const result = runOutcome([{ source: "/a.jpg", state: "saved", output: "/o.jpg", issues: [], crowded: true }]);
 
-    assert.match(detailOf(result), /placed against the opposite edge/u);
+    assert.match(detailOf(result), /keep the stamp on the selected side/u);
 });
 
 test("the detail lists copies by folder, then notes, failures, refusals and the version", () => {
@@ -93,15 +93,15 @@ test("the detail lists copies by folder, then notes, failures, refusals and the 
         { source: "/t/a.jpg", state: "saved", output: "/t/a_stamped.jpg", issues: [], missingMetadata: ["GPS coordinates"] },
         { source: "/t/b.jpg", state: "saved", output: "/t/b_stamped.jpg", issues: [], crowded: true },
         { source: "/u/c.jpg", state: "failed", issues: [{ code: "damaged", message: "This image is damaged or incomplete." }] },
-        { source: "/u/d.jpg", state: "nothing-to-stamp", reason: "it does not say when it was taken", issues: [] },
+        { source: "/u/d.jpg", state: "nothing-to-stamp", reason: "It does not say when it was taken.", issues: [] },
         { source: "/u/e.jpg", state: "not-started", issues: [] }
     ], [{ path: "/u/x.gif", name: "x.gif", reason: "This file is not a supported format." }]);
 
     assert.equal(detail(result), [
         "2 saved; 1 failed; 1 with nothing to stamp; 1 not started; 1 not included; 1 copy with requested metadata left off.",
         "Saved to:\n/t/\na_stamped.jpg\nb_stamped.jpg",
-        "Notes:\na_stamped.jpg: Missing requested metadata: GPS coordinates.\nb_stamped.jpg: The margin is larger than this image has room for, so the stamp was placed against the opposite edge.",
-        "Nothing to stamp:\n/u/d.jpg: it does not say when it was taken",
+        "Notes:\na_stamped.jpg: Missing requested metadata: GPS coordinates.\nb_stamped.jpg: The margin was reduced to keep the stamp on the selected side of the image.",
+        "Nothing to stamp:\n/u/d.jpg: It does not say when it was taken.",
         "Could not stamp:\n/u/c.jpg: This image is damaged or incomplete.",
         "Not started: 1",
         "Not included from your selection:\n/u/x.gif: This file is not a supported format.",

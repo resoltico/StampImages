@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Mixed-direction captions keep paragraph-local direction and left alignment; excessive margins stay on the selected side, and nothing-to-stamp reasons are complete sentences.
+- Color emoji use monochrome coverage masks and can lose internal colored detail; this rendering limitation is documented.
+
 - Localized Font Book family and face names are accepted when they identify one installed catalog choice; ambiguous, hidden and PostScript names remain refused.
 
 - Folder runs save each stamped copy beside its original; legal stems and matching extension case stay intact, with only unsafe controls or byte-length limits changing names.

@@ -80,14 +80,14 @@ test("nothing-to-stamp reasons do not call invalid fields absent or read disable
 
 test("nothing reasons are complete sentences about the requested absent or invalid content", () => {
     const request = { ...settings, customText: "" };
-    const ending = ", and there is no text of your own to put on it";
+    const ending = ", and there is no text of your own to put on it.";
     assert.equal(inscriptionFor({ DateTimeOriginal: "2026:02:30 12:00" }, request).nothing,
-        `it does not say where it was taken; its date/time is recorded but not valid${ending}`);
+        `It does not say where it was taken; its date/time is recorded but not valid${ending}`);
     assert.equal(inscriptionFor({ GPSLatitude: 999, GPSLongitude: 20 }, request).nothing,
-        `it does not say when it was taken; its GPS coordinates are recorded but not valid${ending}`);
+        `It does not say when it was taken; its GPS coordinates are recorded but not valid${ending}`);
     assert.equal(inscriptionFor({ DateTimeOriginal: "2026:02:30 12:00", GPSLatitude: 999, GPSLongitude: 20 }, request).nothing,
-        `its date/time and GPS coordinates are recorded but not valid${ending}`);
-    assert.equal(inscriptionFor({}, request).nothing, `it does not say when or where it was taken${ending}`);
+        `Its date/time and GPS coordinates are recorded but not valid${ending}`);
+    assert.equal(inscriptionFor({}, request).nothing, `It does not say when or where it was taken${ending}`);
     assert.equal(inscriptionFor({}, { dateFormat: "none", coordinateFormat: "none", customText: "" }).nothing,
-        "there is no text of your own to put on it");
+        "There is no text of your own to put on it.");
 });

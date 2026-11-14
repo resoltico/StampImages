@@ -55,14 +55,14 @@ test("a requested field that is recorded but unusable is named apart from one th
 
     assert.deepEqual(nothing.missing, ["date/time", "GPS coordinates"]);
     assert.deepEqual(nothing.invalid, ["date/time", "GPS coordinates"]);
-    assert.match(nothing.nothing, /its date\/time and GPS coordinates are recorded but not valid/u);
+    assert.match(nothing.nothing, /Its date\/time and GPS coordinates are recorded but not valid/u);
     const partial = inscriptionFor({ DateTimeOriginal: "2020:02:30 25:61:61", GPSLatitude: 1, GPSLongitude: 2 }, both);
 
     assert.deepEqual(partial.invalid, ["date/time"]);
     assert.equal(inscriptionFor({}, both).invalid, undefined, "absent is not invalid");
     assert.match(inscriptionFor({ CreateDate: " " }, DEFAULTS).nothing, /does not say when it was taken,/u);
     assert.match(inscriptionFor({ CreateDate: "garbled" }, DEFAULTS).nothing,
-        /its date\/time is recorded but not valid, and there/u);
+        /Its date\/time is recorded but not valid, and there/u);
     for (const absent of [undefined, null, "", "  "]) {
         assert.equal(inscriptionFor({ DateTimeOriginal: absent }, DEFAULTS).invalid, undefined, String(absent));
     }

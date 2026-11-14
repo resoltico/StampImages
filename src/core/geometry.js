@@ -4,7 +4,7 @@ const { OperationError } = require("./errors.js");
 
 /*
  * Place the stamp in image pixels from the edges named by its position.
- * Clamp an excessive margin to keep the whole stamp visible. Refuse a stamp
+ * Clamp an excessive margin at the center so the selected side is retained. Refuse a stamp
  * larger than the image: libvips crops overlays, which would lose caption text.
  */
 
@@ -66,16 +66,16 @@ function placeStamp(image, stamp, settings) {
         left: HORIZONTAL[horizontal](acrossRoom, settings.margin),
         top: VERTICAL[vertical](downRoom, settings.margin)
     };
+    const acrossMargin = clamp(settings.margin, Math.floor(acrossRoom / CENTER_HALVES));
+    const downMargin = clamp(settings.margin, Math.floor(downRoom / CENTER_HALVES));
     const at = {
-        left: clamp(asked.left, acrossRoom),
-        top: clamp(asked.top, downRoom)
+        left: Math.round(HORIZONTAL[horizontal](acrossRoom, acrossMargin)),
+        top: Math.round(VERTICAL[vertical](downRoom, downMargin))
     };
 
     return {
         ...at,
-        // A stamp pushed to the edge by a margin too large for the room is
-        // still wholly visible, and a margin is a request rather than a
-        // promise -- but a run that quietly did something else should say so.
+        // Report any reduction at an active edge; centered axes ignore margin.
         crowded: at.left !== Math.round(asked.left) ||
             at.top !== Math.round(asked.top)
     };

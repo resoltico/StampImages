@@ -145,3 +145,8 @@ artifact; a changed build needs new evidence.
 Localized-font checks compare Japanese full-name, style and bare-family outputs
 to canonical Hiragino Sans pixels, verify distinct W3/W6 native font identities, and refuse unknown,
 hidden and PostScript names without publishing a copy.
+
+Mixed-direction layout checks compare complete RTL punctuation/number rasters with
+single-line controls for LF and Unicode paragraph separators, while checking left
+alignment. Oversized-margin checks compare actual stamp pixel bounds with native
+mask geometry at all six positions, including whole-pixel selected-half limits.

@@ -57,9 +57,9 @@ including when the configured typeface is unavailable.
 | `customText` | Custom text | String of up to 500 UTF-16 code units; may contain newlines; CRLF and CR normalize to LF before counting; NUL and unpaired surrogates are refused |
 | `font` | Typeface | Nonblank name of an installed face, as in Font Book; trimmed |
 | `size` | Text size | Integer 8–400 (points at the image's scale) |
-| `textColor` | Text color | Six hexadecimal digits, optional `#`; normalized to uppercase `#RRGGBB` |
+| `textColor` | Text color | Six hexadecimal digits, optional `#`; outer whitespace trimmed, normalized to uppercase `#RRGGBB` |
 | `outlineWidth` | Outline | Integer 0–20 (pixels) |
-| `outlineColor` | Outline color | Six hexadecimal digits, optional `#`; normalized to uppercase `#RRGGBB` |
+| `outlineColor` | Outline color | Six hexadecimal digits, optional `#`; outer whitespace trimmed, normalized to uppercase `#RRGGBB` |
 | `position` | Position | `bottom-right`, `bottom-left`, `top-right`, `top-left`, `bottom-center` or `top-center` |
 | `margin` | Margin | Integer 0–2000 (pixels) |
 
@@ -168,7 +168,7 @@ Saved and recovered records also carry appearance notes, each `true` or `false`:
 
 | Note | Meaning |
 | --- | --- |
-| `crowded` | The margin was larger than the room; the stamp sits against the opposite edge |
+| `crowded` | The margin was reduced to keep the stamp on the selected side of the image |
 | `expanded` | A grayscale original was saved with RGB channels, determined from the actual final copy |
 | `unconverted` | The image's color profile could not be read; colors were drawn in sRGB |
 | `substituted` | Some characters were not in the typeface and were drawn in another one |
