@@ -53,6 +53,17 @@ function isLocalAuthority(authority) {
  * named. Unencoded spaces are accepted by decodeURIComponent; literal percent
  * characters in a filename must be encoded.
  */
+function hasUrlScheme(value) { return /^[A-Za-z][A-Za-z\d+.-]*:/u.test(String(value)); }
+
+function isRemoteUrl(value) {
+    const text = String(value);
+    if (!hasUrlScheme(text)) { return false; }
+    if (!/^file:/iu.test(text)) { return true; }
+    if (!/^file:\/\//iu.test(text)) { return false; }
+    const [authority] = text.slice("file://".length).split("/");
+    return !isLocalAuthority(authority);
+}
+
 const NUL = "\u0000";
 
 function decodePath(path) {
@@ -77,4 +88,4 @@ function decodeFileUrl(value) {
 
 function isCliInput(input) { return Array.isArray(input) && input.every((item) => typeof item === "string"); }
 
-module.exports = { isCliInput, normalizeInvocationInput, decodeFileUrl };
+module.exports = { hasUrlScheme, isRemoteUrl, isCliInput, normalizeInvocationInput, decodeFileUrl };

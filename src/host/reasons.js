@@ -1,6 +1,7 @@
 "use strict";
 const { isSupportedImage, supportedFormatList } = require("../core/formats.js");
 const { isRegularFile, isDirectory } = require("./filesystem-probes.js");
+const { isRemoteUrl } = require("./invocation-syntax.js");
 const { pathCandidates } = require("./input.js");
 
 /*
@@ -16,7 +17,8 @@ const { pathCandidates } = require("./input.js");
 const FOLDER = "This is a folder; select the images inside it.";
 const UNSUPPORTED = `This file is not a supported format; use ${supportedFormatList()}.`;
 const NOT_A_FILE = "This file cannot be read; check that it still exists and that you have access.";
-const NOT_A_PATH = "This is not an absolute path to a file.";
+const NOT_A_PATH = "No file or folder exists at this path.";
+const REMOTE_URL = "Remote URLs are not supported; download the file first.";
 
 function rejectionReason(app, path) {
     // Asked first, because a folder that happens to be called album.png would
@@ -26,11 +28,8 @@ function rejectionReason(app, path) {
         return FOLDER;
     }
 
-    if (!isSupportedImage(path)) {
-        return UNSUPPORTED;
-    }
-
-    return isRegularFile(app, path) ? "" : NOT_A_FILE;
+    if (!isRegularFile(app, path)) { return NOT_A_FILE; }
+    return isSupportedImage(path) ? "" : UNSUPPORTED;
 }
 
 /*
@@ -48,15 +47,15 @@ function describeUnresolved(item) {
     const named = pathCandidates(item)
         .find((candidate) => candidate && candidate !== ANONYMOUS);
 
-    return named
-        ? {
-            path: "",
-            name: named,
-            reason: NOT_A_PATH,
-            code: "not-a-path",
-            stage: "selection"
-        }
-        : null;
+    if (!named) { return null; }
+    const remote = isRemoteUrl(named);
+    return {
+        path: "",
+        name: named,
+        reason: remote ? REMOTE_URL : NOT_A_PATH,
+        code: remote ? "remote-url" : "not-a-path",
+        stage: "selection"
+    };
 }
 
-module.exports = { rejectionReason, describeUnresolved, FOLDER, UNSUPPORTED, NOT_A_FILE };
+module.exports = { rejectionReason, describeUnresolved, FOLDER, UNSUPPORTED, NOT_A_FILE, NOT_A_PATH, REMOTE_URL };

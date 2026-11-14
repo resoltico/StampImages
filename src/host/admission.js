@@ -4,7 +4,7 @@ const { sortImageRecords } = require("../core/ordering.js");
 const { imagesInFolder, NO_IMAGES } = require("./expand.js");
 const { UNREADABLE, UNEXAMINABLE, ALREADY_STAMPED } = require("./walking.js");
 const { selectedItems } = require("./selection.js");
-const { rejectionReason, FOLDER, UNSUPPORTED, NOT_A_FILE } = require("./reasons.js");
+const { rejectionReason, FOLDER, UNSUPPORTED, NOT_A_FILE, NOT_A_PATH, REMOTE_URL } = require("./reasons.js");
 
 /*
  * Admit supported requests and keep explicit reasons for the others.
@@ -19,6 +19,9 @@ function record(path, folder) {
 }
 
 const KIND_REASONS = {
+    missing: NOT_A_PATH,
+    unreadable: UNREADABLE,
+    unexaminable: UNEXAMINABLE,
     package: "This is a package, not a folder of images.",
     link: "This is a link; select the file it points to.",
     other: "This is not a regular file (a pipe, socket or device)."
@@ -30,7 +33,7 @@ const KIND_REASONS = {
  * reason constants: the wording stays where it is decided.
  */
 const SELECTION_CODES = new Map([
-    [FOLDER, "folder"], [UNSUPPORTED, "unsupported-format"], [NOT_A_FILE, "not-a-file"],
+    [NOT_A_PATH, "not-a-path"], [REMOTE_URL, "remote-url"], [FOLDER, "folder"], [UNSUPPORTED, "unsupported-format"], [NOT_A_FILE, "not-a-file"],
     [KIND_REASONS.package, "package"], [KIND_REASONS.link, "link"], [KIND_REASONS.other, "special-file"],
     [UNREADABLE, "unreadable"], [UNEXAMINABLE, "unexaminable"], [ALREADY_STAMPED, "already-stamped"],
     [NO_IMAGES, "empty-folder"]

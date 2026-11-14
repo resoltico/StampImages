@@ -27,14 +27,14 @@ test("an input that named itself and did not resolve is reported", () => {
         {
             path: "",
             name: "./second.jpg",
-            reason: "This is not an absolute path to a file.",
+            reason: "No file or folder exists at this path.",
             code: "not-a-path",
             stage: "selection"
         },
         {
             path: "",
             name: "~/Pictures/third.png",
-            reason: "This is not an absolute path to a file.",
+            reason: "No file or folder exists at this path.",
             code: "not-a-path",
             stage: "selection"
         }
@@ -83,4 +83,23 @@ test("a folder is reported as a folder, whatever it is called", () => {
         "album: This is a folder; select the images inside it.",
         "album.png: This is a folder; select the images inside it."
     ]);
+});
+
+
+test("positive filesystem failures take precedence over filename formats", () => {
+    const kinds = new Map([["/missing", "missing"], ["/missing.gif", "missing"], ["/missing.jpg", "missing"],
+        ["/denied.gif", "unreadable"], ["/unknown.gif", "unexaminable"], ["/pipe.gif", "other"]]);
+    const tree = { standardize: (path) => path, inspect: (path) => ({ kind: kinds.get(path), identity: "" }) };
+    const { images, rejected } = collectImageFiles(createFakeApp(), [...kinds.keys()], tree);
+    assert.deepEqual(images, []);
+    assert.deepEqual(rejected.map((item) => item.code), ["not-a-path", "not-a-path", "not-a-path", "unreadable", "unexaminable", "special-file"]);
+    assert.equal(rejected[0].reason, "No file or folder exists at this path.");
+    assert.equal(rejected[3].reason, "This item could not be read.");
+});
+
+test("remote URL schemes and authorities are explained without treating them as paths", () => {
+    const inputs = ["https://example.invalid/photo.jpg", "data:image/png;base64,AA==", "urn:image:1", "file://example.invalid/photo.jpg"];
+    const { rejected } = collectImageFiles(createFakeApp(), inputs);
+    assert.deepEqual(rejected.map((item) => item.name), inputs);
+    assert.ok(rejected.every((item) => item.code === "remote-url" && item.reason === "Remote URLs are not supported; download the file first."));
 });

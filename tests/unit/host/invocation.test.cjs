@@ -128,3 +128,26 @@ test("flat CLI string argv cannot enter interactive collection", () => {
 test("only a string that starts as a file URL is decoded", () => {
     assert.equal(decodeFileUrl("xfile:///a.png"), "");
 });
+
+
+test("URL schemes use the complete ASCII grammar and local file authorities stay local", () => {
+    const { hasUrlScheme, isRemoteUrl } = require("../../../src/host/invocation-syntax.js");
+    for (const value of ["https:photo", "data:image/png,AA", "urn:image", "x1:a", "git+ssh:a", "a.b:a", "a-b:a", "FILE:///photo.jpg"]) {
+        assert.equal(hasUrlScheme(value), true, value);
+    }
+    for (const value of ["/a/b.jpg", "./photo:one.jpg", "1a:photo", "+a:photo", " a:photo", "a_b:photo", ""]) {
+        assert.equal(hasUrlScheme(value), false, value);
+    }
+    for (const value of ["https:photo", "https:file:/photo.jpg", "data:image/png,AA", "urn:image", "file://remote/photo.jpg", "file://localhostelsewhere/photo.jpg", "file://127.0.0.1/photo.jpg"]) {
+        assert.equal(isRemoteUrl(value), true, value);
+    }
+    for (const value of ["/photo.jpg", "file:///photo.jpg", "FILE://LOCALHOST/photo.jpg", "file:/photo.jpg", "file:description/file://remote/photo.jpg", "file://", ""]) {
+        assert.equal(isRemoteUrl(value), false, value);
+    }
+});
+
+
+test("a file URL cannot silently discard an unencoded embedded line break", () => {
+    assert.equal(decodeFileUrl("file:///a\nb.png"), "");
+    assert.equal(decodeFileUrl("file:///a%0Ab.png"), "/a\nb.png");
+});

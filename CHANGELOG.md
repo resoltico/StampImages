@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Missing image paths are reported before format checks, and remote URL schemes are refused; prefix relative names containing a colon with `./`.
+
 - Invalid settings now use the same visible error tint across numeric, text, color, typeface and choice controls in both appearances.
 
 - Stop is exposed as a button and immediately changes to disabled “Stopping…” feedback while waiting for a safe checkpoint.

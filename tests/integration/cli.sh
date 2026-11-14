@@ -22,6 +22,17 @@ expect_status() {
 expect_status 0 --help
 assert_contains "$(cat "$WORK/receipt")" 'all 10 required' 'help describes current settings'
 expect_status 0 --version
+for missing_image in "$WORK/not-there" "$WORK/not-there.gif" "$WORK/not-there.jpg"; do
+    expect_status 1 --headless "$WORK/settings.json" "$missing_image"
+    node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1]));if(r.rejected[0].code!=="not-a-path"||r.rejected[0].reason!=="No file or folder exists at this path.")throw Error("missing path was classified from its extension");' "$WORK/receipt"
+done
+for remote_image in 'data:image/png;base64,AA==' 'urn:image:1' 'file://example.invalid/photo.jpg'; do
+    expect_status 1 --headless "$WORK/settings.json" "$remote_image"
+    node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1]));if(r.rejected[0].code!=="remote-url")throw Error("remote URL became a relative path");' "$WORK/receipt"
+done
+cp "$WORK/source.png" "$WORK/photo:one.png"
+(cd "$WORK"; osascript -l JavaScript "$SCRIPT" -- --headless settings.json './photo:one.png' > receipt 2> error)
+node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1]));if(r.state!=="complete"||!r.images[0].source.endsWith("/photo:one.png"))throw Error("explicit relative colon filename was refused");' "$WORK/receipt"
 cp "$WORK/source.png" "$WORK/locale-source.png"
 taken_at "$WORK/locale-source.png" '2026:11:14 12:34:56' 10 20
 settings_file "$WORK/locale.json" 'Riga' bottom-right iso-minutes decimal

@@ -17,6 +17,7 @@ const { createTree, kindFrom } = require("../../../src/host/tree.js");
 function bridgeOf(world = {}, imports = []) {
     const ns = (value) => ({
         boxed: value,
+        isNil: () => value === undefined,
         // stringByStandardizingPath is a property, not a call.
         stringByStandardizingPath: String(value).replace("/../t", "")
     });
@@ -24,7 +25,14 @@ function bridgeOf(world = {}, imports = []) {
     Object.assign(ns, { NSFileType: "NSFileType", NSFileSystemNumber: "NSFileSystemNumber", NSFileSystemFileNumber: "NSFileSystemFileNumber" });
     ns.NSFileManager = {
         defaultManager: {
-            attributesOfItemAtPathError: (path) => nativeAttributes(world.attributes?.[path.boxed]),
+            attributesOfItemAtPathError(path, failure) {
+                const values = world.attributes?.[path.boxed];
+                if (!values) {
+                    const problem = world.failures?.[path.boxed] ?? { domain: "NSCocoaErrorDomain", code: 260 };
+                    Object.assign(failure, problem, { isNil: () => false, userInfo: { objectForKey: () => ({ isNil: () => true }) } });
+                }
+                return nativeAttributes(values);
+            },
             contentsOfDirectoryAtPathError: (path) => world.entries?.[path.boxed]
         }
     };
@@ -142,4 +150,17 @@ test("unavailable or unreadable package facts fail closed", () => {
         const { objc, ns, ref } = bridgeOf({ attributes: { "/t": { NSFileType: "NSFileTypeDirectory" } }, packageValues });
         assert.throws(() => createTree(objc, ns, ref).inspect("/t"), /package status could not be read/u);
     }
+});
+
+
+test("native absence, denied access and an unknown inspection failure stay distinct", () => {
+    const { objc, ns, ref } = bridgeOf({ failures: {
+        "/denied.gif": { domain: "NSCocoaErrorDomain", code: 257 },
+        "/unknown.gif": { domain: "NSCocoaErrorDomain", code: 256 }
+    } });
+    const tree = createTree(objc, ns, ref);
+    assert.equal(tree.inspect("/gone.gif").kind, "missing");
+    assert.equal(tree.inspect("/denied.gif").kind, "unreadable");
+    assert.equal(tree.inspect("/unknown.gif").kind, "unexaminable");
+    assert.equal(kindFrom(null, () => { throw new Error("no directory facts"); }, "/unknown"), "unexaminable");
 });

@@ -2,7 +2,7 @@
 const { APP_NAME, VERSION } = require("../../core/version.js");
 const { SETTINGS_SCHEMA, validateSettings, stampIssues } = require("../../core/settings.js");
 const { OperationError } = require("../../core/errors.js");
-const { normalizeInvocationInput } = require("../invocation-syntax.js");
+const { hasUrlScheme, normalizeInvocationInput } = require("../invocation-syntax.js");
 const { writeReceipt, exitCli } = require("./receipt.js");
 // A caption that only restates the value ("Bottom right" for bottom-right) is left out.
 function choiceCaption(choice) {
@@ -97,7 +97,7 @@ function readSettingsFile(context, path) {
 }
 
 function absolutePath(value, context) {
-    if (/^[a-z][a-z\d+.-]*:\/\//iu.test(value)) { return value; }
+    if (hasUrlScheme(value)) { return value; }
     const { objc, ns, manager } = context;
     const path = value.startsWith("/") ? value : `${String(objc.unwrap(manager.currentDirectoryPath))}/${value}`;
     const standardized = String(objc.unwrap(ns(path).stringByStandardizingPath));

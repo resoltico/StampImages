@@ -16,7 +16,10 @@ run line and exits 2.
 A command-line run never opens a dialog and neither reads nor writes remembered
 settings. External tools run in the C locale so message parsing does not depend on
 the terminal language. Paths may be absolute or relative to the working directory. Local
-`file://` URLs are accepted; remote URLs are refused.
+`file://` image URLs are accepted; remote URLs of any scheme are refused.
+A relative filename containing a colon needs an explicit `./` prefix, for example
+`./photo:one.jpg`, to distinguish it from a URL scheme. Missing paths are reported
+before filename-format checks; permission failures remain distinct.
 
 ## Settings file
 
