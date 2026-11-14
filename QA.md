@@ -48,7 +48,7 @@ live in package.json, package-lock.json, .node-version and mise.toml; clean rest
 
 The integration scripts under `tests/integration/` exercise real stamp pixels,
 placement, supported formats, source hashes, date/GPS content, alpha, profiles,
-grayscale color expansion, fonts, damaged/multi-image refusal, selection,
+grayscale color expansion, fonts, damaged/multi-image refusal (including JPEG decoder warnings), selection,
 publication collisions, cross-volume/card behavior, measurement failures and
 native form geometry/accessibility in both appearances. `resources.sh` checks
 confirmed temporary recovery and dead/live/retained/unreadable workspace ownership;

@@ -160,3 +160,13 @@ test("a decode that fails for another reason keeps its own description", () => {
         return true;
     });
 });
+
+test("a bare JPEG entropy warning is damaged even without a loader suffix", () => {
+    const { job } = jobOn({}, createFakeHost({ files: ["/a/one.jpg"], failures: [["'autorot'", new Error("VipsJpeg: Corrupt JPEG data: premature end of data segment")]] }));
+    assert.throws(() => preparePhotograph(job, imageOf("/a/one.jpg"), "1", []), (error) => {
+        assert.equal(error.issues[0].code, "damaged");
+        assert.equal(error.issues[0].stage, "stamping");
+        assert.match(error.issues[0].diagnostic.message, /premature end of data segment/u);
+        return true;
+    });
+});

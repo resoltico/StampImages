@@ -1,4 +1,5 @@
 "use strict";
+const { FAIL_ON_DAMAGE } = require("./commands.js");
 
 /*
  * Capability probes for the external tools.
@@ -33,7 +34,6 @@
  * file exists before it parses a load option. The two are the same enum, added
  * to libvips together. Why it is probed at all is in QA.md.
  */
-const FAIL_ON_PROBE = "--fail-on=error";
 
 const PROBE_IMAGE = "/nonexistent-stamp-images-preflight.png";
 const PROBE_OUTPUT = "/nonexistent-stamp-images-preflight.v";
@@ -49,7 +49,7 @@ function buildVipsProbeArgv(vipsPath) {
         "--size=down",
         "--export-profile",
         "srgb",
-        FAIL_ON_PROBE
+        FAIL_ON_DAMAGE
     ];
 }
 

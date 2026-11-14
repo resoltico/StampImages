@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Decoder warnings now refuse damaged images, including JPEG entropy corruption that could previously produce incomplete stamped copies reported as successful.
+
 - The `empty-stamp` receipt issue now uses stage `settings` and field `customText`; update consumers that match its previous request stage.
 - Command-line typefaces are checked before tools and image inspection; invalid requests with missing tools now exit 2 instead of 3.
 - Licensed under AGPL-3.0-only instead of MPL-2.0: distributing the script or a modified version requires offering its corresponding source; see [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md).

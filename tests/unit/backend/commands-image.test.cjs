@@ -63,7 +63,7 @@ test("a position at the origin is still a position", () => {
 test("orientation is applied rather than carried", () => {
     assert.deepEqual(
         buildOrientArgv(VIPS, "/a/p.jpg", "/w/oriented.v"),
-        [VIPS, "autorot", "/a/p.jpg[fail_on=error]", "/w/oriented.v"]
+        [VIPS, "autorot", "/a/p.jpg[fail_on=warning]", "/w/oriented.v"]
     );
 });
 
@@ -75,12 +75,12 @@ test("the one stage that reads the photograph refuses a damaged one", () => {
     // On the path rather than as a flag, because autorot is not a load
     // operation and has none: vips reads a loader's settings off the end of
     // the path it is given, as it reads an encoder's off the path it writes.
-    assert.equal(readingPath("/a/p.jpg"), "/a/p.jpg[fail_on=error]");
+    assert.equal(readingPath("/a/p.jpg"), "/a/p.jpg[fail_on=warning]");
 
     // A photograph whose own name ends in brackets is still read as itself:
     // vips tries the whole string as a filename before it splits the trailing
     // group off. Measured, not assumed.
-    assert.equal(readingPath("/a/p[1].jpg"), "/a/p[1].jpg[fail_on=error]");
+    assert.equal(readingPath("/a/p[1].jpg"), "/a/p[1].jpg[fail_on=warning]");
 });
 
 test("an alpha band a format cannot hold is flattened onto white", () => {

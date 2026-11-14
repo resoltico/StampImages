@@ -16,6 +16,7 @@ test("the vips probe uses the flags the pipeline depends on", () => {
     assert.ok(argv.includes("--size=down"));
     assert.ok(argv.includes("--export-profile"));
     assert.ok(argv.includes("srgb"));
+    assert.ok(argv.includes("--fail-on=warning"));
     // Against a path that cannot exist, so nothing is written anywhere.
     assert.ok(argv.some((argument) => /nonexistent/u.test(argument)));
 });

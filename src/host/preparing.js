@@ -18,7 +18,7 @@ const { sourceIssue } = require("../core/source-policy.js");
  * inspection uses, rather than the decoder's own output. Only a loader's
  * complaint means this; any other failure keeps its own description.
  */
-const LOADER_FAILURE = /\b(?:jpeg|png|heif|tiff|webp|vips)load\b|VipsForeignLoad/u;
+const LOADER_FAILURE = /\b(?:jpeg|png|heif|tiff|webp|vips)load\b|VipsForeignLoad|VipsJpeg/u;
 
 function damagedOr(error) {
     if (!(error instanceof OperationError) || !LOADER_FAILURE.test(errorMessage(error))) { return error; }
