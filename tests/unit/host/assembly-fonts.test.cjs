@@ -13,7 +13,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const { assemble } = require("../../../src/host/assembly.js");
-const { defaultSettings } = require("../../../src/host/form-defaults.js");
+const { defaultSettings } = require("../../../src/host/quick-action/settings-model.js");
 const { createFakeHost } = require("./fake-host.cjs");
 const { recorder, prepared, place } = require("./fake-assembly.cjs");
 const { catalogOf } = require("./fake-typefaces.cjs");

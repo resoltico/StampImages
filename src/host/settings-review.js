@@ -1,7 +1,7 @@
 "use strict";
 const { APP_NAME } = require("../core/version.js");
 const { formSpec, CREATE_BUTTON, CANCEL_BUTTON } = require("./form.js");
-const { answersFromSettings } = require("./answers.js");
+const { answersFromSettings } = require("./quick-action/settings-model.js");
 const { UserCanceled } = require("../core/errors.js");
 const { plural } = require("../core/numbers.js");
 const { COPY_NOTE } = require("./stamp-description.js");

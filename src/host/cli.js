@@ -1,15 +1,9 @@
 "use strict";
 const { APP_NAME, VERSION } = require("../core/version.js");
-const { SETTINGS_SCHEMA, validateSettings } = require("../core/settings.js");
-const { contentProblem } = require("../core/stamp-content.js");
+const { SETTINGS_SCHEMA, validateSettings, stampIssues } = require("../core/settings.js");
 const { OperationError } = require("../core/errors.js");
 const { normalizeInvocationInput } = require("../core/invocation.js");
 const { writeReceipt, exitCli } = require("./receipt.js");
-const { POSITION, DATE_FORMAT, COORDINATE_FORMAT } = require("./choices.js");
-
-// The captions the form shows, so a value in help reads as it does in the form.
-const CAPTIONED = { position: POSITION.choices, dateFormat: DATE_FORMAT.choices, coordinateFormat: COORDINATE_FORMAT.choices };
-
 // A caption that only restates the value ("Bottom right" for bottom-right) is left out.
 function choiceCaption(choice) {
     const caption = choice.label ?? choice.name;
@@ -21,7 +15,7 @@ function choiceCaption(choice) {
 function settingsHelp() {
     return Object.entries(SETTINGS_SCHEMA).map(([field, rule]) => {
         let values = rule.kind === "color" ? "#RRGGBB" : "text";
-        if (rule.choices) { values = (CAPTIONED[field] ?? rule.choices).map(choiceCaption).join(" | "); }
+        if (rule.choices) { values = rule.choices.map(choiceCaption).join(" | "); }
         else if (rule.minimum !== undefined) { values = `${rule.minimum}–${rule.maximum}${rule.unit ? ` ${rule.unit}` : ""}`; }
         const fallback = rule.default === undefined || rule.default === "" ? "" : `; default ${rule.default}`;
         return `  ${field} — ${rule.name}: ${values}${fallback}`;
@@ -31,7 +25,7 @@ const RUN_LINE = "osascript -l JavaScript Stamp-Images.jxa -- --headless <settin
 function usage() {
     return `${APP_NAME} ${VERSION}\n\nUsage:\n  osascript -l JavaScript Stamp-Images.jxa -- --help\n` +
         "  osascript -l JavaScript Stamp-Images.jxa -- --version\n" +
-        `  ${RUN_LINE}\n\nSettings (all ten required):\n` +
+        `  ${RUN_LINE}\n\nSettings (all ${Object.keys(SETTINGS_SCHEMA).length} required):\n` +
         `${settingsHelp()}\n\nPaths may be absolute or relative to the working directory. Settings must be UTF-8 JSON without a BOM.\n`;
 }
 function requestError(code, message, diagnostic = null) {
@@ -73,8 +67,8 @@ function configurationValues(configuration) {
     if (validated.issues.length) {
         throw new OperationError(validated.issues.map((issue) => issue.message).join("\n"), { issues: validated.issues });
     }
-    const empty = contentProblem(validated.settings);
-    if (empty) { throw requestError("empty-stamp", empty.message); }
+    const issues = stampIssues(validated.settings);
+    if (issues.length > 0) { throw new OperationError(issues.map((issue) => issue.message).join("\n"), { issues }); }
     return { settings: validated.settings };
 }
 

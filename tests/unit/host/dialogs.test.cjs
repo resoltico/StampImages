@@ -12,8 +12,8 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const { collectDialogSettings } = require("../../../src/host/dialogs.js");
-const { ORDER } = require("../../../src/host/form-rows.js");
-const { defaultAnswers } = require("../../../src/host/form-defaults.js");
+const { ORDER } = require("../../../src/host/quick-action/settings-model.js");
+const { defaultAnswers } = require("../../../src/host/quick-action/settings-model.js");
 const { createFakeApp } = require("./fake-app.cjs");
 const { askingContext } = require("./fake-assembly.cjs");
 

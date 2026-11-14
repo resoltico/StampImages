@@ -1,7 +1,7 @@
 "use strict";
 const { formSpec } = require("../../src/host/form.js");
-const { readAnswers } = require("../../src/host/answers.js");
-const { defaultAnswers } = require("../../src/host/form-defaults.js");
+const { readAnswers } = require("../../src/host/quick-action/settings-model.js");
+const { defaultAnswers } = require("../../src/host/quick-action/settings-model.js");
 const { buildForm } = require("../../src/host/appkit-form.js");
 const { WIDGETS, readControls } = require("../../src/host/appkit.js");
 const { unbindChoices } = require("../../src/host/appkit-choice.js");

@@ -11,7 +11,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const { chooseRequired, askUntil } = require("../../../src/host/prompts.js");
-const { POSITION } = require("../../../src/host/choices.js");
+const { POSITION } = require("../../../src/host/quick-action/settings-model.js");
 const { createFakeApp } = require("./fake-app.cjs");
 
 function question(prompt = "Text size:", defaultAnswer = "36") {

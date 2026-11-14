@@ -20,7 +20,7 @@ expect_status() {
     test "$status" = "$expected" || fail "expected $expected, got $status: $(cat "$WORK/receipt" "$WORK/error")"
 }
 expect_status 0 --help
-assert_contains "$(cat "$WORK/receipt")" 'all ten required' 'help describes current settings'
+assert_contains "$(cat "$WORK/receipt")" 'all 10 required' 'help describes current settings'
 expect_status 0 --version
 STAMP_IMAGES_VIPS="$WORK/missing-vips" expect_status 3 --headless "$WORK/settings.json" "$WORK/source.png"
 node -e 'const fs=require("fs");const value=JSON.parse(fs.readFileSync(process.argv[1]));value.font="StampImages Nonexistent Typeface";fs.writeFileSync(process.argv[2],JSON.stringify(value));' "$WORK/settings.json" "$WORK/missing-font.json"

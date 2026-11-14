@@ -4,12 +4,12 @@ const assert = require("node:assert/strict");
 const { cliCommand, configurationValues, jsonConfiguration, usage } = require("../../../src/host/cli.js");
 const { reportHeadless, exitCode } = require("../../../src/host/reporting.js");
 const { runOutcome } = require("../../../src/core/outcomes.js");
-const { defaultSettings } = require("../../../src/host/form-defaults.js");
+const { defaultSettings } = require("../../../src/host/quick-action/settings-model.js");
 const settings = defaultSettings(["Menlo"]);
 test("help/version and strict CLI grammar never read files", () => {
     assert.equal(cliCommand(["--help"]).kind, "help"); assert.equal(cliCommand(["--version"]).kind, "version");
     for (const args of [[], ["photo.png"], ["--unknown"], ["--headless"], ["--headless", "s.json", ""]]) { assert.throws(() => cliCommand(args), /Usage/u); }
-    assert.match(usage(), /all ten required/u);
+    assert.match(usage(), /all 10 required/u);
 });
 test("relative paths are resolved and native reader output uses the canonical validator", () => {
     const read = [];
@@ -75,7 +75,7 @@ test("help lists each setting with its values, captions that add something, and 
     assert.match(help, /\n {2}position — Position: bottom-right \| bottom-left \| top-right \| top-left \| bottom-center \| top-center; default bottom-right\n/u);
     assert.match(help, /\n {2}size — Text size: 8–400 pt; default 36\n/u);
     assert.match(help, /\n {2}customText — Custom text: text\n/u);
-    assert.match(help, /\n {2}font — Typeface: text\n/u);
+    assert.match(help, /\n {2}font — Typeface: text; default Helvetica Neue\n/u);
     assert.match(help, /Paths may be absolute or relative to the working directory\./u);
 });
 

@@ -14,7 +14,7 @@ const {
     SIZE,
     MARGIN,
     OUTLINE_WIDTH
-} = require("../../../src/host/bounds.js");
+} = require("../../../src/host/quick-action/settings-model.js");
 
 const CONTROLS = [SIZE, MARGIN, OUTLINE_WIDTH];
 

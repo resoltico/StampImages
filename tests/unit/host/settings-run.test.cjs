@@ -11,7 +11,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const { settingsFor } = require("../../../src/host/settings-run.js");
-const { defaultAnswers } = require("../../../src/host/form-defaults.js");
+const { defaultAnswers } = require("../../../src/host/quick-action/settings-model.js");
 const { encode } = require("../../../src/host/preferences.js");
 const { createFakeApp } = require("./fake-app.cjs");
 const { askingContext } = require("./fake-assembly.cjs");

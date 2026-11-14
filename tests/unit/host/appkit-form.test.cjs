@@ -13,7 +13,7 @@ const {
 } = require("../../../src/host/appkit-geometry.js");
 const { WIDGETS } = require("../../../src/host/appkit.js");
 const { formSpec } = require("../../../src/host/form.js");
-const { defaultAnswers } = require("../../../src/host/form-defaults.js");
+const { defaultAnswers } = require("../../../src/host/quick-action/settings-model.js");
 const { createFakeObjC } = require("./fake-objc.cjs");
 
 const FONTS = ["Menlo", "Menlo Bold"];

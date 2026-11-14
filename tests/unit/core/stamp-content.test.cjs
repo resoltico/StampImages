@@ -2,11 +2,11 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { defaultAnswers, defaultSettings } = require("../../../src/host/form-defaults.js");
+const { defaultAnswers, defaultSettings } = require("../../../src/host/quick-action/settings-model.js");
 const { normalizeSettings } = require("../../../src/core/settings.js");
 const { contentProblem, requireStampContent } = require("../../../src/core/stamp-content.js");
 const { encode, rememberedAnswers } = require("../../../src/host/preferences.js");
-const { readAnswers } = require("../../../src/host/answers.js");
+const { readAnswers } = require("../../../src/host/quick-action/settings-model.js");
 const { selectionSummary } = require("../../../src/host/stamp-description.js");
 const { formSpec, invitation } = require("../../../src/host/form.js");
 const FONTS = ["Menlo"];

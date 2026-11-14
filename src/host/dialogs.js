@@ -1,12 +1,11 @@
 "use strict";
 const { hostError } = require("./cancellation.js");
-const { ORDER, controlFor } = require("./form-rows.js");
-const { readAnswer, readAnswers } = require("./answers.js");
-const { labelOfValue } = require("./choices.js");
+const { ORDER, controlFor } = require("./quick-action/settings-model.js");
+const { readAnswer, readAnswers } = require("./quick-action/settings-model.js");
+const { labelOfValue } = require("./quick-action/settings-model.js");
 const { errorMessage } = require("../core/errors.js");
-const { contentProblem } = require("../core/stamp-content.js");
+const { stampIssues } = require("../core/settings.js");
 const { APP_NAME } = require("../core/version.js");
-const { resolved } = require("../core/typeface-refusal.js");
 const { chooseRequired, askUntil } = require("./prompts.js");
 const { reviewSettings } = require("./settings-review.js");
 const { invitation } = require("./form.js");
@@ -39,7 +38,7 @@ function refusal(context, row, text) {
         const value = readAnswer(row, text, context.fonts);
 
         return row.kind === "font"
-            ? resolved(context.known, value).problem ?? ""
+            ? stampIssues({ font: value }, context.known)[0]?.message ?? ""
             : "";
     } catch (error) {
         return errorMessage(error);
@@ -122,7 +121,7 @@ function collectDialogSettings(app, answers, context) {
         const read = readAnswers(given, context.fonts);
         // Every field has already passed the same reader in askRow.
         // Only the relationship between the content fields remains to check.
-        const problem = contentProblem(read.settings);
+        const [problem] = stampIssues(read.settings, context.known);
 
         if (problem) {
             try {

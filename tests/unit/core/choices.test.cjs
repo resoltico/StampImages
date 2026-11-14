@@ -19,7 +19,7 @@ const {
     defaultValueOf,
     valueOfLabel,
     labelOfValue
-} = require("../../../src/host/choices.js");
+} = require("../../../src/host/quick-action/settings-model.js");
 
 const CONTROLS = [POSITION, DATE_FORMAT, COORDINATE_FORMAT];
 

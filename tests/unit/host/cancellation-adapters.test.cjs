@@ -8,7 +8,7 @@ const { succeeds, isRegularNonEmpty, sameBytes, isExecutable, isRegularFile, pat
 const { chooseRequired, askUntil } = require("../../../src/host/prompts.js");
 const { showDetails } = require("../../../src/host/details-dialog.js");
 const { collectDialogSettings } = require("../../../src/host/dialogs.js");
-const { defaultAnswers } = require("../../../src/host/form-defaults.js");
+const { defaultAnswers } = require("../../../src/host/quick-action/settings-model.js");
 const { findTool } = require("../../../src/host/tools.js");
 const { checkTools } = require("../../../src/host/preflight.js");
 const { createWorkspace, reclaimWorkspaces } = require("../../../src/host/workspace.js");

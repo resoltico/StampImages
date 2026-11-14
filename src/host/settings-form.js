@@ -1,13 +1,12 @@
 "use strict";
 const { formSpec } = require("./form.js");
-const { readAnswers } = require("./answers.js");
-const { contentProblem } = require("../core/stamp-content.js");
-const { UserCanceled } = require("../core/errors.js");
-const { resolved } = require("../core/typeface-refusal.js");
+const { readAnswers } = require("./quick-action/settings-model.js");
+const { stampIssues } = require("../core/settings.js");
+const { UserCanceled, OperationError } = require("../core/errors.js");
 const { presentForm } = require("./appkit.js");
 const { appkitBridge } = require("./appkit-bridge.js");
 const { collectDialogSettings } = require("./dialogs.js");
-const { defaultAnswers } = require("./form-defaults.js");
+const { defaultAnswers } = require("./quick-action/settings-model.js");
 
 /*
  * Which front end asks for the settings.
@@ -32,14 +31,8 @@ const { defaultAnswers } = require("./form-defaults.js");
 function confirmedSettings(state, outcome, read) {
     const values = read.settings ?? read.values;
     const problems = [...read.problems ?? []];
-    if (values.font !== undefined) {
-        const answer = resolved(state.context.known, values.font);
-        if (answer.problem) { problems.push({ key: "font", message: answer.problem }); }
-    }
-    if (["dateFormat", "coordinateFormat", "customText"].every((key) => Object.hasOwn(values, key))) {
-        const empty = contentProblem(values);
-        if (empty) { problems.push(empty); }
-    }
+    if (values.font !== undefined && !state.context.known) { throw new OperationError("A typeface catalog is required before choosing a face."); }
+    problems.push(...stampIssues(values, state.context.known).map((issue) => ({ key: issue.field, message: issue.message })));
     return problems.length > 0 ? { answers: outcome.answers, problems } : { settings: read.settings };
 }
 

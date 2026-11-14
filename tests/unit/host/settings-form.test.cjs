@@ -16,7 +16,7 @@ const {
     collectViaForm,
     collectSettings
 } = require("../../../src/host/settings-form.js");
-const { defaultAnswers } = require("../../../src/host/form-defaults.js");
+const { defaultAnswers } = require("../../../src/host/quick-action/settings-model.js");
 const { askingContext } = require("./fake-assembly.cjs");
 const { createFakeApp } = require("./fake-app.cjs");
 

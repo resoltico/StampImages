@@ -14,7 +14,7 @@ const {
     CREATE_BUTTON,
     CANCEL_BUTTON
 } = require("../../../src/host/form.js");
-const { defaultAnswers } = require("../../../src/host/form-defaults.js");
+const { defaultAnswers } = require("../../../src/host/quick-action/settings-model.js");
 
 const FONTS = ["Menlo", "Menlo Bold"];
 const CONTEXT = { count: 0, fonts: FONTS };

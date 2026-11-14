@@ -1,6 +1,6 @@
 "use strict";
-const { normalizeSettings } = require("../core/settings.js");
-const { answersFromSettings } = require("./answers.js");
+const { validateSettings } = require("../core/settings.js");
+const { answersFromSettings } = require("./quick-action/settings-model.js");
 const DOMAIN = "com.resoltico.StampImages";
 const KEY = "lastSettings";
 function encode(settings) {
@@ -13,7 +13,8 @@ function rememberedAnswers(text, fonts) {
     try {
         const held = JSON.parse(String(text));
         if (!held || typeof held !== "object" || Array.isArray(held) || Object.hasOwn(held, "customText")) { return undefined; }
-        return answersFromSettings(normalizeSettings({ ...held, customText: "" }), fonts);
+        const result = validateSettings({ ...held, customText: "" });
+        return result.settings ? answersFromSettings(result.settings, fonts) : undefined;
     } catch { return undefined; }
 }
 module.exports = { DOMAIN, KEY, encode, rememberedAnswers };

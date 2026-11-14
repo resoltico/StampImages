@@ -11,10 +11,10 @@ const test = require("node:test");
 const {
     defaultAnswers,
     defaultSettings
-} = require("../../../src/host/form-defaults.js");
-const { ORDER } = require("../../../src/host/form-rows.js");
+} = require("../../../src/host/quick-action/settings-model.js");
+const { ORDER } = require("../../../src/host/quick-action/settings-model.js");
 const { normalizeSettings } = require("../../../src/core/settings.js");
-const { readAnswers } = require("../../../src/host/answers.js");
+const { readAnswers } = require("../../../src/host/quick-action/settings-model.js");
 
 const FONTS = ["Menlo", "Menlo Bold"];
 

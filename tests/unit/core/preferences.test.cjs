@@ -2,7 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { DOMAIN, KEY, encode, rememberedAnswers } = require("../../../src/host/preferences.js");
-const { defaultSettings, defaultAnswers } = require("../../../src/host/form-defaults.js");
+const { defaultSettings, defaultAnswers } = require("../../../src/host/quick-action/settings-model.js");
 const fonts = ["Menlo"];
 test("current preferences retain appearance and exclude private text and resolved typeface", () => {
     assert.equal(DOMAIN, "com.resoltico.StampImages"); assert.equal(KEY, "lastSettings");

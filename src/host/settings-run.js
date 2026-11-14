@@ -1,7 +1,6 @@
 "use strict";
 const { OperationError } = require("../core/errors.js");
-const { normalizeSettings } = require("../core/settings.js");
-const { requireStampContent } = require("../core/stamp-content.js");
+const { validateSettings, stampIssues } = require("../core/settings.js");
 const { confirmSelection } = require("./settings-review.js");
 const { encode, rememberedAnswers } = require("./preferences.js");
 const { resolved } = require("../core/typeface-refusal.js");
@@ -44,21 +43,19 @@ function defaultMemory() {
  * went through a different door.
  */
 function drawableSettings(settings, context) {
-    requireStampContent(settings);
+    const validated = validateSettings(settings);
+    if (validated.issues.length > 0) { throw new OperationError(validated.issues.map((issue) => issue.message).join("\n"), { issues: validated.issues }); }
     if (!context.known) { throw new OperationError("Installed typefaces could not be verified on this Mac."); }
+    const issues = stampIssues(validated.settings, context.known);
+    if (issues.length > 0) { throw new OperationError(issues.map((issue) => issue.message).join("\n"), { issues }); }
+    const answer = resolved(context.known, validated.settings.font);
 
-    const answer = resolved(context.known, settings.font);
-
-    if (answer.problem) {
-        throw new OperationError(answer.problem, { issues: [{ code: "typeface", field: "font", stage: "settings", message: answer.problem }] });
-    }
-
-    return { ...settings, typeface: answer.typeface };
+    return { ...validated.settings, typeface: answer.typeface };
 }
 
 function settingsFor(app, invocation, context, injected = {}) {
     if (invocation.headless) {
-        return drawableSettings(normalizeSettings(invocation.settings), context);
+        return drawableSettings(invocation.settings, context);
     }
 
     confirmSelection(app, context);
@@ -70,7 +67,7 @@ function settingsFor(app, invocation, context, injected = {}) {
         answers: rememberedAnswers(memory.recall(), context.fonts)
     };
     const settings = drawableSettings(
-        normalizeSettings(collectSettings(app, opening, injected)),
+        collectSettings(app, opening, injected),
         context
     );
 

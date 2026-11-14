@@ -11,8 +11,8 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { readAnswers } = require("../../../src/host/answers.js");
-const { defaultAnswers } = require("../../../src/host/form-defaults.js");
+const { readAnswers } = require("../../../src/host/quick-action/settings-model.js");
+const { defaultAnswers } = require("../../../src/host/quick-action/settings-model.js");
 
 const FONTS = ["Menlo", "Menlo Bold"];
 

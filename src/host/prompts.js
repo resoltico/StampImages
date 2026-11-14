@@ -2,7 +2,7 @@
 const { hostError } = require("./cancellation.js");
 const { UserCanceled, errorMessage } = require("../core/errors.js");
 const { APP_NAME } = require("../core/version.js");
-const { labelsOf, valueOfLabel } = require("./choices.js");
+const { labelsOf, valueOfLabel } = require("./quick-action/settings-model.js");
 
 /*
  * Asking one question at a time, when the native form is unavailable.

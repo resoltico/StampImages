@@ -20,18 +20,8 @@ const { familyIn } = require("../core/typeface.js");
  * for coordinates that line up. Names the machine does not have are dropped,
  * so the list can afford to be optimistic about what a given Mac has.
  */
-const CANDIDATES = [
-    "Helvetica Neue",
-    "Arial",
-    "Verdana",
-    "Avenir Next",
-    "Gill Sans",
-    "Georgia",
-    "Palatino",
-    "Baskerville",
-    "Menlo",
-    "Courier New"
-];
+const { SETTINGS_SCHEMA } = require("../core/settings.js");
+const CANDIDATES = SETTINGS_SCHEMA.font.suggestions;
 
 /*
  * The one style worth offering beside the family itself, and offered only
