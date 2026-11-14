@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- TIFF copies now retain EXIF capture dates and GPS; all output formats copy standard capture metadata while keeping orientation and dimensions consistent with stamped pixels.
+
 - Running the Quick Action without input files now uses Finder’s current selection.
 
 - Invisible-only captions are refused before processing; Windows line endings no longer add blank lines to stamps.

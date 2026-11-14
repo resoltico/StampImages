@@ -61,9 +61,7 @@ function saveCopy(job, stamped, target, source) {
             : buildFlattenArgv(job.tools.vips, stamped, written),
         "saving the stamped copy"
     );
-    if (source.gainMap) {
-        runArgv(job.app, buildMetadataCopyArgv(job.tools.exiftool, source.metadataSource, target), "retaining image metadata");
-    }
+    runArgv(job.app, buildMetadataCopyArgv(job.tools.exiftool, source.metadataSource, target, source.size), "retaining image metadata");
     verifyFileWritten(job.app, target, "the stamped copy");
 
     /*

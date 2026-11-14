@@ -64,6 +64,11 @@ are empty text; combining sequences, emoji and right-to-left scripts remain vali
 location metadata their originals carry. Ultra HDR JPEGs produce standard-range
 JPEG copies without gain maps; capture metadata and color profiles are retained.
 
+Copies retain standard EXIF capture fields and GPS across supported output formats,
+plus writable XMP/IPTC and the copy’s color profile. Orientation and EXIF/XMP
+dimensions describe the upright stamped pixels. Proprietary maker fields are not
+guaranteed across encoders; existing retained maker data is not deleted.
+
 ## Receipt and exit status
 
 Every handled request writes one JSON object, ending in a newline, to stdout, and a

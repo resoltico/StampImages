@@ -57,4 +57,5 @@ for file in animated.png animated.webp multiple.tif; do
     assert_contains "$(cat "$WORK/receipt")" 'multiple-images' 'multi-image content is refused'
     test ! -e "$WORK/${file%.*}_stamped.${file##*.}"
 done
+node "$ROOT/tests/integration/metadata-contract.cjs" "$SCRIPT" "$WORK"
 printf 'macOS format and animation integration passed\n'

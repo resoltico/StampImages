@@ -60,6 +60,11 @@ reset them:
 defaults delete com.resoltico.StampImages
 ```
 
+Stamped copies retain standard EXIF capture fields and GPS, writable XMP/IPTC,
+and color profiles. Orientation and dimension metadata describe the upright copy.
+Proprietary maker data already retained by the image backend is preserved; not every
+vendor-specific field or embedded preview can be transferred.
+
 ## Settings
 
 | Field | Setting | Values | Default |
