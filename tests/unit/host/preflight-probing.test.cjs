@@ -30,7 +30,7 @@ test("a probe is asked for its output, whether it succeeded or not", () => {
 });
 
 test("Homebrew is asked about in a way that cannot fail the run", () => {
-    const app = createFakeApp({ installed: [] });
+    const app = Object.assign(createFakeApp(), { installed: [] });
 
     assert.throws(() => checkTools(app), /brew install/u);
     assert.ok(app.commands.some(
@@ -39,7 +39,7 @@ test("Homebrew is asked about in a way that cannot fail the run", () => {
     ));
 });
 
-test("a host that refuses to run anything is a machine with nothing on it", () => {
+test("an unavailable shell reports its own failure rather than claiming the tools are absent", () => {
     // Every question here is asked of a shell, and a host that will not run
     // one has answered all of them.
     const app = createFakeApp();
@@ -49,8 +49,8 @@ test("a host that refuses to run anything is a machine with nothing on it", () =
     };
 
     assert.throws(() => checkTools(app), (error) => {
-        assert.match(error.message, /Setup needed/u);
-        assert.match(error.message, /Install Homebrew first/u);
+        assert.match(error.message, /reading the requested tool override/u);
+        assert.match(error.message, /not permitted/u);
 
         return true;
     });

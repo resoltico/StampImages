@@ -110,3 +110,20 @@ test("reports separate multiple folders, metadata fields and failure reasons", (
         "Could not stamp:\n/in/c.jpg: Failed. Cleanup failed."].join("\n\n"));
     assert.equal(describeNoImages([{ path: "/a.gif", reason: "Unsupported" }, { name: "b.gif", reason: "Unreadable" }], false), "/a.gif: Unsupported\nb.gif: Unreadable");
 });
+
+test("setup refusals have their own headline and no image failure heading or zero counts", () => {
+    const summary = summarizeRun(runOutcome([], [], [], [{ code: "operation", stage: "setup", message: "The header tool cannot run." }]));
+    assert.equal(summary.kind, "setup");
+    assert.equal(headline(summary), "A required tool is missing or unusable.");
+    assert.equal(countsLine(summary), "");
+    assert.equal(summaryText(summary), "A required tool is missing or unusable.\n\nThe header tool cannot run.");
+    assert.equal(summaryText(summary, false), "The header tool cannot run.");
+});
+
+test("a setup-labelled issue cannot replace the account of already saved image work", () => {
+    const outcome = runOutcome([saved], [], [], [{ code: "operation", stage: "setup", message: "Late operation failure." }]);
+    const summary = summarizeRun(outcome);
+    assert.equal(summary.kind, "some-saved");
+    assert.match(summaryText(summary), /Created 1 stamped copy\./u);
+    assert.doesNotMatch(summaryText(summary), /A required tool/u);
+});

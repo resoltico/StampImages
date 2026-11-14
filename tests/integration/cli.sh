@@ -30,6 +30,14 @@ node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1]));if(r.st
 test "$(exiftool -s3 -DateTimeOriginal "$WORK/locale-source_stamped.png")" = '2026:11:14 12:34:56'
 test "$(exiftool -s3 -n -GPSLatitude "$WORK/locale-source_stamped.png")" = 10
 STAMP_IMAGES_VIPS="$WORK/missing-vips" expect_status 3 --headless "$WORK/settings.json" "$WORK/source.png"
+for requested_header in /usr/bin/false /opt/homebrew/bin relative-header "$WORK/missing-header"; do
+    STAMP_IMAGES_VIPSHEADER="$requested_header" expect_status 3 --headless "$WORK/settings.json" "$WORK/source.png"
+    node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1]));if(r.state!=="invalid"||r.images.length||r.rejected.length)throw Error("broken header tool was not refused before admission");' "$WORK/receipt"
+    assert_contains "$(cat "$WORK/error")" 'A required tool is missing or unusable.' 'setup has its own headline'
+    assert_contains "$(cat "$WORK/error")" 'STAMP_IMAGES_VIPSHEADER=' 'the override variable is named'
+    assert_contains "$(cat "$WORK/error")" "$requested_header" 'the requested value is named'
+    assert_not_contains "$(cat "$WORK/error")" 'brew install' 'override-only refusal does not suggest reinstalling an unrelated tool'
+done
 node -e 'const fs=require("fs");const value=JSON.parse(fs.readFileSync(process.argv[1]));value.font="StampImages Nonexistent Typeface";fs.writeFileSync(process.argv[2],JSON.stringify(value));' "$WORK/settings.json" "$WORK/missing-font.json"
 expect_status 2 --headless "$WORK/missing-font.json" "$WORK/source.png"
 # Invalid settings win even if tools and sources are unavailable.

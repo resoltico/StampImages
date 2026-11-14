@@ -18,13 +18,13 @@ test("every tool the pipeline needs is named", () => {
 test("an environment override wins when it is executable", () => {
     const app = createFakeApp([["printenv", "/custom/vips\n"]]);
 
-    assert.equal(findTool(app, "vips"), "/custom/vips");
+    assert.equal(findTool(app, "vips").path, "/custom/vips");
 });
 
 test("an unset environment variable is not an error", () => {
     const app = createFakeApp([["printenv", failing("1")]]);
 
-    assert.equal(findTool(app, "vips"), HOMEBREW);
+    assert.equal(findTool(app, "vips").path, HOMEBREW);
 });
 
 test("an invalid explicit override fails instead of selecting another backend", () => {
@@ -33,7 +33,7 @@ test("an invalid explicit override fails instead of selecting another backend", 
         ["'/custom/vips'", failing("1")]
     ]);
 
-    assert.equal(findTool(app, "vips"), "");
+    assert.throws(() => findTool(app, "vips"), /STAMP_IMAGES_VIPS=.*custom\/vips/u);
 });
 
 test("the first executable candidate is used", () => {
@@ -42,7 +42,7 @@ test("the first executable candidate is used", () => {
         ["'/opt/homebrew/bin/vips'", failing("1")]
     ]);
 
-    assert.equal(findTool(app, "vips"), "/usr/local/bin/vips");
+    assert.equal(findTool(app, "vips").path, "/usr/local/bin/vips");
 });
 
 test("PATH is searched when no candidate exists", () => {
@@ -54,7 +54,7 @@ test("PATH is searched when no candidate exists", () => {
         ["command -v", "/opt/local/other/vips\n"]
     ]);
 
-    assert.equal(findTool(app, "vips"), "/opt/local/other/vips");
+    assert.equal(findTool(app, "vips").path, "/opt/local/other/vips");
 });
 
 test("a PATH hit that is not executable is not accepted", () => {
@@ -67,14 +67,14 @@ test("a PATH hit that is not executable is not accepted", () => {
         ["'/weird/vips'", failing("1")]
     ]);
 
-    assert.equal(findTool(app, "vips"), "");
+    assert.equal(findTool(app, "vips").path, "");
 });
 
 test("a missing tool is reported as absent rather than thrown", () => {
     // The preflight collects every problem, so absence must be a value.
     const app = createFakeApp([["", failing("1")]]);
 
-    assert.equal(findTool(app, "exiftool"), "");
+    assert.equal(findTool(app, "exiftool").path, "");
 });
 
 test("each tool has its own environment override, under its own name", () => {
@@ -90,7 +90,7 @@ test("each tool has its own environment override, under its own name", () => {
     for (const name of TOOL_NAMES) {
         const app = createFakeApp([["printenv", `/custom/${name}\n`]]);
 
-        assert.equal(findTool(app, name), `/custom/${name}`);
+        assert.equal(findTool(app, name).path, `/custom/${name}`);
 
         const asked = app.commands.find((command) => command.includes("printenv"));
 
@@ -128,7 +128,7 @@ test("the direct candidates cover the same three package prefixes", () => {
     findTool(app, "exiftool");
 
     const probed = app.commands
-        .filter((command) => command.includes("'-x'"))
+        .filter((command) => command.includes("'-f'"))
         .map((command) => command.match(/'(?<path>\/[^']*exiftool)'/u)?.groups.path);
 
     assert.deepEqual(probed.slice(0, 3), [
@@ -136,4 +136,9 @@ test("the direct candidates cover the same three package prefixes", () => {
         "/usr/local/bin/exiftool",
         "/opt/local/bin/exiftool"
     ]);
+});
+
+test("override provenance preserves the supplied value independently of its resolved path", () => {
+    const app = createFakeApp([["printenv", " /custom/header \n"]]);
+    assert.deepEqual(findTool(app, "vipsheader"), { path: "/custom/header", override: { name: "STAMP_IMAGES_VIPSHEADER", value: " /custom/header \n" } });
 });

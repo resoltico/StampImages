@@ -12,6 +12,7 @@ function madeSentence(counts) {
     return [saved, recovered].filter(Boolean).join(" ") || "No stamped copy was created.";
 }
 function headline(summary) {
+    if (summary.kind === "setup") { return "A required tool is missing or unusable."; }
     if (summary.kind === "invalid") { return "The request is invalid."; }
     if (summary.kind === "nothing-to-stamp") { return "Nothing to stamp."; }
     let prefix = "Finished with issues. ";

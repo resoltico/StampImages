@@ -3,13 +3,16 @@ const { hostError } = require("./cancellation.js");
 const { OperationError, isUserCanceled } = require("../core/errors.js");
 const { shellQuote } = require("../core/shell.js");
 const {
+    buildVipsheaderProbeArgv,
+    isVipsheaderUsable,
+    VIPSHEADER_PROBE_IMAGE,
     buildVipsProbeArgv,
     buildExiftoolProbeArgv,
     isVipsUsable,
     isExiftoolUsable,
     describeSetupProblems
 } = require("../backend/preflight.js");
-const { probeArgv } = require("./shell.js");
+const { probeArgv, probeImageArgv } = require("./shell.js");
 const { findTool, TOOL_NAMES, TOOL_SEARCH_PATH } = require("./tools.js");
 
 /*
@@ -18,14 +21,13 @@ const { findTool, TOOL_NAMES, TOOL_SEARCH_PATH } = require("./tools.js");
  */
 
 /*
- * The probes are expected to fail: they name a file that cannot exist. The
- * suffix merges stderr and forces a zero exit so the output can be read
- * directly instead of being recovered from a thrown error. It is a fixed
- * string, never anything the user supplied.
+ * Ordinary capability probes capture failure output. The header probe also
+ * requires successful execution against its privately owned built-in image.
+ * Cancellation remains cancellation rather than an unusable-tool response.
  */
-function probe(app, argv) {
+function probe(app, argv, image) {
     try {
-        return probeArgv(app, argv);
+        return image ? probeImageArgv(app, argv, image) : probeArgv(app, argv);
     } catch (caught) {
         const error = hostError(caught);
         if (isUserCanceled(error)) { throw error; }
@@ -44,6 +46,7 @@ function hasHomebrew(app) {
 }
 
 const CAPABILITY_PROBES = {
+    vipsheader: { build: buildVipsheaderProbeArgv, usable: isVipsheaderUsable, image: VIPSHEADER_PROBE_IMAGE },
     vips: {
         build: buildVipsProbeArgv,
         usable: isVipsUsable,
@@ -59,22 +62,22 @@ const CAPABILITY_PROBES = {
 function inspectTool(app, name) {
     const found = findTool(app, name);
 
-    if (!found) {
-        return { tool: name, kind: "missing", path: "" };
+    if (!found.path) {
+        return { tool: name, kind: "missing", ...found };
     }
 
     const capability = CAPABILITY_PROBES[name];
 
-    if (capability && !capability.usable(probe(app, capability.build(found)))) {
+    if (capability && !capability.usable(probe(app, capability.build(found.path), capability.image))) {
         return {
             tool: name,
             kind: "unusable",
             flags: capability.flags,
-            path: found
+            ...found
         };
     }
 
-    return { tool: name, kind: "ok", path: found };
+    return { tool: name, kind: "ok", ...found };
 }
 
 /*
@@ -85,8 +88,8 @@ function checkTools(app) {
     const problems = results.filter((result) => result.kind !== "ok");
 
     if (problems.length > 0) {
-        // A missing or unusable tool is something to install, not a fault in the program.
-        throw new OperationError(describeSetupProblems(problems, hasHomebrew(app)));
+        // Setup refusals are operations; override diagnostics name the requested executable.
+        throw new OperationError(describeSetupProblems(problems, problems.some((problem) => !problem.override) && hasHomebrew(app)));
     }
 
     const tools = {};

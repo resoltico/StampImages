@@ -80,6 +80,8 @@ function refuses(app, command) {
 }
 
 function answersFor(app, command) {
+    if (command.includes("image-tool-probe")) { return app.vipsheaderProbe ?? "1"; }
+    if (command.includes("printenv")) { throw Object.assign(new Error("unset"), { errorNumber: 1 }); }
     for (const answer of [
         searchesPath(app, command),
         readsFile(app, command),

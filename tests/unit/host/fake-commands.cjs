@@ -39,7 +39,7 @@ function dispatch(fs, argv, command, host) {
         // a caller that does not trim ends up with a path containing one.
         "/usr/bin/mktemp": () => temporaryDirectory(rest),
         "/usr/bin/printenv": () => {
-            throw new Error("unset");
+            throw Object.assign(new Error("unset"), { errorNumber: 1 });
         },
         "/bin/cat": () => fs.read(rest),
         "/bin/test": () => fs.test(rest),

@@ -2,39 +2,12 @@
 const { FAIL_ON_DAMAGE } = require("./commands.js");
 
 /*
- * Capability probes for the external tools.
- *
- * Presence is not enough. A build that is installed and on PATH can still
- * reject a flag this program depends on and fail every run with a message
- * that points at nothing. A version comparison would be the wrong
- * instrument: libvips keeps `--export-profile` as a backward-compatible alias
- * it no longer advertises but still accepts, so the question is whether this
- * build takes the flags we use, not what it is called.
- *
- * The two tools have to be asked differently, which is worth stating because
- * copying one probe onto the other would prove nothing.
- *
- * vips is asked to fail. It is given the real flags and a path that cannot
- * exist: a build that understands the flags gets as far as the loader and
- * names it, and one that does not complains about the flag instead.
- *
- * exiftool cannot be asked that way. Measured: `-notaflag` is not an unknown
- * option to it, it is a request for a tag called "notaflag", so a build that
- * understands nothing we asked for still answers "File not found" exactly as
- * a healthy one does. It is asked to succeed instead, about a file that is
- * certainly there -- its own executable -- and the answer has to be the JSON
- * this program reads. That establishes the whole path in one go: it runs, it
- * takes -json and -n, and what comes back can be parsed.
+ * Verify behavior, not presence alone. vips must accept the required flags
+ * before failing on a nonexistent input. vipsheader must read width 1 from
+ * the built-in RGB PNG. ExifTool must return its single-file JSON record
+ * when asked about its own executable; a missing-file complaint proves none
+ * of that parsing contract.
  */
-
-/*
- * The damage policy, asked for through the one operation that takes it as a
- * flag. The run puts `fail_on` on the path it reads instead, because autorot
- * has no flag of its own, and that form cannot be probed -- vips checks the
- * file exists before it parses a load option. The two are the same enum, added
- * to libvips together. Why it is probed at all is in QA.md.
- */
-
 const PROBE_IMAGE = "/nonexistent-stamp-images-preflight.png";
 const PROBE_OUTPUT = "/nonexistent-stamp-images-preflight.v";
 const PROBE_WIDTH = "10";
@@ -52,6 +25,14 @@ function buildVipsProbeArgv(vipsPath) {
         FAIL_ON_DAMAGE
     ];
 }
+
+const VIPSHEADER_PROBE_IMAGE = "\\0211\\0120\\0116\\0107\\0015\\0012\\0032\\0012\\0000\\0000\\0000\\0015\\0111\\0110\\0104\\0122\\0000\\0000\\0000\\0001\\0000\\0000\\0000\\0001\\0010\\0002\\0000\\0000\\0000\\0220\\0167\\0123\\0336\\0000\\0000\\0000\\0014\\0111\\0104\\0101\\0124\\0170\\0234\\0143\\0120\\0016\\0357\\0004\\0000\\0001\\0244\\0001\\0004\\0360\\0075\\0155\\0310\\0000\\0000\\0000\\0000\\0111\\0105\\0116\\0104\\0256\\0102\\0140\\0202";
+
+function buildVipsheaderProbeArgv(vipsheaderPath) {
+    return [vipsheaderPath, "-f", "width"];
+}
+
+function isVipsheaderUsable(probeOutput) { return String(probeOutput).trim() === "1"; }
 
 /*
  * Asked about itself, because preflight runs before anybody has chosen a
@@ -98,6 +79,8 @@ const INSTALL_COMMAND = "brew install exiftool vips";
 const HOMEBREW_URL = "https://brew.sh";
 
 function describeProblem(problem) {
+    if (problem.override) { return `- ${problem.override.name}=${JSON.stringify(problem.override.value)} is not usable as ${problem.tool}.`; }
+    if (problem.tool === "vipsheader" && problem.kind === "unusable") { return "- vipsheader could not read the built-in PNG image."; }
     if (problem.kind === "missing") {
         return `- ${problem.tool} is not installed.`;
     }
@@ -112,15 +95,18 @@ function describeProblem(problem) {
  * the next one.
  */
 function describeSetupProblems(problems, hasHomebrew) {
-    const remedy = hasHomebrew
-        ? `Run this in Terminal:\n\n${INSTALL_COMMAND}`
-        : `Install Homebrew first, from ${HOMEBREW_URL}\n\n` +
-            `then run:\n\n${INSTALL_COMMAND}`;
+    const automatic = problems.filter((problem) => !problem.override);
+    const commands = automatic.some((problem) => problem.kind === "unusable") ? `${INSTALL_COMMAND}\nbrew upgrade exiftool vips` : INSTALL_COMMAND;
+    const install = hasHomebrew ? `Run this in Terminal:\n\n${commands}` : `Install Homebrew first, from ${HOMEBREW_URL}\n\nthen run:\n\n${commands}`;
+    const remedy = [problems.some((problem) => problem.override) ? "Fix or unset the named tool overrides, then try again." : "", automatic.length > 0 ? install : ""].filter(Boolean).join("\n\n");
 
     return `Setup needed.\n\n${problems.map(describeProblem).join("\n")}\n\n${remedy}`;
 }
 
 module.exports = {
+    buildVipsheaderProbeArgv,
+    isVipsheaderUsable,
+    VIPSHEADER_PROBE_IMAGE,
     buildVipsProbeArgv,
     buildExiftoolProbeArgv,
     isVipsUsable,

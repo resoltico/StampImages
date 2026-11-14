@@ -46,7 +46,7 @@ test("invalid request classification belongs to core and requires no admitted wo
         assert.equal(runOutcome([], [], [], [issue]).state, "invalid");
         assert.equal(runOutcome([{ state: "saved", issues: [] }], [], [], [issue]).state, "incomplete");
     }
-    assert.equal(runOutcome([], [], [], [{ code: "operation", stage: "setup" }]).state, "incomplete");
+    assert.equal(runOutcome([], [], [], [{ code: "operation", stage: "setup" }]).state, "invalid");
     assert.deepEqual(noImagesOutcome([]).issues, [{ code: "no-images", stage: "selection", message: "None of the selected items can be stamped." }]);
     const rejected = [{ path: "/no.gif" }];
     assert.equal(noImagesOutcome(rejected).rejected, rejected);
@@ -55,7 +55,7 @@ test("failed runs preserve prior work, diagnostics and reporting cancellation", 
     const invalid = new IssueError("Refused", { issues: [{ code: "text", stage: "settings", message: "Refused" }] });
     assert.equal(failedRun(invalid).state, "invalid");
     const failed = failedRun(new OperationError("Missing"));
-    assert.equal(failed.state, "incomplete");
+    assert.equal(failed.state, "invalid");
     assert.equal(failed.issues[0].stage, "setup");
     const prior = { ...runOutcome([{ state: "saved", source: "/in.jpg", output: "/out.jpg", issues: [] }], [{ path: "/no.gif" }], ["/old.jpg"], [{ code: "note" }]), diagnostics: [{ code: "observer-fault" }] };
     assert.equal(failedRun(new UserCanceled(), prior), prior);
@@ -76,4 +76,14 @@ test("empty and failed requests have explicit empty ledgers", () => {
     assert.deepEqual(failed.rejected, []);
     assert.deepEqual(failed.excluded, []);
     assert.deepEqual(failed.diagnostics, []);
+});
+
+test("only a setup operation refusal with no image work is invalid", () => {
+    const { isSetupRefusal } = require("../../../src/core/outcomes.js");
+    assert.equal(isSetupRefusal({ code: "operation", stage: "setup" }), true);
+    assert.equal(isSetupRefusal({ code: "fault", stage: "setup" }), false);
+    assert.equal(isSetupRefusal({ code: "operation", stage: "reporting" }), false);
+    assert.equal(runOutcome([], [], [], [{ code: "fault", stage: "setup" }]).state, "incomplete");
+    assert.equal(runOutcome([], [], [], [{ code: "canceled", stage: "setup" }]).state, "canceled");
+    assert.equal(runOutcome([{ state: "saved", issues: [] }], [], [], [{ code: "operation", stage: "setup" }]).state, "incomplete");
 });

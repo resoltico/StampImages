@@ -21,7 +21,7 @@ test("the file predicates report true when test succeeds", () => {
     assert.equal(isExecutable(app, "/bin/vips"), true);
     assert.deepEqual(
         app.commands.map((command) => command.split(" ")[1]),
-        ["'-f'", "'-x'"]
+        ["'-f'", "'-f'", "'-x'"]
     );
 });
 

@@ -116,3 +116,17 @@ test("one locale applies to probes, redirections and the header byte budget", ()
     ]);
     assert.equal(HEADER_ARGV_BUDGET, 23983);
 });
+
+test("the bounded image probe quotes its arguments and cleans only its exclusively owned file and directory", () => {
+    const { probeImageArgv } = require("../../../src/host/shell.js");
+    const commands = [];
+    assert.equal(probeImageArgv({ doShellScript(command) { commands.push(command); return "1"; } }, ["/tools/header", "-f", "width"], "\\0211\\0120"), "1");
+    assert.match(commands[0], /^export LC_ALL=C; probe_dir=/u);
+    assert.match(commands[0], /'\/usr\/bin\/mktemp' '-d' '-t' 'image-tool-probe'/u);
+    assert.match(commands[0], /trap/u);
+    assert.match(commands[0], /\/bin\/rm/u);
+    assert.match(commands[0], /\/bin\/rmdir/u);
+    assert.match(commands[0], /'\/tools\/header' '-f' 'width' "\$probe_dir\/image\.png"/u);
+    assert.doesNotMatch(commands[0], /\|\| true|'-rf'/u);
+    assert.throws(() => probeImageArgv({ doShellScript() { throw new Error("cannot execute probe"); } }, ["/tools/header"], "data"), /cannot execute probe/u);
+});

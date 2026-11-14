@@ -2,8 +2,8 @@
 const { hostError } = require("./cancellation.js");
 const { OperationError, isUserCanceled } = require("../core/errors.js");
 
-const { RM } = require("../core/executables.js");
-const { shellJoin } = require("../core/shell.js");
+const { RM, RMDIR, MKTEMP } = require("../core/executables.js");
+const { shellJoin, shellQuote } = require("../core/shell.js");
 const { errorMessage, summarizeCommand } = require("../core/errors.js");
 
 /*
@@ -79,6 +79,13 @@ function tryArgv(app, argumentsList) {
 
 function probeArgv(app, argv) { return runCommand(app, `${shellJoin(argv)} 2>&1 || true`); }
 
+function probeImageArgv(app, argumentsList, image) {
+    const directory = shellJoin([MKTEMP, "-d", "-t", "image-tool-probe"]);
+    const cleanup = `${shellJoin([RM, "--"])} "$probe_dir/image.png"; ${shellJoin([RMDIR, "--"])} "$probe_dir"`;
+    const write = `printf '%b' ${shellQuote(image)} >"$probe_dir/image.png"`;
+    return runCommand(app, `probe_dir=$(${directory}) && (trap ${shellQuote(cleanup)} EXIT; ${write} && ${shellJoin(argumentsList)} "$probe_dir/image.png") 2>&1`);
+}
+
 function cleanupArgv(app, argv) {
     try { runArgv(app, argv, "cleaning temporary work"); return { state: "removed" }; }
     catch (error) {
@@ -93,4 +100,4 @@ const MAXIMUM_HEADER_COMMAND_LENGTH = 24000;
 const HEADER_ARGV_BUDGET = MAXIMUM_HEADER_COMMAND_LENGTH - LOCALE_PREFIX.length;
 const runHeaderArgv = runArgv;
 
-module.exports = { probeArgv, cleanupArgv, HEADER_ARGV_BUDGET, runHeaderArgv, runArgv, runArgvInto, tryArgv, removeFile };
+module.exports = { probeImageArgv, probeArgv, cleanupArgv, HEADER_ARGV_BUDGET, runHeaderArgv, runArgv, runArgvInto, tryArgv, removeFile };

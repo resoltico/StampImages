@@ -13,12 +13,14 @@ function issuesOf(error, stage) {
     try { return readableIssues(error, stage); }
     catch { return [{ code: ISSUE.fault, stage, message: "The failure details could not be read." }]; }
 }
+function isSetupRefusal(issue) { return issue.stage === "setup" && issue.code === ISSUE.operation; }
+
 function runOutcome(images = [], rejected = [], excluded = [], issues = []) {
     const stopped = issues.some((issue) => issue.code === ISSUE.canceled) || images.some((image) => image.state === "canceled" || image.issues.some((issue) => issue.code === ISSUE.canceled));
     const incomplete = images.length === 0 || rejected.length > 0 || issues.length > 0 || images.some((image) => image.state !== "saved" || image.issues.length > 0 || image.missingMetadata?.length > 0);
     let state = incomplete ? "incomplete" : "complete";
     if (stopped && incomplete) { state = "canceled"; }
-    if (images.length === 0 && issues.some((issue) => ["settings", "request"].includes(issue.stage))) { state = "invalid"; }
+    if (images.length === 0 && issues.some((issue) => ["settings", "request"].includes(issue.stage) || isSetupRefusal(issue))) { state = "invalid"; }
     return { state, images, rejected, excluded, issues, diagnostics: [] };
 }
 function noImagesOutcome(rejected) {
@@ -29,4 +31,4 @@ function failedRun(error, outcome = null) {
     return { ...runOutcome(outcome?.images ?? [], outcome?.rejected ?? [], outcome?.excluded ?? [],
         [...(outcome?.issues ?? []), ...issuesOf(error, outcome ? "reporting" : "setup")]), diagnostics: outcome?.diagnostics ?? [] };
 }
-module.exports = { ISSUE, issuesOf, runOutcome, noImagesOutcome, failedRun };
+module.exports = { isSetupRefusal, ISSUE, issuesOf, runOutcome, noImagesOutcome, failedRun };

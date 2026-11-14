@@ -77,7 +77,7 @@ test("empty-stamp corrective dialog translates native stop without another quest
 
 test("tool path search translates stop after ordinary missing candidates", () => {
     canceledAt((stop) => findTool({ doShellScript(command) {
-        if (command.includes("printenv")) { return ""; }
+        if (command.includes("printenv")) { throw Object.assign(new Error("unset"), { errorNumber: 1 }); }
         if (command.includes("command -v")) { return stop(); }
         throw new Error("not found");
     } }, "vips"));
@@ -91,7 +91,7 @@ test("capability probe and Homebrew probe translate native stop", () => {
         return checkTools(app);
     });
     canceledAt((stop) => {
-        const app = createFakeApp({ installed: [] });
+        const app = Object.assign(createFakeApp(), { installed: [] });
         const normal = app.doShellScript;
         app.doShellScript = (command) => command.includes("command -v brew") ? stop() : normal(command);
         return checkTools(app);

@@ -159,4 +159,6 @@ images are `not-started`. Confirmed copies are kept in every case.
 
 `STAMP_IMAGES_VIPS`, `STAMP_IMAGES_VIPSHEADER` and `STAMP_IMAGES_EXIFTOOL` may name
 explicit executables. An override that is missing, relative or unusable fails
-setup with exit status 3.
+setup with state `invalid` and exit status 3; another executable is never silently
+substituted. Errors name the variable and its value. Setup probes all three tools,
+including a real width read by `vipsheader` from a built-in PNG.

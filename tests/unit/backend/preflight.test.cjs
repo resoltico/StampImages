@@ -135,3 +135,36 @@ test("the vips probe names a file that cannot exist", () => {
         }
     }
 });
+
+test("vipsheader is tested with a bounded built-in RGB PNG and an exact width response", () => {
+    const { VIPSHEADER_PROBE_IMAGE, buildVipsheaderProbeArgv, isVipsheaderUsable } = require("../../../src/backend/preflight.js");
+    const { Buffer } = require("node:buffer");
+    const bytes = Buffer.from([...VIPSHEADER_PROBE_IMAGE.matchAll(/\\0(?<octal>[0-7]{3})/gu)].map((match) => Number.parseInt(match.groups.octal, 8)));
+    assert.equal(bytes.length, 69);
+    assert.deepEqual([...bytes.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+    assert.equal(bytes.readUInt32BE(16), 1);
+    assert.equal(bytes.readUInt32BE(20), 1);
+    assert.deepEqual(buildVipsheaderProbeArgv("/tools/header"), ["/tools/header", "-f", "width"]);
+    for (const text of ["1", "1\n", " 1 "]) { assert.equal(isVipsheaderUsable(text), true); }
+    for (const text of ["", "900", "width: 1", "1\nwarning", "not an image"]) { assert.equal(isVipsheaderUsable(text), false); }
+});
+
+test("override-only refusals give override advice without an unrelated Homebrew install", () => {
+    const override = { tool: "vipsheader", kind: "unusable", override: { name: "STAMP_IMAGES_VIPSHEADER", value: "/usr/bin/false" } };
+    const text = describeSetupProblems([override], true);
+    assert.match(text, /STAMP_IMAGES_VIPSHEADER="\/usr\/bin\/false"/u);
+    assert.match(text, /Fix or unset the named tool overrides, then try again\./u);
+    assert.doesNotMatch(text, /brew|Homebrew/u);
+    assert.equal(describeSetupProblems([{ tool: "vipsheader", kind: "unusable" }], true).includes("vipsheader could not read the built-in PNG image."), true);
+    const mixed = describeSetupProblems([override, { tool: "vips", kind: "missing" }], true);
+    assert.match(mixed, /Fix or unset/u);
+    assert.match(mixed, /brew install exiftool vips/u);
+});
+
+test("setup advice preserves distinct missing, upgrade and override actions with one blank line per section", () => {
+    assert.equal(describeSetupProblems([{ tool: "vips", kind: "missing" }], true), "Setup needed.\n\n- vips is not installed.\n\nRun this in Terminal:\n\nbrew install exiftool vips");
+    assert.equal(describeSetupProblems([{ tool: "vips", kind: "missing" }, { tool: "exiftool", kind: "unusable", flags: "answer JSON" }], true), "Setup needed.\n\n- vips is not installed.\n- exiftool is installed but does not do what this needs: answer JSON.\n\nRun this in Terminal:\n\nbrew install exiftool vips\nbrew upgrade exiftool vips");
+    const override = { tool: "vipsheader", kind: "unusable", override: { name: "STAMP_IMAGES_VIPSHEADER", value: "/usr/bin/false" } };
+    assert.equal(describeSetupProblems([override], true), 'Setup needed.\n\n- STAMP_IMAGES_VIPSHEADER="/usr/bin/false" is not usable as vipsheader.\n\nFix or unset the named tool overrides, then try again.');
+    assert.equal(describeSetupProblems([override, { tool: "vips", kind: "missing" }], true), 'Setup needed.\n\n- STAMP_IMAGES_VIPSHEADER="/usr/bin/false" is not usable as vipsheader.\n- vips is not installed.\n\nFix or unset the named tool overrides, then try again.\n\nRun this in Terminal:\n\nbrew install exiftool vips');
+});
