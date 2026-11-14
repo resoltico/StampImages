@@ -1,5 +1,5 @@
 "use strict";
-const { hostError } = require("./cancellation.js");
+const { hostError } = require("../cancellation.js");
 const { appkitBridge, MODAL_UNAVAILABLE } = require("./appkit-bridge.js");
 
 const DETAIL_HEIGHT = 140;

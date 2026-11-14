@@ -10,7 +10,7 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { makeCaption, moveFocus } = require("../../../src/host/appkit-fields.js");
+const { makeCaption, moveFocus } = require("../../../src/host/quick-action/appkit-fields.js");
 const { createFakeObjC } = require("./fake-objc.cjs");
 
 const RECT = { left: 0, bottom: 0, width: 200, height: 60 };

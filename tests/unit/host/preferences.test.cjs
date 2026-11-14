@@ -10,8 +10,8 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { createMemory } = require("../../../src/host/preference-storage.js");
-const { DOMAIN, KEY } = require("../../../src/host/preferences.js");
+const { createMemory } = require("../../../src/host/quick-action/preference-storage.js");
+const { DOMAIN, KEY } = require("../../../src/host/quick-action/preferences.js");
 
 function suiteFor(state, settings) {
     return {

@@ -1,12 +1,18 @@
 "use strict";
+const { resolveStampSettings } = require("../stamp-settings.js");
+const { catalog } = require("../typefaces.js");
+const { availableFonts } = require("./fonts.js");
+const { confirmSelection } = require("./settings-review.js");
+const { encode, rememberedAnswers } = require("./preferences.js");
+const { createMemory } = require("./preference-storage.js");
 const { formSpec } = require("./form.js");
-const { readAnswers } = require("./quick-action/settings-model.js");
-const { stampIssues } = require("../core/settings.js");
-const { UserCanceled, OperationError } = require("../core/errors.js");
+const { readAnswers } = require("./settings-model.js");
+const { stampIssues } = require("../../core/settings.js");
+const { UserCanceled, OperationError } = require("../../core/errors.js");
 const { presentForm } = require("./appkit.js");
 const { appkitBridge } = require("./appkit-bridge.js");
 const { collectDialogSettings } = require("./dialogs.js");
-const { defaultAnswers } = require("./quick-action/settings-model.js");
+const { defaultAnswers } = require("./settings-model.js");
 
 /*
  * Which front end asks for the settings.
@@ -104,4 +110,19 @@ function collectSettings(app, opening, injected) {
     );
 }
 
-module.exports = { collectViaForm, collectSettings };
+function defaultMemory() { return createMemory(globalThis.ObjC, globalThis.$); }
+
+function chooseSettings(app, context, injected = {}) {
+    const { known = catalog(), openMemory = defaultMemory } = injected;
+    if (!known) { throw new OperationError("Installed typefaces could not be verified on this Mac."); }
+    const asking = { ...context, known, fonts: availableFonts(known) };
+    confirmSelection(app, asking);
+    const memory = openMemory();
+    const opening = { context: asking, answers: rememberedAnswers(memory.recall(), asking.fonts) };
+    const resolved = resolveStampSettings(collectSettings(app, opening, injected), known);
+    // Remember confirmed appearance before processing; custom text remains private to this run.
+    memory.remember(encode(resolved.settings));
+    return resolved;
+}
+
+module.exports = { collectViaForm, collectSettings, chooseSettings };

@@ -10,9 +10,9 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { settingsFor } = require("../../../src/host/settings-run.js");
+const { chooseSettings } = require("../../../src/host/quick-action/settings-form.js");
 const { defaultAnswers } = require("../../../src/host/quick-action/settings-model.js");
-const { encode } = require("../../../src/host/preferences.js");
+const { encode } = require("../../../src/host/quick-action/preferences.js");
 const { createFakeApp } = require("./fake-app.cjs");
 const { askingContext } = require("./fake-assembly.cjs");
 
@@ -49,7 +49,7 @@ function memoryHolding(text) {
 }
 
 function interactive(app, injected) {
-    return settingsFor(app, { headless: false }, CONTEXT, injected);
+    return chooseSettings(app, CONTEXT, { ...injected, known: CONTEXT.known }).settings;
 }
 
 test("an interactive run opens on what the last one confirmed", () => {

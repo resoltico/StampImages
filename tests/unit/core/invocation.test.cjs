@@ -5,7 +5,7 @@ const test = require("node:test");
 const {
     normalizeInvocationInput,
     decodeFileUrl
-} = require("../../../src/core/invocation.js");
+} = require("../../../src/host/invocation-syntax.js");
 
 
 
@@ -118,7 +118,7 @@ test("the separator is dropped only while it is the first thing there", () => {
 });
 
 test("flat CLI string argv cannot enter interactive collection", () => {
-    const { isCliInput } = require("../../../src/core/invocation.js");
+    const { isCliInput } = require("../../../src/host/invocation-syntax.js");
     assert.equal(isCliInput([]), true);
     assert.equal(isCliInput(["--headless", "settings.json", "photo.jpg"]), true);
     assert.equal(isCliInput([["/photo.jpg"], {}]), false);

@@ -1,11 +1,11 @@
 "use strict";
-const { APP_NAME } = require("../core/version.js");
+const { APP_NAME } = require("../../core/version.js");
 const { formSpec, CREATE_BUTTON, CANCEL_BUTTON } = require("./form.js");
-const { answersFromSettings } = require("./quick-action/settings-model.js");
-const { UserCanceled } = require("../core/errors.js");
-const { plural } = require("../core/formatting.js");
+const { answersFromSettings } = require("./settings-model.js");
+const { UserCanceled } = require("../../core/errors.js");
+const { plural } = require("../../core/formatting.js");
 const { COPY_NOTE } = require("./stamp-description.js");
-const { basename, dirname } = require("../core/paths.js");
+const { basename, dirname } = require("../../core/paths.js");
 
 /*
  * One refusal as a person scans for it: the name first, then why, then where.

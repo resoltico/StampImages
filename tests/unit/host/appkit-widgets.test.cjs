@@ -9,7 +9,7 @@ const {
     makePopup,
     addPopupItem,
     makeAlert
-} = require("../../../src/host/appkit-widgets.js");
+} = require("../../../src/host/quick-action/appkit-widgets.js");
 const { createFakeObjC } = require("./fake-objc.cjs");
 
 const RECT = { left: 10, bottom: 20, width: 100, height: 24 };

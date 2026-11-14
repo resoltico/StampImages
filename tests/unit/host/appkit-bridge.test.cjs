@@ -15,7 +15,7 @@ const {
     appkitBridge,
     rectOf,
     perform
-} = require("../../../src/host/appkit-bridge.js");
+} = require("../../../src/host/quick-action/appkit-bridge.js");
 
 function objcThat(behavior) {
     return { import: behavior, unwrap: (value) => value };

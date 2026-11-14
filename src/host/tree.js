@@ -1,4 +1,7 @@
 "use strict";
+const { OperationError } = require("../core/errors.js");
+const { attributesAt, identityOf, kindOf } = require("./native-file-attributes.js");
+
 /*
  * What the filesystem says about a path, for walking a selected folder.
  *
@@ -7,7 +10,7 @@
  * newline, which the integration suite already exercises elsewhere, and no
  * separator survives that. Measured: contentsOfDirectoryAtPath returns
  * "two\nlines.png" intact, attributesOfItemAtPath reports a symbolic link
- * without following it, and NSWorkspace tells a package from a folder.
+ * without following it, and NSURL package resource values tell a package from a folder.
  *
  * It is also the only way to ask about thousands of entries without paying
  * for a subprocess each time. A folder of three thousand photographs would be
@@ -15,13 +18,13 @@
  * question Foundation answers in microseconds.
  *
  * The bridge is taken by parameter so this can be driven from a fake, and
- * returns null when there is none: the action still converts the files it is
- * given, and a selected folder is refused with a reason rather than expanded.
+ * returns null when unavailable. The composition root requires this capability
+ * for every source, including directly selected files.
  */
 
 const DIRECTORY = "NSFileTypeDirectory";
 const REGULAR = "NSFileTypeRegular";
-const LINK = "NSFileTypeSymbolicLink";
+const SYMBOLIC_LINK = "NSFileTypeSymbolicLink";
 
 /*
  * Which file this is, as the filesystem knows it: the volume it is on and its
@@ -33,24 +36,26 @@ const LINK = "NSFileTypeSymbolicLink";
  * nothing, and it is "" when there are no attributes to read -- which is the
  * same thing as there being no file.
  */
-function identityFrom(attributes) {
-    return attributes
-        ? `${attributes.NSFileSystemNumber}:${attributes.NSFileSystemFileNumber}`
-        : "";
-}
-
-function kindFrom(attributes, workspace, path, ns) {
+function kindFrom(attributes, packageFor, path) {
     if (!attributes) {
         return "missing";
     }
 
-    // A link and a pipe or device are both passed over, for different
-    // reasons, and the person who selected one is told which.
-    if (attributes.NSFileType === REGULAR) { return "file"; }
-    if (attributes.NSFileType === LINK) { return "link"; }
-    if (attributes.NSFileType !== DIRECTORY) { return "other"; }
+    if (attributes.NSFileType !== DIRECTORY) {
+        if (attributes.NSFileType === REGULAR) { return "file"; }
+        return attributes.NSFileType === SYMBOLIC_LINK ? "link" : "other";
+    }
 
-    return workspace.isFilePackageAtPath(ns(path)) ? "package" : "directory";
+    return packageFor(path) ? "package" : "directory";
+}
+
+function packageAt({ objc, ns, ref }, path) {
+    const url = ns.NSURL.fileURLWithPath(ns(path));
+    const values = url.resourceValuesForKeysError(ns([ns.NSURLIsPackageKey]), ref());
+    if (!values || values.isNil()) { throw new OperationError("The folder's package status could not be read."); }
+    const value = objc.unwrap(values.objectForKey(ns.NSURLIsPackageKey));
+    if (typeof value !== "boolean") { throw new OperationError("The folder's package status could not be read."); }
+    return value;
 }
 
 function createTree(objc, ns, ref) {
@@ -60,24 +65,21 @@ function createTree(objc, ns, ref) {
 
     try {
         objc.import("Foundation");
-        objc.import("AppKit");
     } catch {
         return null;
     }
 
     const manager = ns.NSFileManager.defaultManager;
-    const workspace = ns.NSWorkspace.sharedWorkspace;
+    const packageFor = (path) => packageAt({ objc, ns, ref }, path);
 
     return {
         // What the path is, and which file it is, from one question.
         inspect(path) {
-            const attributes = objc.deepUnwrap(
-                manager.attributesOfItemAtPathError(ns(path), ref())
-            );
-
+            const attributes = attributesAt(manager, ns, path);
+            const kind = kindOf(objc, ns, attributes);
             return {
-                kind: kindFrom(attributes, workspace, path, ns),
-                identity: identityFrom(attributes)
+                kind: kindFrom(kind ? { NSFileType: kind } : null, packageFor, path),
+                identity: identityOf(objc, ns, attributes)
             };
         },
 
@@ -96,4 +98,4 @@ function createTree(objc, ns, ref) {
     };
 }
 
-module.exports = { createTree, kindFrom, identityFrom };
+module.exports = { createTree, kindFrom };

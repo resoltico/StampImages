@@ -1,5 +1,5 @@
 "use strict";
-const { normalizeInvocationInput, decodeFileUrl } = require("../core/invocation.js");
+const { decodeFileUrl } = require("./invocation-syntax.js");
 
 /*
  * Resolving whatever Shortcuts, Finder, or a headless caller supplies into
@@ -58,25 +58,4 @@ function inputItemToPosixPath(item) {
     return "";
 }
 
-function finderSelection() {
-    return Application("Finder").selection();
-}
-
-/*
- * What kind of run this is travels with it. Which settings a run uses turns
- * on the answer, and reading it back off the settings themselves -- "there
- * are none, so somebody must be here to ask" -- is a guess that a
- * configuration file of `false` or `0` gets wrong: a headless run went to the
- * dialogs and waited for an answer nobody was there to give.
- */
-function collectInvocation(app, input) {
-    const items = normalizeInvocationInput(input);
-    return { headless: false, settings: null, inputItems: items };
-}
-
-module.exports = {
-    pathCandidates,
-    inputItemToPosixPath,
-    finderSelection,
-    collectInvocation
-};
+module.exports = { pathCandidates, inputItemToPosixPath };

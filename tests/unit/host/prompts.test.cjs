@@ -10,7 +10,7 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { chooseRequired, askUntil } = require("../../../src/host/prompts.js");
+const { chooseRequired, askUntil } = require("../../../src/host/quick-action/prompts.js");
 const { POSITION } = require("../../../src/host/quick-action/settings-model.js");
 const { createFakeApp } = require("./fake-app.cjs");
 

@@ -1,8 +1,8 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { cliCommand, configurationValues, jsonConfiguration, usage } = require("../../../src/host/cli.js");
-const { reportHeadless, exitCode } = require("../../../src/host/reporting.js");
+const { cliCommand, configurationValues, jsonConfiguration, usage } = require("../../../src/host/command-line/cli.js");
+const { reportHeadless, exitCode } = require("../../../src/host/command-line/reporting.js");
 const { runOutcome } = require("../../../src/core/outcomes.js");
 const { defaultSettings } = require("../../../src/host/quick-action/settings-model.js");
 const settings = defaultSettings(["Menlo"]);
@@ -19,7 +19,7 @@ test("relative paths are resolved and native reader output uses the canonical va
     });
     assert.deepEqual(read, ["/cwd/settings.json"]); assert.deepEqual(result.invocation.inputItems, ["/cwd/photo.png"]);
     assert.deepEqual(result.invocation.settings, settings);
-    assert.equal(result.invocation.headless, true);
+    assert.equal(Object.hasOwn(result.invocation, "headless"), false);
     assert.throws(() => configurationValues({ ...settings, size: "36", extra: 1 }), (error) => error.issues.length === 2);
     assert.throws(() => configurationValues({ ...settings, dateFormat: "none", customText: " " }), /nothing to stamp/u);
 });

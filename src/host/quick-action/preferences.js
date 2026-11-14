@@ -1,6 +1,6 @@
 "use strict";
-const { validateSettings } = require("../core/settings.js");
-const { answersFromSettings } = require("./quick-action/settings-model.js");
+const { validateSettings } = require("../../core/settings.js");
+const { answersFromSettings } = require("./settings-model.js");
 const DOMAIN = "com.resoltico.StampImages";
 const KEY = "lastSettings";
 function encode(settings) {

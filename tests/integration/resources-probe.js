@@ -4,8 +4,9 @@ const { sourceAccess } = require("../../src/host/source-capture.js");
 const { createTree } = require("../../src/host/tree.js");
 const { nativePublication } = require("../../src/host/native-publication.js");
 const { workspaceAccess } = require("../../src/host/workspace-access.js");
+const { commandLineInteraction } = require("../../src/host/command-line/interaction.js");
 const { createProgress } = require("../../src/host/progress.js");
-const { cliCommand } = require("../../src/host/cli.js");
+const { cliCommand } = require("../../src/host/command-line/cli.js");
 function run(input) {
     const [downloads, ...argv] = input;
     const app = Application.currentApplication();
@@ -19,7 +20,8 @@ function run(input) {
         if (to.startsWith(downloads)) { attemptedDownloads += 1; }
         return link(from, to);
     };
-    const result = execute(app, cliCommand(argv).invocation, { headless: true, progress: createProgress([]), capabilities: {
+    const { invocation } = cliCommand(argv);
+    const result = execute(app, invocation, { interaction: commandLineInteraction(invocation, { progress: createProgress([]) }), capabilities: {
         sources: sourceAccess(ObjC, $), publication, storage, tree: createTree(ObjC, $, globalThis.Ref)
     } });
     return JSON.stringify({ attemptedDownloads, ...result });

@@ -1,10 +1,10 @@
 "use strict";
-const { formSpec } = require("../../src/host/form.js");
+const { formSpec } = require("../../src/host/quick-action/form.js");
 const { readAnswers } = require("../../src/host/quick-action/settings-model.js");
 const { defaultAnswers } = require("../../src/host/quick-action/settings-model.js");
-const { buildForm } = require("../../src/host/appkit-form.js");
-const { WIDGETS, readControls } = require("../../src/host/appkit.js");
-const { unbindChoices } = require("../../src/host/appkit-choice.js");
+const { buildForm } = require("../../src/host/quick-action/appkit-form.js");
+const { WIDGETS, readControls } = require("../../src/host/quick-action/appkit.js");
+const { unbindChoices } = require("../../src/host/quick-action/appkit-choice.js");
 
 const SMALLEST_VISIBLE_HEIGHT = 744;
 

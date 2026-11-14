@@ -1,5 +1,10 @@
 "use strict";
-const { appkitBridge } = require("./appkit-bridge.js");
+// The shared font catalog is the command line's only AppKit dependency.
+function fontBridge(objc, ns) {
+    if (!objc || !ns) { return null; }
+    try { objc.import("AppKit"); return { objc, ns }; }
+    catch { return null; }
+}
 
 /*
  * What faces this Mac has, asked of the font system that draws them.
@@ -93,7 +98,7 @@ function coverageFrom(bridge, typeface) {
  * given `null`; setup refuses to render when installed typefaces cannot be
  * verified.
  */
-function catalog(bridge = appkitBridge(globalThis.ObjC, globalThis.$)) {
+function catalog(bridge = fontBridge(globalThis.ObjC, globalThis.$)) {
     if (!bridge) {
         return null;
     }

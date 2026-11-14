@@ -1,7 +1,7 @@
 "use strict";
-const { APP_NAME, VERSION } = require("../core/version.js");
-const { summarizeRun } = require("../core/run-summary.js");
-const { headline, reportText } = require("../core/run-report.js");
+const { APP_NAME, VERSION } = require("../../core/version.js");
+const { summarizeRun } = require("../../core/run-summary.js");
+const { headline, reportText } = require("../../core/run-report.js");
 const { showDetails } = require("./details-dialog.js");
 function completionMessage(result) {
     return [reportText(result, false), result.state === "invalid" ? "" : `${APP_NAME} ${VERSION}`].filter(Boolean).join("\n\n");

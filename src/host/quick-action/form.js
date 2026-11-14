@@ -1,7 +1,7 @@
 "use strict";
-const { APP_NAME } = require("../core/version.js");
-const { formRows } = require("./quick-action/settings-model.js");
-const { defaultAnswers } = require("./quick-action/settings-model.js");
+const { APP_NAME } = require("../../core/version.js");
+const { formRows } = require("./settings-model.js");
+const { defaultAnswers } = require("./settings-model.js");
 const {
     selectionSummary, outcomeSummary, ORIGINALS_NOTE, SOURCE_NOTE, LOCATION_NOTE
 } = require("./stamp-description.js");

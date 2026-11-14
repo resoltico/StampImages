@@ -4,7 +4,6 @@ const { sortImageRecords } = require("../core/ordering.js");
 const { imagesInFolder, NO_IMAGES } = require("./expand.js");
 const { UNREADABLE, UNEXAMINABLE, ALREADY_STAMPED } = require("./walking.js");
 const { selectedItems } = require("./selection.js");
-const { finderSelection } = require("./input.js");
 const { rejectionReason, FOLDER, UNSUPPORTED, NOT_A_FILE } = require("./reasons.js");
 
 /*
@@ -131,7 +130,6 @@ function admit(app, tree, root, outcome) {
  * files that were selected directly are converted as they always were.
  */
 function collectImageFiles(app, inputItems, tree = null) {
-    const items = inputItems.length > 0 ? inputItems : finderSelection();
     const outcome = {
         images: [],
         selectedFolders: 0,
@@ -142,7 +140,7 @@ function collectImageFiles(app, inputItems, tree = null) {
         taken: new Set()
     };
 
-    for (const root of selectedItems(tree, items, outcome.rejected)) {
+    for (const root of selectedItems(tree, inputItems, outcome.rejected)) {
         admit(app, tree, root, outcome);
     }
 

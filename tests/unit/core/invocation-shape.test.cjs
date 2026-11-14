@@ -10,7 +10,7 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { normalizeInvocationInput } = require("../../../src/core/invocation.js");
+const { normalizeInvocationInput } = require("../../../src/host/invocation-syntax.js");
 
 test("the Shortcuts selection arrives nested and is flattened", () => {
     // Measured, not guessed: a Quick Action on four files reported

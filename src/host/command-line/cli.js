@@ -1,8 +1,8 @@
 "use strict";
-const { APP_NAME, VERSION } = require("../core/version.js");
-const { SETTINGS_SCHEMA, validateSettings, stampIssues } = require("../core/settings.js");
-const { OperationError } = require("../core/errors.js");
-const { normalizeInvocationInput } = require("../core/invocation.js");
+const { APP_NAME, VERSION } = require("../../core/version.js");
+const { SETTINGS_SCHEMA, validateSettings, stampIssues } = require("../../core/settings.js");
+const { OperationError } = require("../../core/errors.js");
+const { normalizeInvocationInput } = require("../invocation-syntax.js");
 const { writeReceipt, exitCli } = require("./receipt.js");
 // A caption that only restates the value ("Bottom right" for bottom-right) is left out.
 function choiceCaption(choice) {
@@ -119,7 +119,7 @@ function cliCommand(input, injected = null) {
     const io = injected ?? nativeCliIO();
     const configuration = io.read(io.absolute(args[1]));
     const firstImageIndex = 2;
-    return { kind: "run", invocation: { headless: true, ...configurationValues(configuration),
+    return { kind: "run", invocation: { ...configurationValues(configuration),
         inputItems: args.slice(firstImageIndex).map((path) => io.absolute(path)) } };
 }
 

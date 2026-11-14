@@ -2,8 +2,8 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { presentForm } = require("../../../src/host/appkit.js");
-const { formSpec } = require("../../../src/host/form.js");
+const { presentForm } = require("../../../src/host/quick-action/appkit.js");
+const { formSpec } = require("../../../src/host/quick-action/form.js");
 const { defaultAnswers } = require("../../../src/host/quick-action/settings-model.js");
 const { createFakeObjC } = require("./fake-objc.cjs");
 

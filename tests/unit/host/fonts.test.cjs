@@ -11,7 +11,7 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { availableFonts, CANDIDATES } = require("../../../src/host/fonts.js");
+const { availableFonts, CANDIDATES } = require("../../../src/host/quick-action/fonts.js");
 const { catalogOf } = require("./fake-typefaces.cjs");
 
 function withEvery(faces) {

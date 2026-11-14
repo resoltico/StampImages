@@ -1,5 +1,5 @@
 "use strict";
-const { familyIn } = require("../core/typeface.js");
+const { familyIn } = require("../../core/typeface.js");
 
 /*
  * Which faces the form suggests.
@@ -20,7 +20,7 @@ const { familyIn } = require("../core/typeface.js");
  * for coordinates that line up. Names the machine does not have are dropped,
  * so the list can afford to be optimistic about what a given Mac has.
  */
-const { SETTINGS_SCHEMA } = require("../core/settings.js");
+const { SETTINGS_SCHEMA } = require("../../core/settings.js");
 const CANDIDATES = SETTINGS_SCHEMA.font.suggestions;
 
 /*

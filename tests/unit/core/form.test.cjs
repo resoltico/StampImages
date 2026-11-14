@@ -13,7 +13,7 @@ const {
     invitation,
     CREATE_BUTTON,
     CANCEL_BUTTON
-} = require("../../../src/host/form.js");
+} = require("../../../src/host/quick-action/form.js");
 const { defaultAnswers } = require("../../../src/host/quick-action/settings-model.js");
 
 const FONTS = ["Menlo", "Menlo Bold"];

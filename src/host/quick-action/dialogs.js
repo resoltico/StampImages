@@ -1,11 +1,11 @@
 "use strict";
-const { hostError } = require("./cancellation.js");
-const { ORDER, controlFor } = require("./quick-action/settings-model.js");
-const { readAnswer, readAnswers } = require("./quick-action/settings-model.js");
-const { labelOfValue } = require("./quick-action/settings-model.js");
-const { errorMessage } = require("../core/errors.js");
-const { stampIssues } = require("../core/settings.js");
-const { APP_NAME } = require("../core/version.js");
+const { hostError } = require("../cancellation.js");
+const { ORDER, controlFor } = require("./settings-model.js");
+const { readAnswer, readAnswers } = require("./settings-model.js");
+const { labelOfValue } = require("./settings-model.js");
+const { errorMessage } = require("../../core/errors.js");
+const { stampIssues } = require("../../core/settings.js");
+const { APP_NAME } = require("../../core/version.js");
 const { chooseRequired, askUntil } = require("./prompts.js");
 const { reviewSettings } = require("./settings-review.js");
 const { invitation } = require("./form.js");

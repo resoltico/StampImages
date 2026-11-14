@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { DOMAIN, KEY, encode, rememberedAnswers } = require("../../../src/host/preferences.js");
+const { DOMAIN, KEY, encode, rememberedAnswers } = require("../../../src/host/quick-action/preferences.js");
 const { defaultSettings, defaultAnswers } = require("../../../src/host/quick-action/settings-model.js");
 const fonts = ["Menlo"];
 test("current preferences retain appearance and exclude private text and resolved typeface", () => {

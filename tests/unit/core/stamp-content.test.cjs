@@ -5,10 +5,10 @@ const test = require("node:test");
 const { defaultAnswers, defaultSettings } = require("../../../src/host/quick-action/settings-model.js");
 const { normalizeSettings } = require("../../../src/core/settings.js");
 const { contentProblem, requireStampContent } = require("../../../src/core/stamp-content.js");
-const { encode, rememberedAnswers } = require("../../../src/host/preferences.js");
+const { encode, rememberedAnswers } = require("../../../src/host/quick-action/preferences.js");
 const { readAnswers } = require("../../../src/host/quick-action/settings-model.js");
-const { selectionSummary } = require("../../../src/host/stamp-description.js");
-const { formSpec, invitation } = require("../../../src/host/form.js");
+const { selectionSummary } = require("../../../src/host/quick-action/stamp-description.js");
+const { formSpec, invitation } = require("../../../src/host/quick-action/form.js");
 const FONTS = ["Menlo"];
 
 test("fresh settings stamp date/time only; GPS is off until someone turns it on", () => {

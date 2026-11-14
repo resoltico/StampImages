@@ -1,9 +1,8 @@
 "use strict";
-const { createProgress } = require("./progress.js");
+const { createProgress } = require("../progress.js");
 const { openPanel } = require("./panel.js");
-function openProgress(headless, build = [openPanel]) {
+function openProgress(build = [openPanel]) {
     const progress = createProgress([]);
-    if (headless) { return progress; }
     const sinks = [];
     for (const open of build) {
         try { const sink = open(); if (sink) { sinks.push(sink); } }
