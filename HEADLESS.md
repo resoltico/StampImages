@@ -76,6 +76,12 @@ representation; active colored text or outline expands gray to RGB without reduc
 dimensions describe the upright stamped pixels. Proprietary maker fields are not
 guaranteed across encoders; existing retained maker data is not deleted.
 
+Localized Font Book family/face names are accepted when native matching identifies
+one installed canonical family or face. Ambiguous, hidden and PostScript names
+are refused rather than substituted.
+Native catalog identity does not guarantee that the text renderer distinguishes
+every weight name: Hiragino Sans W3/W6 can render at the same weight.
+
 ## Receipt and exit status
 
 Every handled request attempts the plain-language report on stderr before one JSON

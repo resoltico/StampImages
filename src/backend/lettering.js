@@ -62,6 +62,9 @@ function asMarkup(text) {
  * are the ones the font system uses: measured, "Avenir, Black 40" draws Avenir
  * Black and "Source Serif 4, Semibold 40" draws that named instance. A family
  * with no face named is its own default one.
+ * Some native weight names are not interpreted as different Pango weights:
+ * measured Hiragino Sans W3/W6 produce the same mask despite distinct native
+ * faces. Catalog resolution verifies installed identity, not exact renderer weight.
  *
  * Nothing here escapes either half: a comma inside a family would end the name
  * early, and no family or face on this Mac contains one -- measured across all

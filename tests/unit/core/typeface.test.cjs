@@ -149,3 +149,33 @@ test("the nearest family is a strict prefix of the name, joined by spaces, or no
     assert.deepEqual(nearestFamily(known, "Nothing Known"), { family: "", rest: "" });
     assert.equal(sameName("  menlo ", "MENLO"), true);
 });
+
+
+test("canonical family and style matches do not ask the localized alias provider", () => {
+    const known = { ...KNOWN, localizedNamed: () => { throw new Error("canonical names need no alias"); } };
+    assert.deepEqual(faceOf(known, "Avenir Black"), { family: "Avenir", face: "Black" });
+    assert.deepEqual(faceOf(known, "Avenir Next"), { family: "Avenir Next", face: "" });
+});
+
+test("localized fallback follows the entire canonical loop, including unknown styles", () => {
+    const asked = [];
+    const known = { ...KNOWN, localizedNamed(name) {
+        asked.push(name);
+        return name === "Avenir localized style" ? { family: "Avenir", face: "Light" } : null;
+    } };
+    assert.deepEqual(faceOf(known, "  Avenir   localized style  "), { family: "Avenir", face: "Light" });
+    assert.equal(faceOf(known, "Unknown alias"), null);
+    assert.deepEqual(asked, ["Avenir localized style", "Unknown alias"]);
+});
+
+test("localized full names and bare families resolve while PostScript guidance remains", () => {
+    const known = { ...catalogOf({ Georgia: ["Regular", "Bold"], "Hiragino Sans": ["W3", "W6"] }),
+        localizedNamed(name) {
+            if (name === "ヒラギノ角ゴシック W3") { return { family: "Hiragino Sans", face: "W3" }; }
+            return name === "ヒラギノ角ゴシック" ? { family: "Hiragino Sans", face: "" } : null;
+        },
+        postScriptNamed: (name) => name === "Georgia-Bold" ? { family: "Georgia", face: "Bold" } : null };
+    assert.deepEqual(faceOf(known, "ヒラギノ角ゴシック W3"), { family: "Hiragino Sans", face: "W3" });
+    assert.deepEqual(faceOf(known, "ヒラギノ角ゴシック"), { family: "Hiragino Sans", face: "" });
+    assert.match(resolved(known, "Georgia-Bold").problem, /Georgia Bold/u);
+});

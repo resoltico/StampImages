@@ -83,7 +83,11 @@ vendor-specific field or embedded preview can be transferred.
 
 The form prefers Helvetica Neue when available, otherwise the first installed
 suggestion. Settings files always require `font`; declared defaults do not fill
-omitted fields. Command-line typefaces are checked before tools or image
+omitted fields. Localized Font Book family and face names are accepted when they
+resolve uniquely to an installed catalog face; PostScript names remain refused.
+Some catalog weight names, including Hiragino Sans W3/W6, can render at the same
+weight in the text renderer even though macOS identifies distinct installed faces.
+Command-line typefaces are checked before tools or image
 inspection. See [HEADLESS.md](HEADLESS.md) for receipts and exit precedence.
 
 The stamp says at least one thing: a date, coordinates or custom text. The date

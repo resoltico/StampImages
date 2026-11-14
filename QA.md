@@ -141,3 +141,7 @@ Shortcuts, or retain a clearly named harness with its inputs for repeatable rete
 Record artifact hash, host, commands, statuses, full failures and skips outside
 operational documentation. Passing evidence applies only to its actual inputs and
 artifact; a changed build needs new evidence.
+
+Localized-font checks compare Japanese full-name, style and bare-family outputs
+to canonical Hiragino Sans pixels, verify distinct W3/W6 native font identities, and refuse unknown,
+hidden and PostScript names without publishing a copy.
