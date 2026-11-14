@@ -5,7 +5,7 @@ const test = require("node:test");
 const {
     finderSelection,
     collectInvocation
-} = require("../../../src/host/input.js");
+} = require("../../../src/host/quick-action/input.js");
 const { collectImageFiles } = require("../../../src/host/admission.js");
 const { createFakeApp, failing } = require("./fake-app.cjs");
 
@@ -69,7 +69,7 @@ test("collectImageFiles falls back to the Finder selection", () => {
 
     globalThis.finderItems = ["/a/fromfinder.png"];
     assert.deepEqual(
-        collectImageFiles(app, []).images.map((record) => record.path),
+        collectImageFiles(app, collectInvocation(app, []).inputItems).images.map((record) => record.path),
         ["/a/fromfinder.png"]
     );
     globalThis.finderItems = [];
@@ -90,10 +90,10 @@ test("finderSelection asks Finder, by name, for its selection", () => {
 
 
 test("an interactive invocation defers its settings", () => {
-    const invocation = collectInvocation(createFakeApp(), ["/a/1.png"], false);
+    const invocation = collectInvocation(createFakeApp(), ["/a/1.png"]);
 
-    assert.equal(invocation.headless, false);
-    assert.equal(invocation.settings, null);
+    assert.equal(Object.hasOwn(invocation, "headless"), false);
+    assert.equal(Object.hasOwn(invocation, "settings"), false);
     assert.deepEqual(invocation.inputItems, ["/a/1.png"]);
 });
 

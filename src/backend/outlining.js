@@ -17,17 +17,10 @@
 const BOTH_SIDES = 2;
 
 /*
- * Room for the outline to grow into.
- *
- * vips rank keeps its input's dimensions -- documented, and measured: a mask
- * dilated by four pixels came back the same size with the growth cut off at
- * every edge, so every stamp this program drew had its outline shaved flat
- * against the glyphs. The mask is embedded in a border first, and the border
- * is what the outline grows into.
- *
- * The glyphs are embedded in the same border rather than only the copy that
- * is dilated, because the two are composited on top of each other and two
- * images of different sizes do not line up.
+ * Embed the mask in a border before dilation. vips rank retains its input
+ * dimensions, so growth without that border is clipped at the glyph edges.
+ * Embed the glyph layer in the same border so both layers have matching sizes
+ * and positions when composited.
  */
 function buildEmbedArgv(vipsPath, around, size, border) {
     return [

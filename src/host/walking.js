@@ -1,5 +1,6 @@
 "use strict";
-const { isSupportedImage, basename } = require("../core/paths.js");
+const { basename } = require("../core/paths.js");
+const { isSupportedImage } = require("../core/formats.js");
 const { looksStamped } = require("../core/naming.js");
 
 /*
@@ -39,13 +40,9 @@ function childrenOf(tree, folder, names) {
  * doing less than it was asked.
  */
 /*
- * Two different silences and one word.
- *
- * Nobody asked about the other files in a folder, so a text file is passed
- * over without a word. A copy this program made is a photograph by every test
- * here, so it is named -- but it was never asked for either, and counting it
- * against the request made an ordinary second run over a folder report itself
- * as a failure. It is excluded, which is its own thing.
+ * Distinguish unrelated files from copies this action made. Skip unrelated
+ * files silently; report stamped copies as exclusions so the user sees why they
+ * were left alone. Exclusions do not turn a repeated folder run into a failure.
  */
 function passedOver(path, entry) {
     if (entry.kind === "missing") {

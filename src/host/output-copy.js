@@ -2,7 +2,7 @@
 const { CP } = require("../core/executables.js");
 const { OperationError, isUserCanceled } = require("../core/errors.js");
 const { runArgv } = require("./shell.js");
-const { sameBytes } = require("./asking.js");
+const { sameBytes } = require("./filesystem-probes.js");
 const { openStaging } = require("./staging-area.js");
 const SIZE_UNKNOWN = -1;
 

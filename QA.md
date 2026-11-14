@@ -10,6 +10,8 @@ CI runs on macOS 26.
 
 Unit tests establish portable rules, application sequencing and adapter calls.
 Native suites establish behavior for the actual generated artifact and host used.
+Compare recursive listings of `~/Downloads` before and after native runs; confirmed
+recovery checks must remove their own outputs and leave no test artifacts there.
 Offscreen form captures do not prove keyboard interaction, real Shortcuts helper
 permissions, live fallback on a host lacking form capability, or the macOS 12.3
 floor. Those require live acceptance; do not infer them from CLI success.
@@ -25,10 +27,17 @@ npm run test:integration:macos
 metadata consistency, document links, ShellCheck/actionlint when available,
 ESLint, unit/repository tests, coverage, mutation and distribution bytes. It never
 rebuilds first: stale committed output must fail. Use `npm run build` to regenerate
-intentionally. Inspect discovered tests and all skips.
+intentionally. Inspect discovered tests and all skips. Unit files follow their
+outermost imported production layer; the repository placement check rejects misplaced files.
+Command-line graph checks forbid quick-action dependencies and permit AppKit only
+in the shared native font catalog. Both cross-front-end import directions are
+rejected by boundary tests. Constructor-field and raw-cancellation tests cover
+the scripting adapters and both top-level front-end catches.
 
-Core, application and pure backend contracts require 100% line, branch and function
-coverage and a mutation score of at least 96. Host adapters are checked through
+Core, application, pure backend contracts and `src/host/invocation-syntax.js` require
+100% line, branch and function coverage. The combined mutation score for those
+gated files must be at least 96. The invocation parser remains explicitly
+included in both gates. Other host adapters are checked through
 focused unit tests and native production-artifact scenarios; a mocked bridge is
 not evidence that macOS rendered or published anything. ESLint rules and deliberate
 exceptions are recorded in `tools/eslint/rules.mjs`. Dependency and toolchain pins
@@ -45,6 +54,8 @@ native form geometry/accessibility in both appearances. `resources.sh` checks
 confirmed temporary recovery and dead/live/retained/unreadable workspace ownership;
 `concurrency.sh` checks 12 two-process publication rounds. CLI and lifecycle probes
 also cover strict settings, statuses, source capture, recovery and cancellation.
+An unavailable typeface combined with a missing tool and unavailable source must
+report `invalid` with exit 2 before source admission.
 `hdr.sh` checks synthetic Ultra HDR admission, visible stamped SDR JPEGs with no
 gain map/MPF or stale HDR XMP declarations, retained EXIF/GPS, ICC, XMP and IPTC,
 orientations 6/8, damaged HDR

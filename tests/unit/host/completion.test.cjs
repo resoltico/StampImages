@@ -12,9 +12,13 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { describe, detailOf } = require("../../../src/host/completion.js");
+const { completionMessage } = require("../../../src/host/quick-action/completion.js");
+const { summarizeRun } = require("../../../src/core/run-summary.js");
+const { headline, reportText } = require("../../../src/core/run-report.js");
+const describe = (result) => headline(summarizeRun(result));
+const detailOf = (result, { commandLine = false } = {}) => commandLine ? reportText(result, false) : completionMessage(result);
 const { runOutcome } = require("../../../src/core/outcomes.js");
-const { reportNothing } = require("../../../src/host/reporting.js");
+const { noImagesOutcome } = require("../../../src/core/outcomes.js");
 
 const DENIED = {
     code: "publication",
@@ -28,10 +32,10 @@ function recovered(issues = [DENIED]) {
 }
 
 test("a copy kept elsewhere is counted in the headline, not denied", () => {
-    const headline = describe(runOutcome([recovered()]));
+    const message = describe(runOutcome([recovered()]));
 
-    assert.doesNotMatch(headline, /No stamped copy/u);
-    assert.match(headline, /1 copy could not be saved where it was meant to go and was kept elsewhere/u);
+    assert.doesNotMatch(message, /No stamped copy/u);
+    assert.match(message, /1 copy could not be saved where it was meant to go and was kept elsewhere/u);
 });
 
 test("saved and recovered copies are both said", () => {
@@ -70,7 +74,7 @@ test("one earlier copy is one copy", () => {
 
 test("each rejection is printed once", () => {
     const rejected = [{ path: "/a/x.gif", name: "x.gif", reason: "not a supported format" }];
-    const detail = detailOf(reportNothing(null, true, rejected));
+    const detail = detailOf(noImagesOutcome(rejected));
 
     assert.equal(detail.split("/a/x.gif: not a supported format").length - 1, 1);
     assert.doesNotMatch(detail, /None of the selected items/u, "the headline already says it");
@@ -83,7 +87,7 @@ test("a crowded stamp says where it went", () => {
 });
 
 test("the detail lists copies by folder, then notes, failures, refusals and the version", () => {
-    const { detailOf: detail } = require("../../../src/host/completion.js");
+    const detail = completionMessage;
     const { VERSION } = require("../../../src/core/version.js");
     const result = runOutcome([
         { source: "/t/a.jpg", state: "saved", output: "/t/a_stamped.jpg", issues: [], missingMetadata: ["GPS coordinates"] },
@@ -106,7 +110,7 @@ test("the detail lists copies by folder, then notes, failures, refusals and the 
 });
 
 test("technical details are key: value lines without stacks", () => {
-    const { diagnosticLines } = require("../../../src/host/completion.js");
+    const { diagnosticLines } = require("../../../src/host/quick-action/completion.js");
 
     assert.deepEqual(diagnosticLines({ code: "damaged", diagnostic: { command: "vips x", message: "a\r\nb", stack: "s" }, empty: null }),
         ["code: damaged", "diagnostic: command: vips x", "diagnostic: message: a\nb"]);
@@ -124,7 +128,7 @@ test("refusals agreed to in the review do not make a finished run read as one wi
 });
 
 test("a selection with nothing admitted is headlined as nothing to stamp", () => {
-    const nothing = reportNothing(null, true, [{ path: "/x.gif", name: "x.gif", reason: "This file is not a supported format." }]);
+    const nothing = noImagesOutcome([{ path: "/x.gif", name: "x.gif", reason: "This file is not a supported format." }]);
 
     assert.equal(describe(nothing), "Nothing to stamp.");
     assert.equal(describe(runOutcome([], [], [], [{ code: "fault", message: "boom" }])), "Finished with issues. No stamped copy was created.");
@@ -140,7 +144,7 @@ test("the dialog detail ends with the elapsed time and then the version", () => 
 
 
 test("unmapped-loader evidence is available through completion Details", () => {
-    const { showCompletion } = require("../../../src/host/completion.js");
+    const { showCompletion } = require("../../../src/host/quick-action/completion.js");
     const responses = ["Details", "Back", "OK"], seen = [];
     const app = { displayDialog(message) { seen.push(message); return { buttonReturned: responses.shift() }; } };
     const result = runOutcome([{ source: "/a.jpg", state: "saved", output: "/a_stamped.jpg", issues: [] }], [{

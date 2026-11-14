@@ -12,8 +12,8 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { collectViaForm } = require("../../../src/host/settings-form.js");
-const { defaultAnswers } = require("../../../src/host/form-defaults.js");
+const { collectViaForm } = require("../../../src/host/quick-action/settings-form.js");
+const { defaultAnswers } = require("../../../src/host/quick-action/settings-model.js");
 const { askingContext } = require("./fake-assembly.cjs");
 const { catalogOf } = require("./fake-typefaces.cjs");
 

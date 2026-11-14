@@ -5,23 +5,13 @@ const { runArgv, cleanupArgv, removeFile } = require("./shell.js");
 const { nonce } = require("./workspace.js");
 
 /*
- * A place of this run's own, beside the destination, to put the image in when
- * it cannot be linked into place from the workspace.
+ * Create a hidden directory beside the destination for cross-volume staging.
+ * mkdir claims the name exclusively and fails for an existing file, directory,
+ * link or pipe, so cleanup can rely on ownership of this attempt's contents.
  *
- * Made rather than found: mkdir either creates the directory or fails, and it
- * fails for anything already at that name -- a file, a folder, a link, a
- * named pipe. Measured, all four. So everything inside it is this attempt's,
- * which is what makes copying into it and clearing it away afterwards safe.
- *
- * Taking a name by opening it was not the same thing. The shell's noclobber
- * redirection refuses a regular file, and quietly accepts a link pointing at
- * something that is not one -- measured, a link to /dev/null was accepted and
- * nothing was created, so the run recorded a name it did not own and cleanup
- * deleted the link. On a named pipe it does worse: it waits for a reader, and
- * there is no timeout above it to end that wait.
- *
- * Hidden, and named for this attempt, so it is neither in the way nor
- * something another run would ask for.
+ * Shell noclobber redirection is insufficient: it can follow a link to a
+ * non-regular target such as /dev/null, and opening a named pipe can wait for
+ * a reader. Neither establishes an exclusively owned staging entry.
  */
 
 const { splitExtension } = require("../core/naming.js");

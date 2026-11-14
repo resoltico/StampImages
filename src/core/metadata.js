@@ -17,17 +17,10 @@ const { readMoment } = require("./moment.js");
  */
 
 /*
- * Which tag may speak for the capture.
- *
- * DateTimeOriginal is when the shutter opened. CreateDate is when the file
- * was made, which for a camera is the same moment and for an editor is close
- * enough to be worth having when the first is gone.
- *
- * ModifyDate is not on the list, and was. It is when the file was last
- * changed -- and the only time it would ever be reached is when both of the
- * others are absent, which is exactly the case where it is an editor's clock
- * rather than a camera's. A stamp reading "2026-09-12" over a photograph
- * taken in 1998 is not a record of anything.
+ * Use DateTimeOriginal for the shutter time and CreateDate as the fallback.
+ * Exclude ModifyDate: when capture tags are absent it can describe an editor's
+ * change rather than the photograph's capture, so it is not a reliable date
+ * for the stamp.
  */
 const MOMENT_TAGS = ["DateTimeOriginal", "CreateDate"];
 
@@ -58,11 +51,9 @@ const LONGITUDE_LIMIT = 180;
 const DECIMAL_DEGREES = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/u;
 
 /*
- * A number, or text that is one, inside the bounds of the globe. Stated as
- * what is accepted rather than as a list of what is not: Number() answers for
- * everything -- true is 1, an empty string is 0, an empty array is 0 -- so a
- * rule written as exclusions is a rule with a gap in it, and the gap put the
- * null island on photographs taken indoors.
+ * Accept a number or numeric text within geographic bounds. Reject coercible
+ * non-numbers explicitly: Number() turns true into 1 and empty strings or arrays
+ * into 0, which would invent coordinates rather than read recorded ones.
  */
 function boundedDegrees(value, limit) {
     const text = typeof value === "number" || typeof value === "string"

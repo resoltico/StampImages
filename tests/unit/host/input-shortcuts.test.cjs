@@ -14,7 +14,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const {
     collectInvocation
-} = require("../../../src/host/input.js");
+} = require("../../../src/host/quick-action/input.js");
 const { collectImageFiles } = require("../../../src/host/admission.js");
 const { createFakeApp } = require("./fake-app.cjs");
 
@@ -35,7 +35,7 @@ const PARAMETERS = { toString: () => "[object Object]" };
 
 function quickAction(app, paths) {
     const selection = paths.map(selectedFile);
-    const { inputItems } = collectInvocation(app, [selection, PARAMETERS], false);
+    const { inputItems } = collectInvocation(app, [selection, PARAMETERS]);
 
     return collectImageFiles(app, inputItems).images;
 }

@@ -3,50 +3,19 @@ const { inputItemToPosixPath } = require("./input.js");
 const { describeUnresolved } = require("./reasons.js");
 
 /*
- * What was actually selected, each thing once.
+ * Normalize each requested spelling and inspect it through the same native
+ * tree used for folder walking. Carry file identity without using it to drop
+ * requests: two hard links can have different admission results.
  *
- * Identity is settled here, for everything, before anything is admitted --
- * because two names for one thing used to be two things. A folder selected
- * alongside a photo inside it converted that photo twice, and selecting them
- * the other way round made the folder report that it held nothing to convert:
- * the answer depended on the order Finder happened to hand the selection over.
- *
- * Two names for one thing is also what a Mac's own filesystem hands over. It
- * is case-insensitive as formatted, so /photos/A.jpg and /photos/a.jpg are
- * one photograph -- measured, the same volume and the same file number -- and
- * standardizing the spelling does not make them one selection. What the
- * filesystem says the file is does, and every root carries it.
- *
- * It is carried rather than used as the key. Keyed by it, the first spelling
- * of a file was the only one considered, and whether that spelling was one
- * this action could convert had not been asked yet: two hard links to one
- * photograph, one named .jpg and one named .backup, meant the .backup was
- * turned away and the .jpg vanished from the run without being converted or
- * reported. Which requests there are is settled here; which of them convert
- * the same file is settled where they are admitted.
- *
- * What each selected path is was asked of the shell, too, which cannot tell a
- * package from a folder. An .app or a .photoslibrary answered "directory", so
- * the walk went inside the bundle and the output was written in there.
- *
- * So every path is standardized and asked what it is through the same tree
- * that will do the walking. Nothing is dropped for where its name sits: a
- * folder covering a path is not the same as the walk taking it -- the walk
- * passes over hidden entries, packages and links -- and dropping an explicit
- * request on that assumption removed it from the run without a word. What
- * was taken is settled by the walk itself, in admission.js.
- *
- * The order is the answer to that: folders first and in path order, so an
- * ancestor is always walked before a folder inside it, and every explicit
- * request is considered after the walking is done.
+ * Visit folders first in path order, so ancestors precede descendants. Assess
+ * explicit requests after walking, including hidden items and entries the walk
+ * passes over. Admission deduplicates accepted images by identity, not merely
+ * by path spelling or containment.
  */
 
 /*
- * What the path is and which file it is, as the tree that would walk it sees
- * them. Without a tree nothing is walked and nothing has to be told from a
- * package, so there is nothing to ask: such a folder is turned away by the
- * same rejection that turns away everything else this action cannot convert,
- * and a path is the only identity there is.
+ * Ask the injected tree for kind and identity. Without one, return no native
+ * facts; the composition root owns the requirement for a native capability.
  */
 function inspect(tree, path) {
     return tree ? tree.inspect(path) : { kind: null, identity: "" };

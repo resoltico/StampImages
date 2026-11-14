@@ -1,6 +1,6 @@
 # Contributing
 
-## Working on this
+## Setup and commands
 
 Use the Node and npm versions declared by mise.toml (also checked against
 .node-version and package.json). Run `mise install` and `mise exec -- npm ci --ignore-scripts`
@@ -24,43 +24,77 @@ brew install exiftool vips shellcheck actionlint
 npm run test:integration:macos
 ```
 
-## What the gate enforces
+Use vendor release information to choose updates. Pin development dependencies in
+`package.json` and restore them through `package-lock.json`. Declare Node in
+`.node-version`, `mise.toml` and `package.json` engines, and npm in `mise.toml`,
+`packageManager` and engines. The consistency gate checks these declarations.
+Keep workflow action references pinned to reviewed vendor commit hashes.
 
-`QA.md` is the contract. It specifies every check, its threshold, and why the
-guard exists — coverage, ESLint mode, the language target, mutation
-score, and the facts that must agree across files.
+The minimatch and glob overrides keep development tools off releases affected by
+GHSA-g3hv-75wg-m249 and GHSA-3g3m-2fjr-6pw4.
+They move together: glob 13 expects RegExp pattern parts, while minimatch 11
+returns Matcher objects supported by glob 14. Remove these overrides when
+all upstream ESLint and Stryker dependency ranges exclude every affected version.
+The qs override fixes GHSA-6pq8-jhm2-2vcw in typed-rest-client, whose pinned
+qs 6.15.1 is affected; remove it when its range excludes affected versions.
 
-This file does not restate those rules, so that there is one place to change
-when they move.
+The Homebrew tools are not pinned at all — CI installs the current ones on
+every run, so a breaking change there surfaces as a failing integration job
+rather than as a silent drift.
 
-Two things worth knowing before you write code, because they shape where things
-go rather than merely passing or failing:
+## Source and ownership boundaries
 
-- **A test belongs in `tests/unit/` if it takes its world by parameter, and in
-  `tests/repo/` if it inspects the real repository.** Only the former is
-  meaningful under mutation, where the tree is deliberately altered.
-- **Rules that are switched off are listed with their reasons** in
-  `tools/eslint/rules.mjs`. Add to that list only with a reason, never in bulk.
+- `src/core/` owns portable stamp settings, content, typography rules, geometry,
+  source policy, outcomes and artifact/workspace lifecycle rules.
+- `src/application/` owns inspection and run/per-image sequencing through explicit
+  ports. Core, application and backend import no native/UI adapters.
+- `src/backend/` owns pure vips/exiftool argv builders and response contracts.
+- `src/host/` owns shared setup and native operations. Its `quick-action/` and
+  `command-line/` front ends supply one interaction port to the use case; neither
+  imports the other, and shared host imports neither.
+- `src/entry.js` dispatches the production `run` entry to the requested front end.
 
-## Source layout
+`tools/lint/boundaries.mjs` enforces those dependencies. The command-line graph
+cannot reach quick-action modules. Its only AppKit import is the shared native
+font catalog in `src/host/typefaces.js`; package detection uses Foundation URL
+metadata. Required native capabilities fail setup when unavailable. Optional UI,
+progress and preferences can be unavailable without concealing programming faults.
 
-`src/core/` owns portable stamp rules, typed settings, geometry, source policy,
-outcomes and artifact/workspace lifecycle rules. `src/application/` owns inspection
-and run/per-image sequencing through explicit ports. `src/backend/` owns pure
-vips/exiftool command and response contracts. `src/host/` adapts those contracts to
-macOS, shell execution, fonts, files, CLI and AppKit. `src/entry.js` exposes the
-production run entry. `tools/lint/boundaries.mjs` enforces these dependencies.
+`src/core/settings.js` owns setting kinds, order, names, defaults, captions, bounds
+and hints. Front ends validate through `settingIssue`, `validateSettings` and
+`stampIssues`; `src/host/quick-action/settings-model.js` derives controls, defaults
+and answer conversion. The command line resolves the configured typeface before
+tool discovery and source admission. The interaction's settings result carries
+validated settings and glyph coverage separately, as `{settings,covers}`; native
+capabilities do not become settings or receipt fields.
 
-Keep UI answer conversion and wording in the host. Validate typed settings through
-`src/core/settings.js`; do not add a competing CLI or preferences validator.
-`src/core/inscription.js` decides what each image can say before rendering.
+`src/host/cancellation.js` translates native cancellation before classification.
+Core recognizes typed cancellation, and issue-carrying errors receive fields in
+their constructors. Contextual errors retain their causes. Progress stops are
+latched until a safe checkpoint; cleanup and recovery preserve validated work.
+
 Inspect originals before consent, then capture and independently inspect private
 bytes before metadata/profile extraction and decoding. Keep original paths for
-reporting. Application outcomes own source mappings and state; presenters derive
-counts and text without changing saved work.
+reporting. `src/core/artifacts.js` owns artifact retention; workspace cleanup must
+not delete unresolved validated copies. Processing stays within the owned
+workspace lifetime. `src/core/inscription.js` decides what an image can say before
+rendering. Outcomes own actual saved/recovery mappings; progress counters do not
+establish publication.
+
+Shared facts and wording belong to `src/core/run-summary.js` and
+`src/core/run-report.js`. Dialog controls, Details, version lines and CLI transport
+belong to their front ends. Front ends do not assign outcome states.
 
 The CLI and receipt contract is in [HEADLESS.md](HEADLESS.md). Keep it strict;
 do not add migrations or compatibility aliases.
+
+HDR admission records a boolean gain-map fact and compares it after capture.
+JPEG output policy uses that fact to omit gain maps while retaining EXIF, ICC,
+XMP and IPTC metadata, so stamped pixels are not boosted by the original map.
+Because uhdrload omits XMP/IPTC, those fields are copied from the captured source
+before final validation, with HDR/gain-map/container namespaces removed.
+The native HDR suite checks the decoded loader, metadata, stamp pixels and source
+bytes through the production artifact.
 
 ## Interface wording
 
@@ -98,15 +132,19 @@ the sibling repository.
   with matching section order in both repositories. Documents describe the current
   state only; history belongs in `CHANGELOG.md`.
 
-HDR admission records a boolean gain-map fact and compares it after capture.
-JPEG output policy uses that fact to omit gain maps while retaining EXIF, ICC,
-XMP and IPTC metadata, so stamped pixels are not boosted by the original map.
-Because uhdrload omits XMP/IPTC, those fields are copied from the captured source
-before final validation, with HDR/gain-map/container namespaces removed.
-The native HDR suite checks the decoded loader, metadata, stamp pixels and source
-bytes through the production artifact.
+## Tests and build
 
-## The released artifact
+Tests with explicit ports and fixtures belong in `tests/unit/`; checks of the
+real checkout belong in `tests/repo/`. Unit files live under the outermost
+production layer they import or resolve, so adapter tests may use inner-layer
+fixtures. `tests/repo/unit-layout.test.cjs` enforces placement. Mutation testing
+runs the unit files; moving tests must preserve their discovery and assertions.
+
+[QA.md](QA.md) defines coverage, mutation, language-target and native requirements.
+Coverage and mutation explicitly include `src/host/invocation-syntax.js` alongside
+core, application and backend. Native adapters also require macOS suites; mocks
+do not establish renderer or filesystem behavior. ESLint's tuned rules and
+exceptions are explained in `tools/eslint/rules.mjs`.
 
 Do not edit `dist/Stamp-Images.jxa` directly. `tools/scoped-bundle.mjs` uses pinned
 esbuild with module scopes and a Safari 15.4 target. `tools/release.mjs` verifies
@@ -119,7 +157,7 @@ First-party files use `AGPL-3.0-only` ([LICENSE](LICENSE)); preserve notices and
 Edit sources, run `npm run release`, and review sources plus generated output.
 `INSTALL.txt` remains plain text because it ships as a downloadable release asset.
 
-## Releasing
+## Documentation and releases
 
 Release only with authorization. Prepare the version declarations and dated
 CHANGELOG section, rebuild and verify the committed artifact, then push
@@ -146,26 +184,6 @@ second copy of the same prose is a second thing to keep in agreement.
 
 `npm run release` builds and gates locally; it does not publish or create a tag.
 Review and commit the generated `dist/` alongside its sources.
-
-## Updating dependencies and toolchains
-
-Use vendor release information to choose updates. Pin development dependencies in
-`package.json` and restore them through `package-lock.json`. Declare Node in
-`.node-version`, `mise.toml` and `package.json` engines, and npm in `mise.toml`,
-`packageManager` and engines. The consistency gate checks these declarations.
-Keep workflow action references pinned to reviewed vendor commit hashes.
-
-The minimatch and glob overrides keep development tools off releases affected by
-GHSA-g3hv-75wg-m249 and GHSA-3g3m-2fjr-6pw4.
-They move together: glob 13 expects RegExp pattern parts, while minimatch 11
-returns Matcher objects supported by glob 14. Remove these overrides when
-all upstream ESLint and Stryker dependency ranges exclude every affected version.
-The qs override fixes GHSA-6pq8-jhm2-2vcw in typed-rest-client, whose pinned
-qs 6.15.1 is affected; remove it when its range excludes affected versions.
-
-The Homebrew tools are not pinned at all — CI installs the current ones on
-every run, so a breaking change there surfaces as a failing integration job
-rather than as a silent drift.
 
 ## Contribution terms
 

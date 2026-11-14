@@ -81,13 +81,10 @@ function pagesIn(job, path) {
 }
 
 /*
- * Asked of the file that was selected, before anything decodes it.
- *
- * Measured: vipsheader answers both questions about the source directly, for
- * every format this accepts. Asking after the decode meant a photograph that
- * was about to be refused had already been decoded into the workspace, and
- * the caller only takes ownership of that file once the decode returns -- so
- * every refusal leaked a full-sized intermediate.
+ * Check source color interpretation and page count before decoding. vipsheader
+ * can answer both directly for every supported format. Refusing unsupported
+ * content at this boundary avoids creating a full-size intermediate before
+ * readPhotograph can transfer ownership of its decoded file to the caller.
  */
 function refuseUnfaithful(job, source) {
     const kind = kindOf(job, source);

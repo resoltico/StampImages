@@ -1,8 +1,7 @@
 /*
- * Checks a release tag before anything is published under it.
- *
- * A thin entry point, like check-dist.mjs: the rule itself lives in
- * tools/lint/consistency.mjs where it is unit tested and mutated.
+ * Check a release tag before anything is published under it. The rule lives
+ * in tools/lint/consistency.mjs and is unit tested; this file only supplies
+ * the command-line tag.
  */
 import { checkReleaseTag } from "./lint/consistency.mjs";
 

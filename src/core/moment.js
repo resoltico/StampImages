@@ -1,25 +1,13 @@
 "use strict";
 
 /*
- * Reading a moment out of what a camera wrote.
+ * Read EXIF moments field by field rather than relying on Date's permissive
+ * parsing and local-zone interpretation. Validate the calendar date and clock
+ * completely; February 31 or 99:99 must not become a plausible-looking stamp.
  *
- * EXIF writes "2026:09:09 14:30:05", which is not a format anything parses by
- * accident. It is read field by field rather than handed to Date, because
- * Date accepts a great deal and reinterprets some of it: a string it does not
- * understand becomes Invalid Date, and one it half understands becomes a
- * different moment in the local zone.
- *
- * Read completely or not at all. The first version of this checked the month
- * and the day against fixed bounds and stopped there, so "2026:02:31 99:99"
- * was stamped onto a photograph as "2026-02-31 99:99" -- a date that is not a
- * date and a clock that is not a clock, printed in a form that looks like a
- * record of something. A half-read moment is worse than no moment at all.
- *
- * Tolerant about shape, strict about meaning. Cameras and editors write the
- * seconds, sometimes a fraction of one, and occasionally an offset; none of
- * those change which minute it was, so they are accepted and not displayed.
- * Anything else after the minute means the field does not hold what this
- * thinks it holds, and the pattern ends where the value must.
+ * Accept seconds, fractional seconds and valid offsets without displaying them:
+ * the stamp preserves the camera's recorded local minute. Reject any other
+ * trailing content so a partially understood field cannot pass as a moment.
  */
 
 const EXIF_MOMENT = new RegExp(

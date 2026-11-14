@@ -1,4 +1,5 @@
 "use strict";
+const { IssueError } = require("./errors.js");
 
 /*
  * POSIX shell quoting.
@@ -14,7 +15,7 @@ function shellQuote(value) {
     // NUL is exactly what this guard rejects; argv cannot carry it.
     // eslint-disable-next-line no-control-regex
     if (/\x00/u.test(text)) {
-        throw new Error("Shell arguments cannot contain NUL bytes.");
+        throw new IssueError("Shell arguments cannot contain NUL bytes.");
     }
 
     return `'${text.replace(/'/gu, "'\\''")}'`;

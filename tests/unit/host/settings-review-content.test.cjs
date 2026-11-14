@@ -2,8 +2,8 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { reviewSettings, confirmSelection } = require("../../../src/host/settings-review.js");
-const { defaultSettings } = require("../../../src/host/form-defaults.js");
+const { reviewSettings, confirmSelection } = require("../../../src/host/quick-action/settings-review.js");
+const { defaultSettings } = require("../../../src/host/quick-action/settings-model.js");
 const { createFakeApp } = require("./fake-app.cjs");
 const { askingContext } = require("./fake-assembly.cjs");
 

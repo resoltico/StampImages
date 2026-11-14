@@ -59,12 +59,8 @@ export async function walk(directory, base = root, wanted = isSourceFile) {
 }
 
 /*
- * Every file the gate is responsible for.
- *
- * Discovered rather than listed, and recursive, so a new module or a new
- * subdirectory cannot quietly escape the checks. Root-level configuration is
- * included explicitly: it is source too, and it was previously the one file
- * the size limit could not see.
+ * Discover source and test files recursively so added modules enter the gate.
+ * Include root-level ESLint configuration explicitly.
  */
 export async function lintableFiles() {
     return [

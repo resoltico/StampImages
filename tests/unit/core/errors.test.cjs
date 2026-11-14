@@ -7,7 +7,7 @@ const {
     errorMessage,
     isUserCanceled,
     summarizeCommand,
-    describeForLog
+    commandOf
 } = require("../../../src/core/errors.js");
 
 test("errorMessage extracts a message from anything", () => {
@@ -18,9 +18,9 @@ test("errorMessage extracts a message from anything", () => {
     assert.equal(errorMessage({ message: "object" }), "object");
 });
 
-test("cancellation is what the interface raised, or what the host reports", () => {
+test("core cancellation requires the typed interface decision", () => {
     assert.equal(isUserCanceled(new UserCanceled()), true);
-    assert.equal(isUserCanceled({ errorNumber: -128 }), true, "osascript's own");
+    assert.equal(isUserCanceled({ errorNumber: -128 }), false, "osascript's own");
 });
 
 test("a file named for cancelling is not a cancellation", () => {
@@ -55,7 +55,7 @@ test("summarizeCommand elides only oversized commands", () => {
     assert.ok(summary.startsWith("x".repeat(100)));
 });
 
-test("describeForLog keeps the failing command; the message does not", () => {
+test("commandOf keeps the failing command; the message does not", () => {
     // The split exists so a dialog can show the cause without an argv dump,
     // while a log still has the command that failed.
     const withCommand = new Error("Command failed while resizing photo.png.");
@@ -63,13 +63,13 @@ test("describeForLog keeps the failing command; the message does not", () => {
     withCommand.command = "'/bin/vips' 'thumbnail' '/a/photo.png'";
 
     assert.ok(!withCommand.message.includes("/bin/vips"));
-    assert.match(describeForLog(withCommand), /Command failed while resizing/u);
-    assert.match(describeForLog(withCommand), /'\/bin\/vips' 'thumbnail'/u);
+    assert.equal(commandOf(withCommand), "'/bin/vips' 'thumbnail' '/a/photo.png'");
+    assert.match(commandOf(withCommand), /'\/bin\/vips' 'thumbnail'/u);
 });
 
-test("describeForLog degrades to the message when there is no command", () => {
-    assert.equal(describeForLog(new Error("plain failure")), "plain failure");
-    assert.equal(describeForLog(null), "Unknown error");
+test("commandOf returns empty text when there is no command", () => {
+    assert.equal(commandOf(new Error("plain failure")), "");
+    assert.equal(commandOf(null), "");
 });
 
 test("summarizeCommand keeps a command of exactly the maximum length", () => {
@@ -124,15 +124,15 @@ test("the failing command survives being wrapped in context", () => {
     const twice = new Error(`converting: ${wrapped.message}`, { cause: wrapped });
 
     for (const error of [inner, wrapped, twice]) {
-        assert.match(describeForLog(error), /Command:\n'\/v\/vips' 'thumbnail'/u);
+        assert.match(commandOf(error), /'\/v\/vips' 'thumbnail'/u);
     }
 });
 
-test("an error carrying no command anywhere reports only its message", () => {
+test("an error carrying no command anywhere reports no command", () => {
     const plain = new Error("something went wrong");
 
-    assert.equal(describeForLog(plain), "something went wrong");
-    assert.equal(describeForLog(new Error("outer", { cause: plain })), "outer");
+    assert.equal(commandOf(plain), "");
+    assert.equal(commandOf(new Error("outer", { cause: plain })), "");
 });
 
 test("expected operation errors and cause chains retain their exact identity", () => {

@@ -13,7 +13,7 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { meeting, prepared } = require("../../../src/host/preparing.js");
+const { prepareColorSpace, preparePhotograph } = require("../../../src/host/preparing.js");
 const { runJob } = require("../../../src/application/job.js");
 const { inSpaceOf } = require("../../../src/host/tinting.js");
 const { describeExpanded } = require("../../../src/core/color.js");
@@ -38,7 +38,7 @@ test("a gray photograph and a gray caption meet where they already are", () => {
     // photograph was.
     const host = createFakeHost({ files: ["/a/one.jpg"] });
     const job = grayPhotograph(host, { textColor: "#FFFFFF", outlineColor: "#202020" });
-    const met = meeting(job, { path: `${WORKSPACE}/oriented-1.v` }, GRAY, "1");
+    const met = prepareColorSpace(job, { path: `${WORKSPACE}/oriented-1.v` }, GRAY, "1");
 
     assert.equal(met.expanded, false);
     assert.equal(met.profile, GRAY, "and the color is still moved into its space");
@@ -51,7 +51,7 @@ test("a gray photograph and a gray caption meet where they already are", () => {
 test("a gray photograph and a colored caption meet in sRGB", () => {
     const host = createFakeHost({ files: ["/a/one.jpg"] });
     const job = grayPhotograph(host, { textColor: "#FF3B30", outlineWidth: 0 });
-    const met = meeting(job, { path: `${WORKSPACE}/oriented-1.v` }, GRAY, "1");
+    const met = prepareColorSpace(job, { path: `${WORKSPACE}/oriented-1.v` }, GRAY, "1");
 
     assert.equal(met.expanded, true);
     assert.equal(met.photograph.path, `${WORKSPACE}/color-1.v`);
@@ -68,14 +68,14 @@ test("a photograph with no profile is read into sRGB by its numbers", () => {
     const host = createFakeHost({ files: ["/a/one.jpg"] });
     const job = grayPhotograph(host, { textColor: "#FF3B30", outlineWidth: 0 });
 
-    meeting(job, { path: `${WORKSPACE}/oriented-1.v` }, { path: "", failed: false }, "1");
+    prepareColorSpace(job, { path: `${WORKSPACE}/oriented-1.v` }, { path: "", failed: false }, "1");
 
     assert.ok(host.commands.some((command) => command.includes("'colourspace'")));
 });
 
 test("a color photograph is left exactly as it is", () => {
     const { host, job } = jobOn({ textColor: "#FF3B30" });
-    const met = meeting(job, { path: `${WORKSPACE}/oriented-1.v` }, GRAY, "1");
+    const met = prepareColorSpace(job, { path: `${WORKSPACE}/oriented-1.v` }, GRAY, "1");
 
     assert.equal(met.expanded, false);
     assert.equal(
@@ -89,7 +89,7 @@ test("an expansion is a second file, and a photograph that needed none is not", 
     const { job } = jobOn();
     const kept = [];
 
-    prepared(job, imageOf("/a/one.jpg"), "1", kept);
+    preparePhotograph(job, imageOf("/a/one.jpg"), "1", kept);
 
     assert.equal(new Set(kept).size, kept.length, kept.join(", "));
 });
@@ -139,7 +139,7 @@ test("a photograph its decoder finds cut short is refused as damaged, in inspect
     const said = "\r(vips:1): VIPS-WARNING **: error in tile 0 x 24\rVipsJpeg: premature end of JPEG image\rjpegload: load error";
     const { job } = jobOn({}, createFakeHost({ files: ["/a/one.jpg"], failures: [["'autorot'", new Error(said)]] }));
 
-    assert.throws(() => prepared(job, imageOf("/a/one.jpg"), "1", []), (error) => {
+    assert.throws(() => preparePhotograph(job, imageOf("/a/one.jpg"), "1", []), (error) => {
         assert.equal(error.message, "This image is damaged or incomplete.");
         assert.equal(error.issues[0].code, "damaged");
         assert.equal(error.issues[0].stage, "stamping");
@@ -153,7 +153,7 @@ test("a photograph its decoder finds cut short is refused as damaged, in inspect
 test("a decode that fails for another reason keeps its own description", () => {
     const { job } = jobOn({}, createFakeHost({ files: ["/a/one.jpg"], failures: [["'autorot'", new Error("No space left on device")]] }));
 
-    assert.throws(() => prepared(job, imageOf("/a/one.jpg"), "1", []), (error) => {
+    assert.throws(() => preparePhotograph(job, imageOf("/a/one.jpg"), "1", []), (error) => {
         assert.equal(error.issues, undefined);
         assert.match(error.message, /No space left on device/u);
 

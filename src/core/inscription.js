@@ -4,25 +4,9 @@ const { MONTHS, MOMENT_TAGS, captureMoment, coordinates } = require("./metadata.
 const { decimalPlace, sexagesimalPlace } = require("./place.js");
 
 /*
- * What this run will write on one photograph -- or the reason it will write
- * nothing on it.
- *
- * Built once, before anything is drawn, and the whole of what the drawing
- * needs. Nothing downstream of here may decide not to draw something: if
- * there is an inscription it is drawable, and if there is not, the photograph
- * was one the request did not apply to and the report says so in the
- * product's words.
- *
- * That rule is why this exists. The lines used to be assembled where they
- * were rendered, and a photograph that knew nothing about itself produced an
- * empty drawing -- which vips refused, in its own words, so somebody who had
- * asked for the date on a folder of scans was shown "text: no text to render"
- * and the command that failed.
- *
- * The formats are a closed list rather than a pattern language. A date can be
- * written a handful of sensible ways; letting somebody invent a format is a
- * second product, and one that fails at the moment of stamping rather than at
- * the moment of asking.
+ * Build the complete inscription before rendering, or explain why the image
+ * has none of the requested content. An empty inscription never reaches vips.
+ * Date and coordinate formats are a closed set validated with the settings.
  */
 
 function isoDate(moment) {
@@ -49,15 +33,9 @@ function wrote(facts, format, read, writers) {
 }
 
 /*
- * Custom text keeps the line breaks and the spacing it was given. It is the
- * one part a person wrote, so it is not tidied into something they did not
- * write -- the trimming that used to happen here was really about the blank
- * line an absent date left behind, and that is now solved by not putting the
- * line there in the first place.
- *
- * Blank lines at the end are the exception: a trailing newline is an accident
- * of typing, and honoring it would stamp a photograph with an inch of empty
- * space under the caption.
+ * Preserve custom text spacing and internal line breaks. Omit absent metadata
+ * lines rather than trimming user text to hide them. Drop trailing blank lines
+ * so they do not create empty space below the caption.
  */
 function customLines(text) {
     const lines = String(text ?? "").split("\n");
@@ -163,4 +141,4 @@ function inscriptionFor(facts, settings) {
         : { nothing: describeAbsence(settings, invalid), ...omissions };
 }
 
-module.exports = { inscriptionFor, wantsMetadata, customLines, describeAbsence };
+module.exports = { inscriptionFor, wantsMetadata };

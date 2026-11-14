@@ -1,21 +1,10 @@
 "use strict";
+const { IssueError } = require("./errors.js");
 
 /*
- * What is said when a typeface cannot be found, and why it is said here.
- *
- * There are two different mistakes and they need two different sentences. A
- * name nothing recognizes is somebody who does not know how to name a face;
- * a family this Mac has, asked for in a style it has not, is somebody who
- * knows exactly what they want and asked for a face the family does not come
- * in. Telling the second one how to name a font would be answering a question
- * they did not ask.
- *
- * The second sentence is the reason for reading a catalog at all: only a
- * program that knows what the family does come in can say so. What this
- * replaced could report that a name had failed and nothing more -- and what
- * that replaced gave advice about where font files have to live, which was
- * wrong as well as unhelpful. A face switched on by a font manager, kept in
- * any folder at all, is one this draws with.
+ * A name with no matching family needs naming guidance; a known family with
+ * an unknown style needs its available styles. Query the installed catalog
+ * so activated fonts are recognized regardless of their file location.
  */
 
 const { faceOf, nearestFamily } = require("./typeface.js");
@@ -61,7 +50,7 @@ function unknownTypeface(known, name) {
  */
 function resolved(known, name) {
     if (!known) {
-        throw new Error("A typeface catalog is required before choosing a face.");
+        throw new IssueError("A typeface catalog is required before choosing a face.");
     }
 
     const found = faceOf(known, name);
@@ -71,4 +60,4 @@ function resolved(known, name) {
         : { problem: unknownTypeface(known, name) };
 }
 
-module.exports = { inWords, unknownTypeface, resolved };
+module.exports = { inWords, resolved };

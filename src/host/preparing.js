@@ -4,7 +4,7 @@ const { buildOrientArgv } = require("../backend/commands.js");
 const { buildToSrgbArgv } = require("../backend/coloring.js");
 const { wantsColor } = require("../core/color.js");
 const { runArgv } = require("./shell.js");
-const { verifyFileWritten } = require("./asking.js");
+const { verifyFileWritten } = require("./filesystem-probes.js");
 const { sizeOf } = require("./tinting.js");
 const { refuseUnfaithful, hasAlpha, bandsOf } = require("./fidelity.js");
 const { profileFor } = require("./color-space.js");
@@ -23,9 +23,7 @@ const LOADER_FAILURE = /\b(?:jpeg|png|heif|tiff|webp|vips)load\b|VipsForeignLoad
 function damagedOr(error) {
     if (!(error instanceof OperationError) || !LOADER_FAILURE.test(errorMessage(error))) { return error; }
     const issue = sourceIssue("damaged", {}, { command: commandOf(error), message: errorMessage(error) });
-    const damaged = new OperationError(issue.message, { cause: error });
-    damaged.issues = [{ ...issue, stage: "stamping" }];
-    return damaged;
+    return new OperationError(issue.message, { cause: error, issues: [{ ...issue, stage: "stamping" }] });
 }
 
 /*
@@ -56,19 +54,11 @@ function orient(job, source, oriented) {
 }
 
 /*
- * A gray photograph, read into sRGB so a color can be painted on it.
- *
- * The stamp's color is moved into the photograph's own space before it is
- * painted, and a gray space cannot hold a color: measured, #FF3B30 moved into
- * a gray profile is one band with the value 138, and the caption came out gray
- * with the run reporting that the color had been handled. A photograph that
- * stores only grays and a caption that is not gray cannot meet in the
- * photograph's space, so they meet in sRGB instead -- the picture unchanged,
- * a value of 200 read back as 200, 200, 200, and the color that was chosen.
- *
- * Only when the color actually needs it. White, black and the default
- * outline are grays, so the ordinary run over a gray photograph is untouched
- * and the copy stays as gray as the photograph was.
+ * Expand a gray photograph into sRGB only when the caption requires color.
+ * Converting chromatic stamp values into a gray profile would erase that color:
+ * measured, #FF3B30 becomes one gray band with value 138. Expanding the picture
+ * instead preserves gray pixel values, such as 200 becoming 200, 200, 200, while
+ * allowing the chosen caption color. Gray captions need no expansion.
  */
 function inColor(job, oriented, profile, token) {
     const expanded = `${job.workspace}/color-${token}.v`;
@@ -107,7 +97,7 @@ function readPhotograph(job, source, token) {
  * it is read into sRGB and the stamp stays there with it -- which is the whole
  * of what the profile is for, so the profile goes with it.
  */
-function meeting(job, photograph, profile, token) {
+function prepareColorSpace(job, photograph, profile, token) {
     if (bandsOf(job, photograph.path) > GRAY_BANDS || !wantsColor(job.settings)) {
         return { photograph, profile, expanded: false };
     }
@@ -123,14 +113,14 @@ function meeting(job, photograph, profile, token) {
  * Everything the photograph has to be, in order, with each stage this
  * photograph's to clear away -- the expansion included.
  */
-function prepared(job, image, token, intermediates) {
+function preparePhotograph(job, image, token, intermediates) {
     const read = readPhotograph(job, image.path, token);
 
     intermediates.push(read.path);
 
-    const met = meeting(job, read, profileFor(job, image.path, token), token);
+    const met = prepareColorSpace(job, read, profileFor(job, image.path, token), token);
 
-    // Only when there is a second file: unexpanded, the meeting hands back the
+    // Only when there is a second file: unexpanded, color preparation hands back the
     // photograph it was given, and a list holding it twice removes it twice.
     if (met.expanded) {
         intermediates.push(met.photograph.path);
@@ -139,4 +129,4 @@ function prepared(job, image, token, intermediates) {
     return met;
 }
 
-module.exports = { readPhotograph, inColor, meeting, prepared };
+module.exports = { readPhotograph, prepareColorSpace, preparePhotograph };

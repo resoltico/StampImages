@@ -1,7 +1,7 @@
 "use strict";
 const { releaseOwnedArtifact } = require("./workspace.js");
 const { ISSUE, issuesOf } = require("../core/outcomes.js");
-const { OperationError, errorMessage } = require("../core/errors.js");
+const { IssueError, OperationError, errorMessage } = require("../core/errors.js");
 const { basename } = require("../core/paths.js");
 const { isPublished } = require("../core/artifacts.js");
 const { claimAvailable } = require("./destination.js");
@@ -18,10 +18,9 @@ function describeFailure(reasons, whereabouts) {
 }
 
 /*
- * What this attempt made and does not need: the place it made in the output
- * folder, and -- when a folder was standing at the output path, which ln
- * links into rather than refusing -- the link left inside it, which publish.js
- * adds once it has confirmed the file there is the one this run published.
+ * Close only the staging area recorded as owned by this publication attempt.
+ * closeStaging removes its known file and removes the directory only if empty;
+ * an unrelated destination entry is never cleanup authority.
  */
 function clearAway(app, outcome) {
     return outcome.staging ? closeStaging(app, outcome.staging) : [];
@@ -79,13 +78,10 @@ function keep(job, paths, outcome) {
 
     releaseRecoveredArtifact(job, paths.staged, recovered, cleanup);
 
-    const failure = new Error(describeFailure(
+    return new IssueError(describeFailure(
         outcome.reasons,
         `The finished image has been kept here:\n\n${recovered}`
-    ));
-    failure.recovery = recovered;
-    failure.issues = [{ code: ISSUE.publication, stage: "publication", message: "The image could not be saved to its requested destination.", diagnostic: outcome.reasons }, ...cleanup, ...rescue.issues, ...(downloads.state === "recovered" ? [] : downloads.issues)];
-    return failure;
+    ), { recovery: recovered, issues: [{ code: ISSUE.publication, stage: "publication", message: "The image could not be saved to its requested destination.", diagnostic: outcome.reasons }, ...cleanup, ...rescue.issues, ...(downloads.state === "recovered" ? [] : downloads.issues)] });
 }
 
 module.exports = { keep, clearAway };

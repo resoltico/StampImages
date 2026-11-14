@@ -8,9 +8,9 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const {
-    collectInvocation,
     inputItemToPosixPath
 } = require("../../../src/host/input.js");
+const { collectInvocation } = require("../../../src/host/quick-action/input.js");
 const { collectImageFiles } = require("../../../src/host/admission.js");
 const { createFakeApp } = require("./fake-app.cjs");
 
@@ -31,7 +31,7 @@ const PARAMETERS = { toString: () => "[object Object]" };
 
 function quickAction(app, paths) {
     const selection = paths.map(selectedFile);
-    const { inputItems } = collectInvocation(app, [selection, PARAMETERS], false);
+    const { inputItems } = collectInvocation(app, [selection, PARAMETERS]);
 
     return collectImageFiles(app, inputItems).images;
 }
@@ -71,7 +71,7 @@ test("a Quick Action reports the files it will not convert", () => {
     // file the user asked for and must not be reported as one.
     const app = createFakeApp();
     const selection = ["/a/photo.jpg", "/a/anim.gif"].map(selectedFile);
-    const { inputItems } = collectInvocation(app, [selection, PARAMETERS], false);
+    const { inputItems } = collectInvocation(app, [selection, PARAMETERS]);
     const { images, rejected } = collectImageFiles(app, inputItems);
 
     assert.deepEqual(images.map((record) => record.originalName), ["photo.jpg"]);

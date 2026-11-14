@@ -2,7 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { LOADERS, rawMetadata } = require("../../../src/backend/metadata.js");
-const { SUPPORTED_FORMATS } = require("../../../src/core/paths.js");
+const { SUPPORTED_FORMATS } = require("../../../src/core/formats.js");
 const { sourceIssues } = require("../../../src/core/source-policy.js");
 
 test("backend loader families and core format families cover each other", () => {

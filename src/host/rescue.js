@@ -1,7 +1,7 @@
 "use strict";
 const { MKTEMP, CP, RMDIR } = require("../core/executables.js");
 const { ISSUE, issuesOf } = require("../core/outcomes.js");
-const { sameBytes } = require("./asking.js");
+const { sameBytes } = require("./filesystem-probes.js");
 const { dirname } = require("../core/paths.js");
 const { runArgv, cleanupArgv, removeFile } = require("./shell.js");
 const RECOVERY_PREFIX = "StampImages-recovered";

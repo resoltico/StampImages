@@ -62,7 +62,7 @@ defaults delete com.resoltico.StampImages
 | Field | Setting | Values | Default |
 | --- | --- | --- | --- |
 | `dateFormat` | Date/time format | `iso-minutes` (2026-09-09 14:30), `iso-date` (2026-09-09), `long-date` (September 9, 2026), `none` | `iso-minutes` |
-| `coordinateFormat` | Include GPS coordinates | `none`, `decimal` (56.9496, 24.1052), `sexagesimal` (56°56'58.6"N 24°6'18.7"E) | `none` |
+| `coordinateFormat` | Coordinate format | `none`, `decimal` (56.9496, 24.1052), `sexagesimal` (56°56'58.6"N 24°6'18.7"E) | `none` |
 | `customText` | Custom text | Up to 500 UTF-16 code units; may span lines | empty |
 | `font` | Typeface | An installed face, named as in Font Book: `Georgia`, `Georgia Bold`, `Avenir Black` | Helvetica Neue |
 | `size` | Text size | 8–400 pt, at the image's own scale | 36 |
@@ -71,6 +71,11 @@ defaults delete com.resoltico.StampImages
 | `outlineColor` | Outline color | `#RRGGBB` | `#202020` |
 | `position` | Position | `bottom-right`, `bottom-left`, `top-right`, `top-left`, `bottom-center`, `top-center` | `bottom-right` |
 | `margin` | Margin | 0–2000 px from the edges the position names | 24 |
+
+The form prefers Helvetica Neue when available, otherwise the first installed
+suggestion. Settings files always require `font`; declared defaults do not fill
+omitted fields. Command-line typefaces are checked before tools or image
+inspection. See [HEADLESS.md](HEADLESS.md) for receipts and exit precedence.
 
 The stamp says at least one thing: a date, coordinates or custom text. The date
 comes from the image's `DateTimeOriginal`, or `CreateDate` when that is absent,

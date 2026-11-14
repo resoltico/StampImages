@@ -2,11 +2,11 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { settingsFor } = require("../../../src/host/settings-run.js");
-const { confirmSelection, approve } = require("../../../src/host/settings-review.js");
-const { collectDialogSettings } = require("../../../src/host/dialogs.js");
-const { encode } = require("../../../src/host/preferences.js");
-const { defaultAnswers, defaultSettings } = require("../../../src/host/form-defaults.js");
+const { chooseSettings } = require("../../../src/host/quick-action/settings-form.js");
+const { confirmSelection, approve } = require("../../../src/host/quick-action/settings-review.js");
+const { collectDialogSettings } = require("../../../src/host/quick-action/dialogs.js");
+const { encode } = require("../../../src/host/quick-action/preferences.js");
+const { defaultAnswers, defaultSettings } = require("../../../src/host/quick-action/settings-model.js");
 const { createFakeApp } = require("./fake-app.cjs");
 const { askingContext } = require("./fake-assembly.cjs");
 const FONTS = ["Menlo"];
@@ -36,7 +36,7 @@ test("selection cancellation stops before settings, preferences or output", () =
 
         return { buttonReturned: "Cancel" };
     };
-    assert.throws(() => settingsFor(app, {}, CONTEXT, {
+    assert.throws(() => chooseSettings(app, CONTEXT, { known: CONTEXT.known,
         openMemory: memory(events), bridge: BRIDGE,
         present: () => { throw new Error("form must not open"); }
     }), /canceled/iu);
@@ -48,7 +48,7 @@ test("selection approval precedes settings, and the approved GPS choice is remem
     const app = createFakeApp();
 
     app.displayDialog = () => { events.push("review"); return { buttonReturned: "Continue" }; };
-    const result = settingsFor(app, {}, CONTEXT, {
+    const result = chooseSettings(app, CONTEXT, { known: CONTEXT.known,
         openMemory: memory(events, encode({ ...defaultSettings(FONTS), coordinateFormat: "decimal", size: 72 })),
         bridge: BRIDGE,
         present(bridge, spec) {
@@ -61,20 +61,15 @@ test("selection approval precedes settings, and the approved GPS choice is remem
     });
 
     assert.deepEqual(events.slice(0, 4), ["review", "open memory", "recall", "form"]);
-    assert.equal(result.coordinateFormat, "sexagesimal");
+    assert.equal(result.settings.coordinateFormat, "sexagesimal");
     assert.equal(events[4].coordinateFormat, "sexagesimal", "remembered for the next run");
 });
 
-test("headless settings bypass selection consent and all interactive memory", () => {
-    const events = [];
-    const app = createFakeApp();
-    const result = settingsFor(app, { headless: true, settings: defaultSettings(FONTS) }, CONTEXT, {
-        openMemory: memory(events)
-    });
-
-    assert.equal(result.coordinateFormat, "none");
-    assert.deepEqual(events, []);
-    assert.deepEqual(app.dialogs, []);
+test("command-line settings bypass selection consent", () => {
+    const { commandLineInteraction } = require("../../../src/host/command-line/interaction.js");
+    const interaction = commandLineInteraction({ settings: defaultSettings(FONTS) }, { known: CONTEXT.known });
+    const result = interaction.settings({ get rejected() { throw new Error("must not ask for selection consent"); } });
+    assert.equal(result.settings.coordinateFormat, "none");
 });
 
 test("canceled fallback approval never remembers settings", () => {
@@ -85,7 +80,7 @@ test("canceled fallback approval never remembers settings", () => {
     app.displayDialog = (message, options) => options.defaultButton === "Create"
         ? { buttonReturned: "Cancel" }
         : display(message, options);
-    assert.throws(() => settingsFor(app, {}, askingContext(FONTS), {
+    assert.throws(() => chooseSettings(app, askingContext(FONTS), { known: CONTEXT.known,
         bridge: null, openMemory: memory(events)
     }), /canceled/iu);
     assert.deepEqual(events, ["open memory", "recall"]);

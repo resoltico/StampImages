@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const { pagesIn, bandsOf } = require("../../../src/host/fidelity.js");
 const { sizeOf } = require("../../../src/host/tinting.js");
-const { readPhotograph, prepared } = require("../../../src/host/preparing.js");
+const { readPhotograph, preparePhotograph } = require("../../../src/host/preparing.js");
 const { isUserCanceled } = require("../../../src/core/errors.js");
 const { createFakeHost, WORKSPACE } = require("./fake-host.cjs");
 const { makeJob } = require("./fake-job.cjs");
@@ -101,7 +101,7 @@ test("gray with alpha is expanded for a color caption and its intermediate is ow
     const {host} = jobOn({bands: 2, stored: "gray"});
     const job = {...makeJob(host, {textColor: "#FF3B30", outlineWidth: 0}), workspace: WORKSPACE};
     const intermediates = [];
-    const result = prepared(job, {path: "/photo.png"}, "1", intermediates);
+    const result = preparePhotograph(job, {path: "/photo.png"}, "1", intermediates);
 
     assert.equal(result.expanded, true);
     assert.deepEqual(intermediates, [`${WORKSPACE}/oriented-1.v`, `${WORKSPACE}/color-1.v`]);

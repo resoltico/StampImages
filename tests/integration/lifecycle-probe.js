@@ -4,8 +4,9 @@ const { sourceAccess } = require("../../src/host/source-capture.js");
 const { createTree } = require("../../src/host/tree.js");
 const { nativePublication } = require("../../src/host/native-publication.js");
 const { workspaceAccess } = require("../../src/host/workspace-access.js");
+const { commandLineInteraction } = require("../../src/host/command-line/interaction.js");
 const { createProgress } = require("../../src/host/progress.js");
-const { cliCommand } = require("../../src/host/cli.js");
+const { cliCommand } = require("../../src/host/command-line/cli.js");
 const { CP } = require("../../src/core/executables.js");
 const { runArgv } = require("../../src/host/shell.js");
 const { UserCanceled } = require("../../src/core/errors.js");
@@ -47,7 +48,7 @@ function run(input) {
         if ((scenario === "stop-before-publication" && text === "Saving image") || (scenario === "stop-before-recovery" && text === "Keeping the finished copy")) { injected += 1; throw new UserCanceled(); }
         return phase(text);
     };
-    const result = execute(app, invocation, { headless: true, progress, capabilities: {
+    const result = execute(app, invocation, { interaction: commandLineInteraction(invocation, { progress }), capabilities: {
         sources, publication, tree: createTree(ObjC, $, globalThis.Ref), storage: workspaceAccess(ObjC, $)
     } });
     return JSON.stringify({ injected, publicationAttempts, ...result });

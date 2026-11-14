@@ -2,7 +2,7 @@
 const { buildTextArgv, fontDescription } = require("../backend/lettering.js");
 const { buildEmbedArgv, buildDilateArgv } = require("../backend/outlining.js");
 const { runArgv } = require("./shell.js");
-const { verifyFileWritten } = require("./asking.js");
+const { verifyFileWritten } = require("./filesystem-probes.js");
 const { sizeOf, tinted, pathsFor, filesOf } = require("./tinting.js");
 
 /*

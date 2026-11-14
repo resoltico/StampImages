@@ -17,18 +17,13 @@ function isNumeric(part) {
 }
 
 /*
- * Two runs of digits, compared as decimal numbers written out rather than as
- * JavaScript numbers.
+ * Compare digit runs as decimal text rather than JavaScript numbers. Number()
+ * loses precision beyond 2^53: 9007199254740992 and 9007199254740993 compare as
+ * the same number. Long numeric camera/export filenames still need a stable,
+ * exact order.
  *
- * Number() is exact only to 2^53. Past that, two different filenames become
- * the same value -- 9007199254740992.jpg and ...93.jpg did -- and subtracting
- * them says they are equal, which leaves their order to the order they
- * happened to arrive in. Nineteen digits is a nanosecond timestamp, which is
- * an ordinary way for a camera or an export to name a file.
- *
- * Leading zeros are not part of the value, so they come off first: what is
- * left is longer when it is larger, and among equal lengths the larger is the
- * one that reads later.
+ * Discard leading zeros for value comparison. A longer remaining run is larger;
+ * equal-length runs compare lexically. Compare original widths only as a tie.
  */
 const LEADING_ZEROS = /^0+(?=\d)/u;
 
@@ -89,13 +84,9 @@ function naturalCompare(left, right) {
 }
 
 /*
- * Sorts by full path, which within one folder is the same as sorting by name
- * and across several is what a folder tree reads as: everything in one place
- * together, in order, before the next place.
- *
- * Sorting by name first put a photograph from one folder between two from
- * another whenever the names happened to interleave -- which is what names in
- * numbered folders do.
+ * Sort by full path so each folder's images stay together, in filename order,
+ * before the next folder. Sorting only by basename would interleave images
+ * from different numbered folders.
  */
 function sortImageRecords(records) {
     return records.slice().sort(

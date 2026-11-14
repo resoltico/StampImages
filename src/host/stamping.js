@@ -11,7 +11,7 @@ const { registerArtifact } = require("../core/artifacts.js");
 const { retainCandidate } = require("./workspace.js");
 const { removeOwned } = require("./owned-cleanup.js");
 const { composite, saveCopy } = require("./image.js");
-const { prepared } = require("./preparing.js");
+const { preparePhotograph } = require("./preparing.js");
 
 /*
  * One photograph, from the file that was selected to a finished copy waiting
@@ -74,7 +74,7 @@ function substituted(job, lines) {
 }
 
 function produce(job, image, token, intermediates) {
-    const met = prepared(job, image, token, intermediates);
+    const met = preparePhotograph(job, image, token, intermediates);
     const { photograph } = met;
     const drawn = stampOnto(job, photograph, {
         text: image.inscription.text,
@@ -108,14 +108,9 @@ function produce(job, image, token, intermediates) {
 }
 
 /*
- * What will be written on this photograph, or the reason nothing will be.
- *
- * A photograph that knows neither when nor where it was taken, when that is
- * all that was asked for, is not a failure of the program and not a success
- * of the run. It is a photograph the request did not apply to, and it used to
- * reach the renderer as an empty drawing -- which vips refused, in its own
- * words, so somebody who had asked for the date on a folder of scans was
- * shown "text: no text to render" and the command that failed.
+ * Determine what this image can say before rendering. Missing requested
+ * metadata can leave nothing to stamp; report that image outcome rather than
+ * sending an empty drawing to vips.
  */
 function inscribe(job, image) {
     const facts = wantsMetadata(job.settings) ? factsFor(job, image.path) : {};

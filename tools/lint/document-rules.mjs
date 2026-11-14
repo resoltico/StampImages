@@ -3,17 +3,10 @@ import { walk } from "./discovery.mjs";
 import { root } from "../repository.mjs";
 
 /*
- * The documents, which nothing read until one of them was found carrying its
- * own opening twice.
- *
- * It had been spliced in by a script: in a JavaScript replacement string, a
- * dollar followed by a backtick means "everything before the match", so
- * writing a backtick-dollar-backtick into a file through `String.replace`
- * inserts the file's own prefix. Nobody noticed, because prose is read in
- * pieces.
- *
- * Only what a machine can be sure of is checked. Whether the prose is true is
- * read, not computed.
+ * Check document hygiene, title structure and duplicate section paths.
+ * Machine checks establish structure, not the truth of the prose; content still
+ * requires review. Include heading ancestry so repeated subsection names under
+ * different parent sections remain valid.
  */
 
 // INSTALL.txt and LICENSE ship in the release, so both receive the document

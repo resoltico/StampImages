@@ -5,20 +5,13 @@ const { buildMetadataArgv } = require("../backend/queries.js");
 const { runArgv } = require("./shell.js");
 
 /*
- * What exiftool says about one photograph.
+ * Read ExifTool's single-file response as a list containing one record that
+ * names the source. A valid record with no requested tags means the image has
+ * no such metadata and may still use custom text.
  *
- * It answers with a list of one entry, because it is built to be asked about
- * many files at once. A photograph that carries none of the tags is answered
- * for all the same, with an entry that names it and says nothing else, and
- * that is a photograph this run knows nothing about -- which is a thing that
- * can still be stamped with whatever was typed by hand.
- *
- * Anything else is a question that could not be put: a tool that would not
- * run, an answer that is not the JSON it promises, a record carrying an error
- * instead of an answer. Those are not photographs without a date. They used
- * to be treated as though they were, so a broken exiftool produced a folder
- * of copies with no date on them and a report saying everything had worked.
- * A run that does not know says so.
+ * A failed process, malformed JSON or an error record is an unreadable answer,
+ * not evidence that metadata is absent. Report that failure rather than creating
+ * undated copies and claiming that every requested field was handled.
  */
 
 function recordFor(answer) {

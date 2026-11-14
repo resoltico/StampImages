@@ -1,15 +1,15 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { cliCommand, configurationValues, jsonConfiguration, usage } = require("../../../src/host/cli.js");
-const { reportHeadless, exitCode } = require("../../../src/host/reporting.js");
+const { cliCommand, configurationValues, jsonConfiguration, usage } = require("../../../src/host/command-line/cli.js");
+const { reportHeadless, exitCode } = require("../../../src/host/command-line/reporting.js");
 const { runOutcome } = require("../../../src/core/outcomes.js");
-const { defaultSettings } = require("../../../src/host/form-defaults.js");
+const { defaultSettings } = require("../../../src/host/quick-action/settings-model.js");
 const settings = defaultSettings(["Menlo"]);
 test("help/version and strict CLI grammar never read files", () => {
     assert.equal(cliCommand(["--help"]).kind, "help"); assert.equal(cliCommand(["--version"]).kind, "version");
     for (const args of [[], ["photo.png"], ["--unknown"], ["--headless"], ["--headless", "s.json", ""]]) { assert.throws(() => cliCommand(args), /Usage/u); }
-    assert.match(usage(), /all ten required/u);
+    assert.match(usage(), /all 10 required/u);
 });
 test("relative paths are resolved and native reader output uses the canonical validator", () => {
     const read = [];
@@ -19,7 +19,7 @@ test("relative paths are resolved and native reader output uses the canonical va
     });
     assert.deepEqual(read, ["/cwd/settings.json"]); assert.deepEqual(result.invocation.inputItems, ["/cwd/photo.png"]);
     assert.deepEqual(result.invocation.settings, settings);
-    assert.equal(result.invocation.headless, true);
+    assert.equal(Object.hasOwn(result.invocation, "headless"), false);
     assert.throws(() => configurationValues({ ...settings, size: "36", extra: 1 }), (error) => error.issues.length === 2);
     assert.throws(() => configurationValues({ ...settings, dateFormat: "none", customText: " " }), /nothing to stamp/u);
 });
@@ -39,7 +39,10 @@ test("receipts use separate streams and exact statuses without an osascript erro
 });
 
 test("field regression: stopped and partial completion expose unfinished counts immediately", () => {
-    const { describe, detailOf } = require("../../../src/host/completion.js");
+    const { summarizeRun } = require("../../../src/core/run-summary.js");
+    const { headline, reportText } = require("../../../src/core/run-report.js");
+    const describe = (result) => headline(summarizeRun(result));
+    const detailOf = (result) => reportText(result, false);
     const stopped = runOutcome([
         { source: "/a", state: "saved", output: "/out", issues: [] },
         { source: "/b", state: "canceled", issues: [] },
@@ -75,7 +78,7 @@ test("help lists each setting with its values, captions that add something, and 
     assert.match(help, /\n {2}position — Position: bottom-right \| bottom-left \| top-right \| top-left \| bottom-center \| top-center; default bottom-right\n/u);
     assert.match(help, /\n {2}size — Text size: 8–400 pt; default 36\n/u);
     assert.match(help, /\n {2}customText — Custom text: text\n/u);
-    assert.match(help, /\n {2}font — Typeface: text\n/u);
+    assert.match(help, /\n {2}font — Typeface: text; default Helvetica Neue\n/u);
     assert.match(help, /Paths may be absolute or relative to the working directory\./u);
 });
 

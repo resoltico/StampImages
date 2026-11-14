@@ -13,7 +13,7 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { createMemory } = require("../../../src/host/preference-storage.js");
+const { createMemory } = require("../../../src/host/quick-action/preference-storage.js");
 
 test("a plain value has no isNil to answer, and is taken as present", () => {
     // Asked defensively: a wrapped Objective-C nil is a truthy object, and a

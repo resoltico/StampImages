@@ -2,10 +2,10 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { collectViaForm, collectSettings } = require("../../../src/host/settings-form.js");
-const { collectDialogSettings } = require("../../../src/host/dialogs.js");
-const { askUntil } = require("../../../src/host/prompts.js");
-const { defaultAnswers } = require("../../../src/host/form-defaults.js");
+const { collectViaForm, collectSettings } = require("../../../src/host/quick-action/settings-form.js");
+const { collectDialogSettings } = require("../../../src/host/quick-action/dialogs.js");
+const { askUntil } = require("../../../src/host/quick-action/prompts.js");
+const { defaultAnswers } = require("../../../src/host/quick-action/settings-model.js");
 const { createFakeApp } = require("./fake-app.cjs");
 const { askingContext } = require("./fake-assembly.cjs");
 const FONTS = ["Menlo"];

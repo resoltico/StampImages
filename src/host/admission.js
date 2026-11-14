@@ -4,17 +4,12 @@ const { sortImageRecords } = require("../core/ordering.js");
 const { imagesInFolder, NO_IMAGES } = require("./expand.js");
 const { UNREADABLE, UNEXAMINABLE, ALREADY_STAMPED } = require("./walking.js");
 const { selectedItems } = require("./selection.js");
-const { finderSelection } = require("./input.js");
 const { rejectionReason, FOLDER, UNSUPPORTED, NOT_A_FILE } = require("./reasons.js");
 
 /*
- * Which of the requested files this action will convert, and why it will not
- * convert the others.
- *
- * Separated from resolution because a rejection is a stated reason rather than
- * the absence of an entry in a list: a silent filter turned a GIF selected
- * alongside two photos into a report that nothing had failed. What was
- * selected, and whether two selections are the same thing, is selection.js.
+ * Admit supported requests and keep explicit reasons for the others.
+ * selection.js normalizes requested spellings; admission decides which
+ * accepted requests refer to an image already included in this run.
  */
 
 function record(path, folder) {
@@ -70,36 +65,23 @@ function admitFolder(tree, path, outcome) {
 }
 
 /*
- * What the tree says a selected path is, when that settles it.
- *
- * A package is a folder to the shell -- an .app, a .photoslibrary -- and
- * walking into one wrote the output inside the bundle. A link is refused for
- * the same reason the walk passes over one: following it is how the run
- * leaves the folder it was given and how it converts the same photograph
- * twice. Asking the shell instead followed it -- test -f reports on the
- * target -- so a link and the file it points to were two images.
+ * Use native kind facts to refuse explicitly selected packages and links.
+ * Packages are directories to the shell, but writing inside an app or photo
+ * library would alter its bundle. Following links could leave the requested
+ * folder and include the same image twice; test -f alone follows the target.
  */
 function reasonFor(app, root) {
     return KIND_REASONS[root.kind] ?? rejectionReason(app, root.path);
 }
 
 /*
- * Selection order puts every folder first, so by the time an explicit request
- * is considered the walking is done and the ledger is complete.
+ * Visit folders before explicit files so the identity ledger includes the walk.
+ * Still assess each explicit request independently: hidden entries, packages
+ * and links can be skipped by walking without satisfying a request for them.
  *
- * An explicit request is never dropped for sitting under a selected folder.
- * The walk passes over hidden entries, packages and links, so assuming it had
- * taken them removed the request from the run without a word: a photograph
- * whose name began with a dot simply did not appear, and a file that could
- * not be converted stopped saying so.
- *
- * Each request is answered on its own terms first, and only then against the
- * ledger. The other way round, what the ledger already held decided whether a
- * name was ever assessed -- so of two names for one photograph, whichever
- * arrived first settled what the other was told, and the same selection said
- * different things depending on the order it arrived in. Being in the ledger
- * already is the one case that is neither a rejection nor a second copy: it
- * was converted, which is what was asked.
+ * Apply identity deduplication only after admission. Different names for one
+ * file can have different admission results; the first name's result must not
+ * silence a later request. An already-admitted identity needs no second copy.
  */
 function admit(app, tree, root, outcome) {
     // A kind at all means there is a tree: it is the tree that answered.
@@ -126,12 +108,11 @@ function admit(app, tree, root, outcome) {
 }
 
 /*
- * The tree is what makes a selected folder mean the images inside it. Without
- * one -- no ObjC bridge -- a folder is refused with a reason instead, and the
- * files that were selected directly are converted as they always were.
+ * Folder expansion needs an injected native tree. The production composition
+ * root requires that capability before calling admission; the null default
+ * keeps isolated adapter tests explicit about missing native facts.
  */
 function collectImageFiles(app, inputItems, tree = null) {
-    const items = inputItems.length > 0 ? inputItems : finderSelection();
     const outcome = {
         images: [],
         selectedFolders: 0,
@@ -142,7 +123,7 @@ function collectImageFiles(app, inputItems, tree = null) {
         taken: new Set()
     };
 
-    for (const root of selectedItems(tree, items, outcome.rejected)) {
+    for (const root of selectedItems(tree, inputItems, outcome.rejected)) {
         admit(app, tree, root, outcome);
     }
 

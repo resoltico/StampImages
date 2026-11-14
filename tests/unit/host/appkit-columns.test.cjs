@@ -2,10 +2,10 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { buildForm } = require("../../../src/host/appkit-form.js");
-const { FORM_WIDTH } = require("../../../src/host/appkit-geometry.js");
-const { WIDGETS } = require("../../../src/host/appkit.js");
-const { formSpec } = require("../../../src/host/form.js");
+const { buildForm } = require("../../../src/host/quick-action/appkit-form.js");
+const { FORM_WIDTH } = require("../../../src/host/quick-action/appkit-geometry.js");
+const { WIDGETS } = require("../../../src/host/quick-action/appkit.js");
+const { formSpec } = require("../../../src/host/quick-action/form.js");
 const { createFakeObjC } = require("./fake-objc.cjs");
 
 const FONTS = ["Menlo", "Menlo Bold"];

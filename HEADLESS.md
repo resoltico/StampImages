@@ -22,7 +22,12 @@ settings. Paths may be absolute or relative to the working directory. Local
 The settings file is UTF-8 JSON without a byte-order mark, and its root is an
 object. All ten fields are required; unknown fields, numeric strings, fractional
 numbers, `null` and wrong types are refused, and every problem is reported together.
-Duplicate keys follow `JSON.parse`: the last value wins.
+Duplicate keys follow `JSON.parse`: the last value wins. Declared defaults are
+listed by `--help`; they do not fill omitted fields in a settings file.
+
+Settings and the installed typeface are checked before tool discovery or source
+admission. Invalid settings take precedence over missing tools and exit 2,
+including when the configured typeface is unavailable.
 
 ```json
 {
@@ -39,17 +44,18 @@ Duplicate keys follow `JSON.parse`: the last value wins.
 }
 ```
 
-| Field | JSON value |
-| --- | --- |
-| `dateFormat` | `iso-minutes`, `iso-date`, `long-date` or `none` |
-| `coordinateFormat` | `none`, `decimal` or `sexagesimal` |
-| `customText` | String of up to 500 UTF-16 code units; may contain newlines; NUL and unpaired surrogates are refused |
-| `font` | Nonblank name of an installed face, as in Font Book; trimmed |
-| `size` | Integer 8–400 (points at the image's scale) |
-| `textColor`, `outlineColor` | Six hexadecimal digits, optional `#`; normalized to uppercase `#RRGGBB` |
-| `outlineWidth` | Integer 0–20 (pixels) |
-| `position` | `bottom-right`, `bottom-left`, `top-right`, `top-left`, `bottom-center` or `top-center` |
-| `margin` | Integer 0–2000 (pixels) |
+| Field | Setting | JSON value |
+| --- | --- | --- |
+| `dateFormat` | Date/time format | `iso-minutes`, `iso-date`, `long-date` or `none` |
+| `coordinateFormat` | Coordinate format | `none`, `decimal` or `sexagesimal` |
+| `customText` | Custom text | String of up to 500 UTF-16 code units; may contain newlines; NUL and unpaired surrogates are refused |
+| `font` | Typeface | Nonblank name of an installed face, as in Font Book; trimmed |
+| `size` | Text size | Integer 8–400 (points at the image's scale) |
+| `textColor` | Text color | Six hexadecimal digits, optional `#`; normalized to uppercase `#RRGGBB` |
+| `outlineWidth` | Outline | Integer 0–20 (pixels) |
+| `outlineColor` | Outline color | Six hexadecimal digits, optional `#`; normalized to uppercase `#RRGGBB` |
+| `position` | Position | `bottom-right`, `bottom-left`, `top-right`, `top-left`, `bottom-center` or `top-center` |
+| `margin` | Margin | Integer 0–2000 (pixels) |
 
 A request must stamp something: a date format, a coordinate format or nonblank
 custom text. `coordinateFormat` controls only what the stamp shows; copies keep the
@@ -64,9 +70,9 @@ plain-language report to stderr. Read both the receipt and the exit status.
 | Exit | Meaning |
 | --- | --- |
 | `0` | Complete |
-| `1` | Incomplete or stopped; confirmed copies are kept |
+| `1` | Incomplete or stopped after setup; confirmed copies are kept |
 | `2` | Usage error or invalid settings |
-| `3` | A required tool is missing or unusable |
+| `3` | Could not start: setup failed or was stopped |
 
 | Field | Meaning |
 | --- | --- |
@@ -77,6 +83,10 @@ plain-language report to stderr. Read both the receipt and the exit status.
 | `issues` | Problems affecting the request as a whole |
 | `diagnostics` | Optional-surface and cleanup diagnostics |
 | `elapsed` | Human-readable run time; absent for invalid requests and when nothing was admitted |
+
+Exit 3 identifies the setup phase, including required tools or native capabilities
+that are unavailable. A setup cancellation has receipt state `canceled` and issue
+code `canceled`; inspect those fields to distinguish a stop from a setup error.
 
 `complete` requires every admitted image saved with everything requested, nothing
 rejected and no issues. An abrupt process end or a failed stdout cannot guarantee a
@@ -123,8 +133,7 @@ refusal includes `diagnostic.loader`, the vips loader that recognized its conten
 | Stage | Codes |
 | --- | --- |
 | `request` | `usage`, `settings-file` |
-| `settings` | `unknown`, `choice`, `integer`, `text`, `color`, `typeface`, `object` |
-| `request` (content) | `empty-stamp` |
+| `settings` | `unknown`, `choice`, `integer`, `text`, `color`, `typeface`, `object`, `empty-stamp` |
 | `setup` | `operation` when a required tool is missing or unusable |
 | `selection` | `folder`, `unsupported-format`, `not-a-file`, `not-a-path`, `package`, `link`, `special-file`, `unreadable`, `unexaminable`, `already-stamped`, `empty-folder`, and the run issue `no-images` |
 | `inspection` | `unreadable`, `empty`, `not-an-image`, `unsupported-content`, `unsupported-color`, `multiple-images`, `damaged` |
@@ -136,6 +145,8 @@ refused as `damaged` at the `stamping` stage, with the decoder's output in its
 `diagnostic`. A stamp larger than its image is an `operation` failure for that image
 only. Software faults (`fault`), cleanup failures and a stop end the run; remaining
 images are `not-started`. Confirmed copies are kept in every case.
+
+`empty-stamp` identifies `customText` at the `settings` stage.
 
 ## Tool overrides
 

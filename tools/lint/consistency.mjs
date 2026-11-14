@@ -3,10 +3,8 @@ import path from "node:path";
 import { root } from "../repository.mjs";
 
 /*
- * Facts that are stated in more than one file must agree.
- *
- * Each of these was previously duplicated with nothing checking it, so they
- * agreed by luck rather than by construction.
+ * Check facts that must appear in multiple supported surfaces against their
+ * authoritative declarations instead of allowing their copies to drift.
  */
 
 export async function readFromDisk(relative) {
@@ -106,13 +104,7 @@ export async function checkReleaseTag(tag, read = readFromDisk) {
     return version;
 }
 
-/*
- * The CHANGELOG section for one version, for a release body.
- *
- * Taken from the CHANGELOG rather than from a per-tag notes file, because a
- * second copy of the same prose is a second thing to keep in agreement, and
- * this repository has been bitten by exactly that before.
- */
+
 /*
  * The one address the artifact carries out of this repository.
  *

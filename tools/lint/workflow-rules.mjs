@@ -29,13 +29,9 @@ export function selectWorkflows(entries) {
 }
 
 /*
- * Every action must be pinned to a commit, not to a tag or a branch.
- *
- * A tag is a moveable label: whoever controls the action repository can point
- * v4 at different code tomorrow, and the workflow would run it with whatever
- * permissions the job holds. Dependabot rewrites these pins together with
- * their version comments, so pinning costs nothing to maintain — but nothing
- * enforced it, and a single unpinned line would have gone unnoticed.
+ * Pin every external action to a commit. A mutable tag or branch can point at
+ * different code while retaining the job's permissions. Dependabot updates
+ * commit pins with their version comments; this check rejects unpinned actions.
  */
 const USES = /^\s*(?:-\s*)?uses:\s*(?<action>\S+)/gmu;
 const COMMIT_PINNED = /@[\da-f]{40}$/u;
@@ -78,16 +74,8 @@ export function hasActionlint(probe = probeActionlint) {
 }
 
 /*
- * The workflows are the one part of this project that has never executed, so a
- * mistake in them surfaces on a first push rather than in the gate. actionlint
- * checks the schema, the expression syntax, and the shell inside `run:` steps.
- *
- * It is optional in the same way shellcheck is: the gate must stay runnable on
- * a machine that does not have it, and CI installs it.
- */
-/*
- * Workflows live in one place and are text, not bytes: read as a Buffer the
- * pinning patterns would match nothing and every workflow would look clean.
+ * Read workflows as UTF-8 text from the workflow directory so action-pinning
+ * patterns inspect their contents rather than an undecoded Buffer.
  */
 export function readWorkflow(file, read = readFile) {
     return read(path.join(root, WORKFLOW_ROOT, file), "utf8");
@@ -97,6 +85,11 @@ export function runActionlint(files, exec = execFileSync) {
     exec("actionlint", files, { stdio: "inherit" });
 }
 
+/*
+ * Statically validate workflow schemas, expressions and run-step shell syntax
+ * with actionlint before hosted execution. It is optional for local machines
+ * without the tool; the macOS CI job installs and runs it.
+ */
 export async function checkWorkflows(options = {}) {
     // The probe is a parameter so that the decision to run actionlint can
     // be tested, not only the two answers it leads to.

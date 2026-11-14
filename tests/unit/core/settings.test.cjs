@@ -166,5 +166,5 @@ test("each refused setting carries the shared code for its kind of value", () =>
     }).issues.map((issue) => [issue.field, issue.code]));
 
     assert.deepEqual(codes, { extra: "unknown", position: "choice", size: "integer", textColor: "color", font: "text", customText: "text" });
-    assert.throws(() => readSetting("nope", 1), (error) => error.code === "unknown");
+    assert.throws(() => readSetting("nope", 1), (error) => error.issues[0].code === "unknown");
 });

@@ -1,6 +1,8 @@
 "use strict";
+const { IssueError } = require("./errors.js");
 const { ISSUE } = require("./outcomes.js");
-const { SUPPORTED_FORMATS, basename, supportedFormatList } = require("./paths.js");
+const { basename } = require("./paths.js");
+const { SUPPORTED_FORMATS, supportedFormatList } = require("./formats.js");
 const GRAY_ALPHA_BANDS = 2;
 const RGB_BANDS = 3;
 const RGBA_BANDS = 4;
@@ -19,7 +21,7 @@ function sourceIssue(code, facts = {}, diagnostic = null) {
         "multiple-images": `This file contains ${facts.pages} images; only single images are supported.`,
         damaged: "This image is damaged or incomplete."
     };
-    if (!Object.hasOwn(messages, code)) { throw new Error("Unknown source issue code."); }
+    if (!Object.hasOwn(messages, code)) { throw new IssueError("Unknown source issue code."); }
     return { code, stage: "inspection", message: messages[code], ...(diagnostic ? { diagnostic } : {}) };
 }
 

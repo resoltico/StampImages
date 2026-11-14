@@ -82,3 +82,12 @@ test("backend remains pure and is consumed only by host adapters", async () => {
     assert.doesNotThrow(() => checkBoundary("src/host/a.js", 'require("../backend/commands.js");'));
     assert.doesNotThrow(() => checkBoundary("src/core/a.js", '// Path manipulation\nconst text = "ObjC";'));
 });
+
+test("front-end boundaries reject both cross-import directions and shared-host interface imports", async () => {
+    const { checkBoundary } = await import("../../../tools/lint/boundaries.mjs");
+    assert.throws(() => checkBoundary("src/host/quick-action/main.js", 'require("../command-line/cli.js");'), /forbidden host interface/u);
+    assert.throws(() => checkBoundary("src/host/command-line/main.js", 'require("../quick-action/form.js");'), /forbidden host interface/u);
+    assert.throws(() => checkBoundary("src/host/main.js", 'require("./quick-action/form.js");'), /forbidden host interface/u);
+    assert.doesNotThrow(() => checkBoundary("src/host/quick-action/main.js", 'require("./form.js");'));
+    assert.doesNotThrow(() => checkBoundary("src/host/command-line/main.js", 'require("./cli.js");'));
+});

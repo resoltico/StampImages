@@ -106,4 +106,4 @@ function nearestFamily(known, name) {
     return { family: "", rest: "" };
 }
 
-module.exports = { sameName, familyIn, faceIn, faceOf, nearestFamily };
+module.exports = { sameName, familyIn, faceOf, nearestFamily };

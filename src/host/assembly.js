@@ -1,19 +1,6 @@
 "use strict";
-const { OperationError } = require("../core/errors.js");
 const { hasRetainedArtifacts } = require("../core/artifacts.js");
 const { createWorkspace, removeWorkspace } = require("./workspace.js");
-const { availableFonts } = require("./fonts.js");
-const { catalog } = require("./typefaces.js");
-const { settingsFor } = require("./settings-run.js");
-
-/*
- * Everything a run needs before it can stamp anything, gathered in the order
- * the answers depend on each other: which faces this Mac has, then what the
- * person wants drawn with them, then the job that carries both.
- *
- * Separate from main.js because it is a different kind of decision. The order
- * of a run is the product; this is the machinery that order asks for.
- */
 
 /*
  * The workspace outlives the run when it still holds a finished copy that
@@ -42,23 +29,6 @@ function withWorkspace(app, prepared, progress, use) {
     }
 }
 
-/*
- * Which faces to suggest, asked only when somebody is going to be offered a
- * choice of them.
- *
- * It used to be the longest thing a run did before it said anything, because
- * every candidate was drawn with and compared. It is now a question put to the
- * font system, which answers in one call and answers about every family on the
- * machine rather than about ten.
- */
-function fontsFor(known, headless) {
-    return headless ? [] : availableFonts(known);
-}
-
-function settingsFrom(app, invocation, context) {
-    return settingsFor(app, invocation, context);
-}
-
 function jobFor(prepared, settings, place) {
     return {
         app: prepared.app,
@@ -81,33 +51,7 @@ function jobFor(prepared, settings, place) {
     };
 }
 
-/*
- * The job, and the two questions that have to be answered before there can be
- * one. The pause is between them and the asking: a panel at the floating
- * window level would otherwise sit over the form, and re-arming it means a run
- * quick enough to need no window still does not get one.
- */
-function assemble(prepared, place, known = catalog()) {
-    if (!known) { throw new OperationError("Installed typefaces could not be verified on this Mac."); }
-    // What this Mac has, read once. It goes in the context beside the count
-    // and the suggestions because it is the same sort of thing: what the front
-    // ends need in order to ask. Neither of them can answer it, and both have
-    // to -- a headless run has no suggestions and still names a typeface.
-    const context = {
-        count: prepared.selection.images.length,
-        selectedFolders: prepared.selection.selectedFolders ?? 0,
-        // Where the copies go, once each, in the order the images were taken.
-        folders: [...new Set(prepared.selection.images.map((image) => image.folder).filter(Boolean))],
-        rejected: prepared.selection.rejected,
-        fonts: fontsFor(known, prepared.invocation.headless),
-        known
-    };
-
-    place.progress.pause();
-
-    const settings = settingsFrom(prepared.app, prepared.invocation, context);
-
-    return { ...jobFor(prepared, settings, place), covers: known.coverageOf?.(settings.typeface) ?? null };
+function assemble(prepared, place, resolved) {
+    return { ...jobFor(prepared, resolved.settings, place), covers: resolved.covers };
 }
-
-module.exports = { withWorkspace, assemble, settingsFrom, jobFor };
+module.exports = { withWorkspace, assemble };

@@ -1,5 +1,6 @@
 "use strict";
-const { OperationError } = require("../core/errors.js");
+const { hostError } = require("./cancellation.js");
+const { OperationError, isUserCanceled } = require("../core/errors.js");
 
 const { RM } = require("../core/executables.js");
 const { shellJoin } = require("../core/shell.js");
@@ -12,14 +13,16 @@ const { errorMessage, summarizeCommand } = require("../core/errors.js");
  * ever assembles a command string by concatenation.
  *
  * Asking the filesystem a question is a different thing and lives in
- * asking.js: a question that comes back "no" has answered, and must not be
+ * filesystem-probes.js: a question that comes back "no" has answered, and must not be
  * dressed up as a command that failed.
  */
 
 function runCommand(app, command, label) {
     try {
         return app.doShellScript(command);
-    } catch (error) {
+    } catch (caught) {
+        const error = hostError(caught);
+        if (isUserCanceled(error)) { throw error; }
         const context = label ? ` while ${label}` : "";
 
         // doShellScript turns the command's newlines into carriage returns,
@@ -27,12 +30,8 @@ function runCommand(app, command, label) {
         const said = errorMessage(error).replace(/\r\n?/gu, "\n").trim();
         const failure = new OperationError(
             `Command failed${context}.\n\n${said}`,
-            { cause: error }
+            { cause: error, command: summarizeCommand(command) }
         );
-
-        // Carried alongside the message so the presenter can decide: shown in
-        // a log, withheld from a dialog.
-        failure.command = summarizeCommand(command);
 
         throw failure;
     }
@@ -43,12 +42,10 @@ function runArgv(app, argumentsList, label) {
 }
 
 /*
- * A command whose answer is a file rather than a line.
- *
- * exiftool writes a binary tag to standard output, and its own -w names the
- * file after the photograph -- which is how a 250-character photograph name
- * asked for a 264-byte filename, over what any Mac filesystem will take. The
- * redirection goes through the same quoting every argument does.
+ * Redirect binary tool output to an explicit workspace file. ExifTool -w
+ * extends the photograph's filename and can exceed the filesystem limit even
+ * for a valid source name. Quote the redirection target by the same argv rule
+ * as every other shell argument.
  */
 function runArgvInto(app, argumentsList, path, label) {
     return runCommand(
@@ -69,11 +66,12 @@ function runArgvInto(app, argumentsList, path, label) {
 function tryArgv(app, argumentsList) {
     try {
         return app.doShellScript(shellJoin(argumentsList));
-    } catch {
+    } catch (caught) {
+        const error = hostError(caught);
+        if (isUserCanceled(error)) { throw error; }
         return "";
     }
 }
-
 
 function cleanupArgv(app, argv) {
     try { runArgv(app, argv, "cleaning temporary work"); return { state: "removed" }; }

@@ -2,11 +2,11 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { buildForm } = require("../../../src/host/appkit-form.js");
-const { presentForm, readControls, WIDGETS } = require("../../../src/host/appkit.js");
-const { unbindChoices } = require("../../../src/host/appkit-choice.js");
-const { formSpec } = require("../../../src/host/form.js");
-const { defaultAnswers } = require("../../../src/host/form-defaults.js");
+const { buildForm } = require("../../../src/host/quick-action/appkit-form.js");
+const { presentForm, readControls, WIDGETS } = require("../../../src/host/quick-action/appkit.js");
+const { unbindChoices } = require("../../../src/host/quick-action/appkit-choice.js");
+const { formSpec } = require("../../../src/host/quick-action/form.js");
+const { defaultAnswers } = require("../../../src/host/quick-action/settings-model.js");
 const { createFakeObjC } = require("./fake-objc.cjs");
 const FONTS = ["Menlo"];
 const OFF = "Do not stamp the coordinates";

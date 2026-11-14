@@ -1,14 +1,13 @@
 "use strict";
 
-const { plural, utf8Length, truncateToBytes } = require("./numbers.js");
+const { utf8Length, truncateToBytes } = require("./utf8.js");
+const { plural } = require("./formatting.js");
 const { fileStem, sanitizeFilename } = require("./paths.js");
 
 /*
- * Output filename construction and collision avoidance.
- *
- * What the output is called is the product's business; what a filename may be
- * is this one's. Both halves here were learned rather than chosen, and
- * neither is about any particular kind of file.
+ * Construct output filenames and avoid collisions. Product code supplies the
+ * marker and extension; this module owns filesystem-safe components and byte
+ * budgets independently of the kind of file.
  */
 
 const MAXIMUM_SUFFIX = 10000;
@@ -84,14 +83,10 @@ function describeExcluded(excluded) {
 }
 
 /*
- * A path split at its extension, read off the end of the last component so
- * the directories cannot join in. A pattern over the whole path made them
- * part of the question: a folder with a newline in its name -- legal, and
- * handled everywhere else here -- stopped the pattern reaching the extension
- * at all, and a second file of the same name could not be given its suffix.
- *
- * A leading dot is a hidden file rather than an extension, so `.profile`
- * keeps its whole name and is numbered after it.
+ * Split the extension from the last path component so directory names cannot
+ * affect it, including directories containing newlines. A leading dot denotes
+ * a hidden file rather than an extension: .profile keeps its whole name and
+ * receives a collision suffix after it.
  */
 function splitExtension(path) {
     const lastSlash = path.lastIndexOf("/");
@@ -120,7 +115,7 @@ function collisionPath(path, attempt) {
  * nor even read a file a tool had created in the user's Downloads folder,
  * while a file the shell itself created there could be renamed freely and
  * copying into that folder from the workspace was allowed throughout.
- * Nothing is written into the output folder now except the finished image.
+ * Nothing is written into the output folder except the finished image.
  */
 function stagedPath(workspace, token, extension) {
     return `${workspace}/staged-${sanitizeFilename(String(token))}${extension}`;
