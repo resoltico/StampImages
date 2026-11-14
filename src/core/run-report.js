@@ -1,4 +1,5 @@
 "use strict";
+const { isWorkspaceName } = require("./workspaces.js");
 const { summarizeRun } = require("./run-summary.js");
 const { basename } = require("./paths.js");
 const { supportedFormatList } = require("./formats.js");
@@ -81,8 +82,16 @@ function summaryText(summary, includeHeadline = true) {
     ].filter(Boolean).join("\n\n");
 }
 
+function workspaceText(diagnostics) {
+    const workspaces = diagnostics.filter((entry) => entry.stage === "workspace" &&
+        ["workspace-retained", "workspace-reclaimed", "workspace-unreadable"].includes(entry.code) &&
+        typeof entry.message === "string" && entry.message.trim() &&
+        typeof entry.diagnostic?.path === "string" && isWorkspaceName(basename(entry.diagnostic.path)));
+    return workspaces.length > 0 ? `Temporary work:\n${workspaces.map((entry) => `${entry.message}\n${entry.diagnostic.path}`).join("\n\n")}` : "";
+}
+
 function reportText(result, includeHeadline = true) {
-    return [summaryText(summarizeRun(result), includeHeadline), result.elapsed ? `Elapsed: ${result.elapsed}` : ""].filter(Boolean).join("\n\n");
+    return [summaryText(summarizeRun(result), includeHeadline), workspaceText(result.diagnostics), result.elapsed ? `Elapsed: ${result.elapsed}` : ""].filter(Boolean).join("\n\n");
 }
 function noImagesHeadline(rejected) { return rejected.length > 0 ? "Nothing to stamp." : "No images selected."; }
 function describeNoImages(rejected, includeHeadline = true) {

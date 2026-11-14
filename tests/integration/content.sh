@@ -34,7 +34,7 @@ settings_file "$WORK/dms.json" "" "bottom-right" "iso-minutes" "sexagesimal"
 if stamp "$WORK/default.json" "$WORK/photo.png" > /dev/null 2> "$WORK/error"; then
     fail "a configuration without coordinateFormat was accepted"
 fi
-assert_contains "$(cat "$WORK/error")" "Coordinate format" "the refusal names the missing setting"
+assert_contains "$(cat "$WORK/error")" '`coordinateFormat` is missing.' "the refusal names the missing JSON setting"
 test ! -e "$WORK/photo_stamped.png" || fail "a refused configuration wrote a copy"
 
 OFF=$(stamp "$WORK/off.json" "$WORK/photo.png")

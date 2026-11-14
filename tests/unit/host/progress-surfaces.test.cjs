@@ -145,3 +145,27 @@ test("a surface that is asked can say the person wants to stop", () => {
     held = true;
     assert.equal(progress.stopped(), true);
 });
+
+
+test("required stop observation follows announcements and stays outside optional fault isolation", () => {
+    const events = [];
+    let requested = false;
+    const progress = createProgress([{ report: () => events.push("announcement"), close: () => undefined }], () => { events.push("required-control"); return requested; });
+    progress.phase("Preparing");
+    assert.deepEqual(events, ["announcement", "required-control"]);
+    requested = true;
+    assert.doesNotThrow(() => progress.finished("saved"));
+    assert.deepEqual(events, ["announcement", "required-control", "announcement"]);
+    assert.throws(() => progress.phase("Next image"), { name: "UserCanceled" });
+    assert.equal(progress.stopped(), true);
+    assert.deepEqual(progress.diagnostics, []);
+});
+
+test("required control operation and programming failures propagate without observer diagnostics", () => {
+    const { OperationError } = require("../../../src/core/errors.js");
+    for (const failure of [new OperationError("Control unavailable."), new TypeError("control bug")]) {
+        const progress = createProgress([], () => { throw failure; });
+        assert.throws(() => progress.phase("Checking"), (error) => error === failure);
+        assert.deepEqual(progress.diagnostics, []);
+    }
+});

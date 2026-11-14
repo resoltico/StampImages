@@ -84,9 +84,9 @@ only, and other cleanup or run problems have their own section.
 | Exit | Meaning |
 | --- | --- |
 | `0` | Complete |
-| `1` | Incomplete or stopped after setup; confirmed copies are kept |
+| `1` | Incomplete or stopped in any phase; confirmed copies are kept |
 | `2` | Usage error or invalid settings |
-| `3` | Could not start: setup failed or was stopped |
+| `3` | Could not start: setup failed |
 
 | Field | Meaning |
 | --- | --- |
@@ -95,16 +95,25 @@ only, and other cleanup or run problems have their own section.
 | `rejected` | Selected items that were not admitted |
 | `excluded` | Earlier stamped copies found in selected folders and left alone |
 | `issues` | Problems affecting the request as a whole |
-| `diagnostics` | Optional-surface and cleanup diagnostics |
+| `diagnostics` | Optional-surface, cleanup and prior-workspace diagnostics |
 | `elapsed` | Human-readable processing time, from the first image's preparation to completion; excludes dialogs and is absent before processing |
 
-Exit 3 identifies the setup phase, including required tools or native capabilities
-that are unavailable. A setup cancellation has receipt state `canceled` and issue
-code `canceled`; inspect those fields to distinguish a stop from a setup error.
+Exit 3 identifies failed setup, including required tools or native capabilities
+that are unavailable. A cancellation exits 1 in every phase. After settings and
+typeface validation, SIGINT and SIGTERM request the same cooperative stop as the
+Quick Action: an in-flight native command finishes before the next safe checkpoint
+observes the request. Monitoring remains owned through receipt/report transport;
+the command-line process exits and the OS reclaims its signal resources.
 
 `complete` requires every admitted image saved with everything requested, nothing
 rejected and no issues. An abrupt process end or a failed stdout cannot guarantee a
 receipt.
+
+Prior workspaces left retained or unreadable, and safely reclaimed stale
+workspaces, appear in a `Temporary work` report section when their exact workspace
+paths are known. Their existing diagnostic object shape is unchanged;
+`workspace-reclaimed` records successful reclamation with stage `workspace` and
+`diagnostic.path`. These informational diagnostics do not change run state.
 
 ## Image records
 

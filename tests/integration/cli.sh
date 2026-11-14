@@ -140,4 +140,5 @@ if (result.injected !== 1 || result.publicationAttempts !== 1 || record.state !=
 if (process.argv[3] === 'fault-after-commit' && !record.issues.some(issue => issue.code === 'fault')) throw Error('post-commit fault diagnostic was lost');
 JS
 done
+node "$ROOT/tests/integration/signals.cjs" "$SCRIPT" "$WORK/settings.json" "$WORK/source.png" "$WORK/signals"
 printf 'macOS CLI and capture lifecycle integration passed\n'

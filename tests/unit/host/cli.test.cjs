@@ -158,3 +158,9 @@ test("remote, incomplete or undecodable settings URLs are refused before file ac
         }), (error) => error.issues[0].code === "settings-file" && error.issues[0].stage === "request" && /valid local file URL/u.test(error.message));
     }
 });
+
+
+test("setup cancellation exits1 even when a tool refusal also exists", () => {
+    const result = runOutcome([], [], [], [{ code: "operation", stage: "setup", message: "Tool unavailable." }, { code: "canceled", stage: "setup", message: "Stopped." }]);
+    assert.equal(result.state, "canceled"); assert.equal(exitCode(result), 1);
+});

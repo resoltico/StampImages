@@ -20,7 +20,7 @@ function runOutcome(images = [], rejected = [], excluded = [], issues = []) {
     const incomplete = images.length === 0 || rejected.length > 0 || issues.length > 0 || images.some((image) => image.state !== "saved" || image.issues.length > 0 || image.missingMetadata?.length > 0);
     let state = incomplete ? "incomplete" : "complete";
     if (stopped && incomplete) { state = "canceled"; }
-    if (images.length === 0 && issues.some((issue) => ["settings", "request"].includes(issue.stage) || isSetupRefusal(issue))) { state = "invalid"; }
+    if (images.length === 0 && issues.some((issue) => ["settings", "request"].includes(issue.stage) || (!stopped && isSetupRefusal(issue)))) { state = "invalid"; }
     return { state, images, rejected, excluded, issues, diagnostics: [] };
 }
 function noImagesOutcome(rejected) {

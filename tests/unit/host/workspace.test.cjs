@@ -5,6 +5,7 @@ const test = require("node:test");
 const {
     createWorkspace,
     removeWorkspace,
+    reclaimWorkspaces,
     nonce
 } = require("../../../src/host/workspace.js");
 const { createFakeApp, failing } = require("../ports/fake-app.cjs");
@@ -95,4 +96,23 @@ test("a workspace that cannot be made says what was being attempted", () => {
         () => createWorkspace(app, storage),
         /creating temporary workspace/u
     );
+});
+
+
+test("successful safe stale reclamation and retained work keep the existing diagnostic shape", () => {
+    const removed = [];
+    const dead = "StampImages.0123456789", retained = "StampImages.9876543210";
+    const app = { doShellScript(command) { if (command.includes("'/bin/rm'")) { removed.push(command); } return ""; } };
+    const world = { temporary: "/tmp", entries(path) {
+        if (path === "/tmp") { return [dead, retained, "unrelated"]; }
+        return path.endsWith(retained) ? ["retain"] : ["owner.json"];
+    },
+    read: () => JSON.stringify({ pid: 99, started: "dead process" }) };
+    assert.deepEqual(reclaimWorkspaces(app, world), [
+        { code: "workspace-reclaimed", stage: "workspace", message: "A stale workspace was reclaimed.", diagnostic: { path: `/tmp/${dead}` } },
+        { code: "workspace-retained", stage: "workspace", message: "A retained or unreadable workspace was left in place.", diagnostic: { path: `/tmp/${retained}` } }
+    ]);
+    assert.equal(removed.length, 1);
+    assert.ok(removed[0].includes(dead));
+    assert.ok(!removed[0].includes(retained));
 });

@@ -87,3 +87,13 @@ test("only a setup operation refusal with no image work is invalid", () => {
     assert.equal(runOutcome([], [], [], [{ code: "canceled", stage: "setup" }]).state, "canceled");
     assert.equal(runOutcome([{ state: "saved", issues: [] }], [], [], [{ code: "operation", stage: "setup" }]).state, "incomplete");
 });
+
+
+test("setup refusal cannot replace a stop while typed request refusal keeps its priority", () => {
+    const stop = { code: "canceled", stage: "setup", message: "Stopped." };
+    const tool = { code: "operation", stage: "setup", message: "Tool unavailable." };
+    assert.equal(runOutcome([], [], [], [tool, stop]).state, "canceled");
+    assert.equal(runOutcome([], [], [], [stop, tool]).state, "canceled");
+    assert.equal(runOutcome([], [], [], [tool]).state, "invalid");
+    assert.equal(runOutcome([], [], [], [{ code: "text", stage: "settings", message: "Invalid setting." }, stop]).state, "invalid");
+});

@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- SIGINT and SIGTERM now request a cooperative command-line stop; every canceled run exits 1, including during setup, and later runs report retained or safely reclaimed workspaces.
+
 - Command-line settings files accept local `file://` URLs, including encoded spaces and Unicode; remote and malformed settings URLs are refused before processing.
 
 - Recovered copies have a “Saved elsewhere” section with the actual cause; failed-only headings and separate cleanup issues keep saved work clear.

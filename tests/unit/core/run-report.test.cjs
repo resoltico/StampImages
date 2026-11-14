@@ -175,3 +175,28 @@ test("multiple request problems stay separated without a conversion failure head
         { code: "operation", stage: "setup", message: "Tool missing." }, { code: "fault", stage: "setup", message: "Other setup detail." }
     ])).kind, "setup");
 });
+
+
+test("actual prior-workspace observations are visible before elapsed without changing receipt state", () => {
+    for (const code of ["workspace-retained", "workspace-reclaimed", "workspace-unreadable"]) {
+        const path = "/tmp/a  b/StampImages.0123456789";
+        const result = { ...runOutcome([saved]), elapsed: "1 second" };
+        result.diagnostics.push({ code, stage: "workspace", message: "Workspace note.", diagnostic: { path } });
+        assert.equal(reportText(result), `Created 1 stamped copy.\n\n1 saved.\n\nSaved to:\n/out/\na.jpg\n\nTemporary work:\nWorkspace note.\n${path}\n\nElapsed: 1 second`);
+        assert.equal(result.state, "complete");
+        const other = { code: "workspace-retained", stage: "workspace", message: "Second note.", diagnostic: { path: "/tmp/StampImages.9876543210" } };
+        result.diagnostics.push(other);
+        assert.ok(reportText(result).includes(`${path}\n\nSecond note.\n/tmp/StampImages.9876543210`));
+    }
+});
+
+test("temporary-root scan, optional observer and malformed diagnostics stay technical-only", () => {
+    const note = { code: "workspace-retained", stage: "workspace", message: "Workspace note.", diagnostic: { path: "/tmp/StampImages.0123456789" } };
+    for (const diagnostic of [{ ...note, stage: "observer" }, { ...note, code: "observer-fault" }, { ...note, message: " " },
+        { ...note, message: null }, { ...note, diagnostic: { path: "/tmp" } }, { ...note, diagnostic: { path: "" } },
+        { ...note, diagnostic: { path: 4 } }, { ...note, diagnostic: {} }, { ...note, diagnostic: null }]) {
+        const result = runOutcome([saved]); result.diagnostics.push(diagnostic);
+        assert.doesNotMatch(reportText(result), /Temporary work:/u);
+    }
+    assert.doesNotMatch(reportText(runOutcome([saved])), /Temporary work:/u);
+});

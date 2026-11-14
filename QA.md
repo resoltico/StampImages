@@ -60,6 +60,12 @@ registration, teardown and reentrant native visibility getters. `resources.sh` c
 confirmed temporary recovery and dead/live/retained/unreadable workspace ownership;
 `concurrency.sh` checks 12 two-process publication rounds. CLI and lifecycle probes
 also cover strict settings, statuses, source capture, recovery and cancellation.
+Signal controller unit checks cover native adapter ownership and complete saved
+signal actions. Actual command-line SIGINT/SIGTERM/repeat runs must produce canceled
+receipts with exit 1 and preserve confirmed output/source integrity. Separate native
+controller probes establish explicit-close restoration; real command-line exit
+reclaims process-owned monitoring resources instead of returning through JS finally.
+Prior-workspace notes must exclude unrelated and temporary-root scan diagnostics.
 An unavailable typeface combined with a missing tool and unavailable source must
 report `invalid` with exit 2 before source admission.
 `hdr.sh` checks synthetic Ultra HDR admission, visible stamped SDR JPEGs with no
