@@ -35,7 +35,7 @@ function commandLineResult(result) {
 
 function reportHeadless(result, write = writeReceipt, exit = exitCli) {
     const reported = commandLineResult(result);
-    write(`${JSON.stringify(reported)}\n`);
+    write(`${JSON.stringify(reported, (field, value) => field === "stack" ? undefined : value)}\n`);
     write(`${reportText(reported)}\n`, undefined, true);
     return exit(exitCode(reported));
 }

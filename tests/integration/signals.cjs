@@ -40,7 +40,16 @@ function checkImage(filename) {
     execFileSync("vips", ["avg", `${filename}[fail_on=warning]`], { stdio: "pipe" });
 }
 
+function noStackKeys(value) {
+    if (!value || typeof value !== "object") { return; }
+    for (const [key, nested] of Object.entries(value)) {
+        assert.notEqual(key, "stack", "public receipts cannot expose exception stacks");
+        noStackKeys(nested);
+    }
+}
+
 function verifyResult(receipt, input, delivered) {
+    noStackKeys(receipt);
     assert.equal(receipt.state, delivered.length ? "canceled" : "complete");
     const outputs = new Set();
     for (const image of receipt.images) {

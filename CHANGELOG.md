@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Command-line receipts omit stack traces while retaining structured issue reasons and other diagnostics.
+
 - Truncated HEIC is reported as damaged, excluded loaders identify unsupported content, and folder runs report visible special files and unreadable image entries.
 
 - Output and recovery paths now report actual stored filename bytes; unverifiable names retain validated originals, and unverified originals are never claimed as recoveries or removed.

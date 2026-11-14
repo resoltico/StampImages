@@ -164,3 +164,19 @@ test("setup cancellation exits1 even when a tool refusal also exists", () => {
     const result = runOutcome([], [], [], [{ code: "operation", stage: "setup", message: "Tool unavailable." }, { code: "canceled", stage: "setup", message: "Stopped." }]);
     assert.equal(result.state, "canceled"); assert.equal(exitCode(result), 1);
 });
+
+
+test("receipt serialization omits every stack key without changing outcomes or other diagnostic data", () => {
+    const result = runOutcome([{ source: "/source.png", state: "failed", issues: [{ code: "fault", stage: "stamping", message: "Keep this reason.",
+        diagnostic: { stack: "private image trace", command: "keep command", facts: { stack: "nested trace", count: 0, flag: false, empty: null } } }] }]);
+    result.stack = "private run trace";
+    result.diagnostics.push({ code: "observer-fault", message: "Keep observer detail.", stack: "private observer trace", nested: [{ stack: "array trace", value: "stack is ordinary text" }] });
+    const before = JSON.stringify(result), output = [];
+    reportHeadless(result, (text, ignored, stderr) => { if (!stderr) { output.push(text); } }, () => 1);
+    const receipt = JSON.parse(output[0]);
+    assert.equal(Object.hasOwn(receipt, "stack"), false);
+    assert.deepEqual(receipt.images[0].issues[0].diagnostic, { command: "keep command", facts: { count: 0, flag: false, empty: null } });
+    assert.deepEqual(receipt.diagnostics, [{ code: "observer-fault", message: "Keep observer detail.", nested: [{ value: "stack is ordinary text" }] }]);
+    assert.equal(receipt.images[0].issues[0].message, "Keep this reason.");
+    assert.equal(JSON.stringify(result), before);
+});

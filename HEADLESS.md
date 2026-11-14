@@ -77,7 +77,8 @@ guaranteed across encoders; existing retained maker data is not deleted.
 ## Receipt and exit status
 
 Every handled request writes one JSON object, ending in a newline, to stdout, and a
-plain-language report to stderr. Read both the receipt and the exit status. Recovered copies appear under
+plain-language report to stderr. `stack` keys are omitted at serialization; other
+structured diagnostic data is retained. Read both the receipt and the exit status. Recovered copies appear under
 “Saved elsewhere” with a one-line cause; “Could not stamp” lists failed copies
 only, and other cleanup or run problems have their own section.
 
