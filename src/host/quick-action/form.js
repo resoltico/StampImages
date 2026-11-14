@@ -30,10 +30,9 @@ function invitation({ count = 0, selectedFolders = 0, folders = [] } = {}) {
 }
 
 /*
- * A form asked for with no answers opens on the defaults -- which include a
- * typeface, and which one that is depends on the machine. Taking them without
- * the fonts left the row saying nothing while the control beside it showed a
- * face, so the answers are defaulted here, where the fonts are known.
+ * Derive opening answers where the machine's font suggestions are available.
+ * The row's displayed value and its native control must use the same default
+ * face, including the fallback when the declared default is unavailable.
  */
 // One line, so the form keeps its height: a wrapped sentence measured 750 points.
 function correction(count) {

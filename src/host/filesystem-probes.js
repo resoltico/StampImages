@@ -73,12 +73,9 @@ function isExecutable(app, path) {
 }
 
 /*
- * A regular file with something in it. Asked in one call because there are
- * five of these per image and a second subprocess each would be five
- * thousand more on a job of a thousand photographs.
- *
- * -s alone passes a directory: measured, and it is how a file moved inside a
- * directory that appeared at the output path was reported as published.
+ * Require both a regular file and nonzero length in one subprocess. The -s
+ * predicate alone can accept a directory, which cannot confirm a written image.
+ * Combining -f and -s also avoids a second subprocess for every verification.
  */
 function isRegularNonEmpty(app, path) {
     try {

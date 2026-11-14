@@ -36,19 +36,9 @@ function makeChoice(context, row, rect) {
 }
 
 /*
- * A row that is typed into: the control, only as wide as what it holds, and
- * the space that would have been wasted carrying the rule it accepts.
- *
- * The color row and the number rows differ in the control and in how wide it
- * is, and in nothing else -- so they differ here in the control and in how
- * wide it is, and in nothing else.
- */
-/*
- * The value, and the rule it breaks -- but only where the hint is a rule.
- *
- * "8-400 pt" in red says what the number had to be. "or type a name" in red
- * said, to somebody who had just typed one, that they had not. Reported from
- * use, and the red hint was the loudest thing on the row.
+ * Highlight the invalid value and any hint that states a validation rule.
+ * Keep suggestion hints such as "or type a name" neutral: typing a name is
+ * allowed even when that particular name cannot be resolved.
  */
 function markRefused(context, row, made) {
     if (!row.invalid) {
@@ -62,6 +52,10 @@ function markRefused(context, row, made) {
     }
 }
 
+/*
+ * Compose editable controls at the width their values need, then use the
+ * remaining column space for the applicable hint.
+ */
 function addTyped(context, row, rect, control) {
     const { ns, widgets, view } = context;
     const { width, make } = control;
@@ -93,10 +87,9 @@ function addCombo(width) {
 }
 
 /*
- * Free text takes the whole control column and states its rule nowhere: what
- * it accepts is anything, and the only bound is a length nobody reaches by
- * writing a caption. It is taller than the other rows because it is the one
- * that can hold more than a line.
+ * Use the whole column and a taller view for multiline custom text. Show any
+ * length or text-validation problem in the form's correction list rather than
+ * adding a second hint beside the caption.
  */
 function addText(context, row, rect) {
     const { ns, widgets, view } = context;

@@ -8,13 +8,9 @@ const { ADD_ROW } = require("./appkit-rows.js");
 const { addOptionalChoice } = require("./appkit-choice.js");
 
 /*
- * Turning the form description from src/host/form.js into a view: where each
- * row goes, and what each row becomes -- the second of which is
- * appkit-rows.js.
- *
- * Split from appkit.js so that laying the rows out and presenting the result
- * stay separately readable. The widget primitives arrive as a parameter,
- * which is what lets this be tested without AppKit.
+ * Lay out the quick-action form description and compose each row through
+ * appkit-rows.js. Keep layout separate from modal presentation in appkit.js;
+ * injected widget primitives let tests inspect composition without AppKit.
  */
 
 const DETAILS_HEIGHT = 110;

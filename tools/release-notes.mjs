@@ -1,8 +1,7 @@
 /*
- * Prints the CHANGELOG section for a tag, for use as a release body.
- *
- * A thin entry point, like check-dist.mjs and check-tag.mjs: the rule lives
- * in tools/lint/consistency.mjs where it is unit tested and mutated.
+ * Print the CHANGELOG section for a release tag. The section-selection rule
+ * lives in tools/lint/consistency.mjs and is unit tested; this file only
+ * supplies the command-line tag and writes the selected text.
  */
 import { checkReleaseTag } from "./lint/consistency.mjs";
 import { releaseNotes } from "./lint/notes.mjs";

@@ -42,12 +42,10 @@ function runArgv(app, argumentsList, label) {
 }
 
 /*
- * A command whose answer is a file rather than a line.
- *
- * exiftool writes a binary tag to standard output, and its own -w names the
- * file after the photograph -- which is how a 250-character photograph name
- * asked for a 264-byte filename, over what any Mac filesystem will take. The
- * redirection goes through the same quoting every argument does.
+ * Redirect binary tool output to an explicit workspace file. ExifTool -w
+ * extends the photograph's filename and can exceed the filesystem limit even
+ * for a valid source name. Quote the redirection target by the same argv rule
+ * as every other shell argument.
  */
 function runArgvInto(app, argumentsList, path, label) {
     return runCommand(
@@ -74,7 +72,6 @@ function tryArgv(app, argumentsList) {
         return "";
     }
 }
-
 
 function cleanupArgv(app, argv) {
     try { runArgv(app, argv, "cleaning temporary work"); return { state: "removed" }; }

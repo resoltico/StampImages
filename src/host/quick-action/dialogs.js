@@ -23,15 +23,10 @@ const { invitation } = require("./form.js");
  */
 
 /*
- * A choice is a list; everything else is typed, and what may be typed is
- * decided by the same reader the form uses -- so a color refused in one is
- * refused in the other, in the same words. Each answer is read on its own:
- * reading it alongside the rest let a bad later answer, still at its old
- * value, refuse a good typeface.
- *
- * The typeface is typed here as well, and resolved by the same function the
- * form uses, so a family the person already uses can be named and a name
- * that names nothing is asked again like a number out of range.
+ * Read each fallback answer independently through the same setting rules as
+ * the form, so a still-invalid later field cannot refuse a valid current one.
+ * Resolve typed typefaces with the shared catalog rule, including names that
+ * are not among the offered suggestions.
  */
 function refusal(context, row, text) {
     try {

@@ -13,16 +13,10 @@ const { labelsOf, valueOfLabel } = require("./settings-model.js");
  */
 
 /*
- * Presents the labels and answers with the one chosen -- the label, not the
- * value behind it. What the caller is assembling is a set of answers, which is
- * what the controls of the form would be showing, and the whole set is read
- * into settings once at the end by the reader the form uses. Answering with
- * the value here put a value where a label belonged, and every choice was then
- * refused as not being one of the choices.
- *
- * Checked against the list it came from all the same: a host that answers
- * something that was never offered is a refusal at the question rather than a
- * puzzle ten questions later.
+ * Present choice labels and return the chosen label as a form answer.
+ * The shared answer reader converts labels to stored values; returning a stored
+ * value here would bypass that contract. Refuse a response outside the offered
+ * list at this question rather than deferring it to later validation.
  */
 function chooseRequired(app, control, opening) {
     try {
@@ -43,19 +37,12 @@ function chooseRequired(app, control, opening) {
 }
 
 /*
- * A question that will not take an answer it cannot use.
+ * Retry an invalid answer with the submitted text still in the box. Replacing
+ * it with the original default would discard the attempted correction and
+ * could make an unaccepted number look approved.
  *
- * What was typed comes back in the box. Asking again with the original
- * default in its place threw away the one thing the person had that the
- * program did not -- the value they were correcting -- and for a number it
- * put back a figure that looked as though it had been accepted.
- *
- * The reason goes into the prompt rather than into a dialog of its own, which
- * is what the form does with its problems: an answer and what is wrong with
- * it belong on one screen rather than on two in turn.
- *
- * displayDialog raises when the person cancels, and that call sits outside
- * the try deliberately: cancelling is a decision, not an unusable answer.
+ * Put the problem in the same prompt as the answer. Keep native cancellation
+ * outside the answer-validation catch so it ends the run instead of retrying.
  */
 function dialogResponse(app, message, options) {
     try { return app.displayDialog(message, options); }

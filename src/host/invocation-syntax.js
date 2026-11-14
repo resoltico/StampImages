@@ -15,20 +15,10 @@
 const ARGUMENT_SEPARATOR = "--";
 
 /*
- * Shortcuts does not hand over a flat list. A Quick Action on a Finder
- * selection arrives as [[file, file, ...], parameters]: the selection nested
- * one level, followed by an object that is not a file at all.
- *
- * Flattened, because String() on an array of paths produces a comma-joined
- * string that still begins with "/" and still ends in ".jpg", so it survives
- * both the path check and the extension check and only fails at "no such
- * file". One image happened to work -- a single-element array stringifies to
- * just its element -- which is what made this look like a multi-image bug
- * rather than a shape the code never anticipated.
- *
- * The trailing parameters object needs no special case: it resolves to
- * nothing that looks like an image and is dropped by the same filter that
- * drops a selected text file.
+ * Normalize nested Shortcuts input, such as [[file, file], parameters], into
+ * individual items. Stringifying an array would join paths with commas and
+ * could pass superficial path/extension checks while naming no actual file.
+ * The trailing parameters object is left for path resolution to ignore.
  */
 function normalizeInvocationInput(input) {
     if (input === undefined || input === null) {
@@ -44,22 +34,11 @@ function normalizeInvocationInput(input) {
     return items;
 }
 
-
 /*
- * Finder hands over file URLs rather than POSIX paths.
- *
- * Parsed rather than stripped of a prefix. Taking "file://" off the front and
- * keeping the rest treats the authority as though it were part of the path:
- * "file://remotehost/photos/a.jpg" became "remotehost/photos/a.jpg", which is
- * a relative path, and the filesystem answers a relative path against whatever
- * the process's working directory happens to be. Matching the longer prefix
- * "file://localhost" first made it worse rather than better --
- * "file://localhostelsewhere/photos/a.jpg" became "elsewhere/photos/a.jpg".
- *
- * A file URL names a local absolute path or it names nothing this action can
- * open. "" is the existing answer for an item that is not a path, and
- * selection.js turns it into a stated rejection naming the URL, which is what
- * somebody who selected it needs to read.
+ * Parse Finder file URLs as local absolute paths. Validate the complete
+ * authority: stripping file:// or matching a localhost prefix could turn a
+ * remote authority into a relative path. Return an empty path for unsupported
+ * URLs so selection can report the original requested URL as a rejection.
  */
 const FILE_URL = /^file:\/\/(?<authority>[^/]*)(?<path>\/.*)$/iu;
 const LOCAL_HOST = "localhost";

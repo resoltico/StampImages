@@ -54,19 +54,11 @@ function orient(job, source, oriented) {
 }
 
 /*
- * A gray photograph, read into sRGB so a color can be painted on it.
- *
- * The stamp's color is moved into the photograph's own space before it is
- * painted, and a gray space cannot hold a color: measured, #FF3B30 moved into
- * a gray profile is one band with the value 138, and the caption came out gray
- * with the run reporting that the color had been handled. A photograph that
- * stores only grays and a caption that is not gray cannot meet in the
- * photograph's space, so they meet in sRGB instead -- the picture unchanged,
- * a value of 200 read back as 200, 200, 200, and the color that was chosen.
- *
- * Only when the color actually needs it. White, black and the default
- * outline are grays, so the ordinary run over a gray photograph is untouched
- * and the copy stays as gray as the photograph was.
+ * Expand a gray photograph into sRGB only when the caption requires color.
+ * Converting chromatic stamp values into a gray profile would erase that color:
+ * measured, #FF3B30 becomes one gray band with value 138. Expanding the picture
+ * instead preserves gray pixel values, such as 200 becoming 200, 200, 200, while
+ * allowing the chosen caption color. Gray captions need no expansion.
  */
 function inColor(job, oriented, profile, token) {
     const expanded = `${job.workspace}/color-${token}.v`;

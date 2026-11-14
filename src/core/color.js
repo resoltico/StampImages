@@ -109,10 +109,9 @@ function describeExpanded(count) {
 }
 
 /*
- * A color that could not be moved into a photograph's own space is painted
- * as the numbers it is, which is what every copy was before the move existed.
- * Said once for the run: what it affects is how closely the stamp matches the
- * color that was chosen, and only on a photograph that carries a profile.
+ * If a color cannot be converted through the image's profile, keep its sRGB
+ * numbers and report the unconverted color. Count this once for the run because
+ * it affects color matching only on images with an unreadable profile.
  */
 function describeUnconverted(count) {
     return `${plural(count, "image")} carried a color profile this ` +

@@ -1,16 +1,9 @@
 "use strict";
 /*
- * Reaching AppKit: whether it is there at all, and the two things every caller
- * that gets there has to say.
- *
- * A bridge that will not take the framework is one that cannot draw anything,
- * and every caller has somewhere else to go: the settings form falls back to
- * the stepwise dialogs, and the progress panel falls back to reporting through
- * the host's own Progress object. Neither fails a run over a widget.
- *
- * This is where the form and the panel meet, and the only place they do. A
- * progress panel that had to import the settings form to ask whether AppKit
- * exists would be pointing its dependency at the wrong thing.
+ * Probe AppKit independently of form or panel construction. Unavailable forms
+ * can use scripting-addition dialogs; progress surfaces are optional and an
+ * unavailable panel must not fail the run. Sharing this capability probe avoids
+ * a dependency from progress UI onto the settings form.
  */
 
 function appkitBridge(objc, ns) {

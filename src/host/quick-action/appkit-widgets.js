@@ -2,18 +2,10 @@
 const { rectOf } = require("./appkit-bridge.js");
 
 /*
- * The structure a form is built from: the view, the labels, the menus and
- * the alert around them. Controls a person types into are appkit-fields.js,
- * and between them they are the only code that touches AppKit directly.
- *
- * Every function takes the ObjC namespace as its first parameter rather than
- * reaching for the `$` global, which is what lets the composition above be
- * driven by a fake in tests. What a fake cannot prove is that AppKit renders
- * any of it; that was established by running a probe inside the Shortcuts
- * helper, and is why appkit.js keeps the stepwise dialogs as a fallback.
- *
- * Deliberately branchless: anything with a decision in it belongs in
- * src/host/form.js, where it can be tested properly.
+ * Construct form views, labels, menus and alerts through an injected ObjC
+ * namespace. Fakes establish composition and property assignments; native
+ * integration checks rendering. Keep domain and answer-validation decisions
+ * in the settings model rather than these widget primitives.
  */
 
 const HINT_FONT_SIZE = 11;
@@ -27,11 +19,12 @@ const INVALID_TINT_ALPHA = 0.18;
 // reverse of UIKit, so the constant is named rather than written inline.
 const ALIGN_RIGHT = 1;
 
-// NSLineBreakByTruncatingTail: a label too long for its column ends in an
-// ellipsis instead of being cut mid-word. Clipping is how "JPEG quality
-// (1-100, 90-95" reached a user looking like an unclosed parenthesis.
-const TRUNCATE_TAIL = 4;
+/*
+ * NSLineBreakByTruncatingTail: show an ellipsis when a label exceeds its
+ * column rather than clipping it into a misleading incomplete phrase.
+ */
 
+const TRUNCATE_TAIL = 4;
 
 function makeView(ns, width, height) {
     return ns.NSView.alloc.initWithFrame(ns.NSMakeRect(0, 0, width, height));

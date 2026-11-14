@@ -41,7 +41,11 @@ export function formulaFor(tool, provided = PROVIDED_BY) {
 
     const formula = provided[tool];
 
-    // A blank mapping and a command that ships with macOS are different
+    /*
+     * A blank formula mapping differs from a command that ships with macOS.
+     * Reject blank mappings so a required external tool cannot be silently exempted
+     * from the declared installation commands.
+     */
     // things, and sharing one representation would let the first pass as the
     // second — silently exempting a tool from the check, which is how tiffcp
     // came to be required by the suite and installed by nothing.

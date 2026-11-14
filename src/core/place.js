@@ -1,18 +1,10 @@
 "use strict";
 
 /*
- * Writing a place the way a map writes one.
- *
- * Two forms, and both round before they decompose. Rounding afterwards is
- * what produced "12°59'60.0"N" on a photograph: the degrees and the minutes
- * were taken from the unrounded value and the seconds were rounded up into a
- * sixtieth that has to carry, and nothing carried it. The same fault at the
- * other end printed "-0.0000" for a coordinate just south of the equator,
- * which is a minus sign in front of nothing.
- *
- * So each form decides its smallest displayed unit first, rounds the whole
- * coordinate into that unit, and reads the larger units back out of it. What
- * comes out cannot disagree with itself.
+ * Round the whole coordinate to the smallest displayed unit before splitting
+ * it into degrees, minutes and seconds. This carries rounded seconds into the
+ * next minute and prevents impossible values such as 12°59'60.0"N. Normalize
+ * a rounded zero so decimal output never displays -0.0000.
  */
 
 const DEGREE_DECIMALS = 4;
@@ -25,17 +17,10 @@ const TENTHS_PER_MINUTE = SECONDS_PER_ARC_MINUTE * TENTHS_PER_SECOND;
 const TENTHS_PER_DEGREE = MINUTES_PER_DEGREE * TENTHS_PER_MINUTE;
 
 /*
- * The hemisphere is a letter rather than a sign: a negative latitude written
- * "-56°56'58.6\"" reads as an arithmetic result, and the letter is what a map
- * says.
- *
- * Which letter is a question about the coordinate, and how large it is is a
- * question about the display -- and rounding the two separately made them
- * disagree. Half of the smallest displayed unit south of the equator rounds
- * to a magnitude of one unit and, rounded again as a signed number, to
- * negative zero: a place shown as a tenth of a second south of the equator,
- * labeled north of it. The sign is read off the value itself, and only a
- * magnitude that displays as nothing takes the positive letter.
+ * Choose the hemisphere from the coordinate's sign and round its magnitude
+ * separately. Rounding a signed half-unit can produce negative zero, which
+ * would assign the wrong hemisphere. Only a magnitude that displays as zero
+ * uses the positive hemisphere letter.
  */
 function hemisphere(value, displayed, positive, negative) {
     return value < 0 && displayed !== 0 ? negative : positive;

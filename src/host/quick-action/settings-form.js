@@ -24,15 +24,10 @@ const { defaultAnswers } = require("./settings-model.js");
  */
 
 /*
- * The answers this layer cannot read for itself, because each depends on more
- * than one row or on the machine: that the stamp says something at all, and
- * that the typeface names a face this Mac has. Each comes back as the same kind
- * of problem a number out of range does: the field marked, the sentence at the
- * top, and everything else still typed.
- *
- * What the name turned out to mean is not taken from here. This is the loop
- * that decides whether to ask again, and it asks only that; the run resolves
- * the name it accepts, once, in settings-run.js.
+ * Validate independent values through the settings model, then check the
+ * content relationship and installed typeface through stampIssues. Corrections
+ * retain all submitted answers and identify the affected rows. The accepted
+ * name's drawing value is resolved by host/stamp-settings.js for the run.
  */
 function confirmedSettings(state, outcome, read) {
     const values = read.settings ?? read.values;

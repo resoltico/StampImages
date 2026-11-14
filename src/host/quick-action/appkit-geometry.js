@@ -8,9 +8,11 @@ const LABEL_WIDTH = 190;
 const CONTROL_WIDTH = 300;
 const NUMBER_WIDTH = 70;
 
-// Room for a color and the button that opens the list beside it. Wider than
-// a number and far narrower than a menu of names, which is what the list held
-// before its items became the colors themselves.
+/*
+ * Allow room for a canonical hex color and the button that opens its preset
+ * list, leaving the rest of the column for the editable-value hint.
+ */
+
 const COLOR_WIDTH = 100;
 
 // A family name and the button that opens the suggestions, with the rest of
@@ -39,9 +41,9 @@ const CONTROL_LEFT = LABEL_WIDTH + GAP;
 const FORM_WIDTH = CONTROL_LEFT + CONTROL_WIDTH;
 
 /*
- * A hint sits past the control it belongs to and stops at the edge of the
- * form. Derived from that control's width rather than from a fixed one: two
- * rows are typed into now, and they are not the same width.
+ * Place each hint after its control and stop at the form's right edge.
+ * Derive the remaining space from that control's width: number, color and
+ * font controls occupy different widths.
  */
 function hintRect(rect, controlWidth) {
     const left = CONTROL_LEFT + controlWidth + HINT_GAP;

@@ -32,17 +32,12 @@ const WIDGETS = {
 };
 
 /*
- * One window instead of ten sequential prompts.
+ * Present one settings window instead of sequential prompts. The ObjC
+ * namespace and widget primitives are injected so composition and answer
+ * collection can be tested with fakes.
  *
- * The ObjC namespace and the widget primitives are both parameters, so the
- * composition here — which rows become which controls, and what comes back
- * out of them — is unit tested against fakes. Only appkit-widgets.js touches
- * AppKit for real.
- *
- * A form that never appears would leave the user with nothing, so a modal
- * that ends any way other than by one of its buttons is reported as "could
- * not present" rather than as an answer. The caller then falls back to the
- * stepwise dialogs, which need no AppKit at all.
+ * A modal response outside the form's buttons means the form is unavailable,
+ * not an answer. The caller can then use scripting-addition dialogs.
  */
 
 /*

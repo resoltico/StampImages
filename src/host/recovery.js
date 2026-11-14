@@ -18,10 +18,9 @@ function describeFailure(reasons, whereabouts) {
 }
 
 /*
- * What this attempt made and does not need: the place it made in the output
- * folder, and -- when a folder was standing at the output path, which ln
- * links into rather than refusing -- the link left inside it, which publish.js
- * adds once it has confirmed the file there is the one this run published.
+ * Close only the staging area recorded as owned by this publication attempt.
+ * closeStaging removes its known file and removes the directory only if empty;
+ * an unrelated destination entry is never cleanup authority.
  */
 function clearAway(app, outcome) {
     return outcome.staging ? closeStaging(app, outcome.staging) : [];

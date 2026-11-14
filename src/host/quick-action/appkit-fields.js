@@ -2,10 +2,9 @@
 const { rectOf } = require("./appkit-bridge.js");
 
 /*
- * The controls a person types into. AppKit is touched here and in
- * appkit-widgets.js and nowhere else; the namespace arrives as a parameter so
- * the composition above can be driven by a fake, and what a fake cannot prove
- * is that any of it renders.
+ * Build editable native controls through an injected AppKit namespace.
+ * Composition tests can inspect calls against a fake; native tests establish
+ * that the controls actually render and accept input.
  */
 
 // NSBezelBorder, so the caption looks like something to type in.
@@ -23,22 +22,12 @@ function makeField(ns, text, rect) {
 }
 
 /*
- * A list to choose from and a field to type in, as one control in one row.
+ * Use one editable combo box for preset suggestions and custom values. Its list
+ * contains strings, so color presets display their canonical hex values rather
+ * than a swatch that could disagree with newly typed text.
  *
- * NSComboBox is the only control that is both, which is what keeps the form
- * at six rows and keeps the background a single setting: there is no second
- * field to reconcile with a menu, and no "Custom..." step that makes a row
- * appear.
- *
- * What it costs is the color swatch the four presets carried in their menu.
- * A combo box list holds strings, and a swatch beside the field instead would
- * be telling the truth only until the next keystroke -- so the colors
- * themselves are the whole of what the list shows now, and what they are
- * called is said in the form around it.
- *
- * Completion is off deliberately. With it on, typing over a selected preset
- * offers to finish the word, and what the field holds is then something the
- * user did not type.
+ * Disable completion so replacing a preset keeps exactly the submitted text,
+ * without inserting an automatic suggestion.
  */
 function makeCombo(ns, row, rect) {
     const combo = ns.NSComboBox.alloc.initWithFrame(
@@ -59,14 +48,9 @@ function makeCombo(ns, row, rect) {
 }
 
 /*
- * The one control a caption can actually be typed into.
- *
- * A text field is one line: Return commits the alert rather than starting
- * another, so the promise that your text keeps its line breaks was a promise
- * the form could not keep -- only a headless caller could. A text view in a
- * scroll view takes as many lines as somebody types, and is read back through
- * `string` rather than `stringValue`, which is why the form asks each control
- * what it is rather than assuming.
+ * Use a plain text view inside a scroll view for multiline captions. Return
+ * starts a new line instead of committing the alert. Read its string property;
+ * ordinary fields expose stringValue, so the form distinguishes control kinds.
  */
 function plainTextView(ns, text, rect) {
     const view = ns.NSTextView.alloc.initWithFrame(rectOf(ns, rect));
@@ -83,14 +67,12 @@ function plainTextView(ns, text, rect) {
 }
 
 /*
- * Tab moves on, as it does in every other field of the form. A text view
- * inserts a tab character by default, so a person working by keyboard could
- * not leave the caption except with Control-Tab -- measured, Tab and Shift-Tab
- * both stayed inside it, and the tab characters typed were stamped as gaps.
- * Return still starts a new line: that is what the caption is for.
+ * Intercept Tab and Shift-Tab to move keyboard focus, while Return continues
+ * to insert a caption line break. NSTextView otherwise inserts tabs and requires
+ * Control-Tab to leave the field.
  *
- * Registered once per process, and held by the caption that uses it because a
- * text view does not keep its delegate alive.
+ * Register the navigation delegate once per process and retain it with the
+ * caption, because a text view does not keep its delegate alive.
  */
 const NAVIGATION_CLASS = "StampImagesCaptionNavigation";
 const MOVES = { "insertTab:": "selectNextKeyView", "insertBacktab:": "selectPreviousKeyView" };

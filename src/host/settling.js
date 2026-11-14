@@ -14,19 +14,10 @@ const { removeOwned } = require("./owned-cleanup.js");
  */
 
 /*
- * The image is at the output path, or it is not published.
- *
- * Asked of the output path itself: which file is this? A hard link shares its
- * volume and file number with the file it was made from, and a rename carries
- * them along, so the same pair is proof that the entry holds what this run
- * put there. A nonempty regular file is not proof of anything -- another
- * writer's image is one too, and taking it as ours published their document and
- * deleted both copies of ours.
- *
- * Checked before anything is let go: after this the staging copy and the
- * workspace copy both go, and a failed check has to still have a finished image
- * to give back. An identity that could not be read is not a match, which is
- * what makes a refused inspection safe.
+ * Confirm the output's native identity before releasing any finished copy.
+ * A hard link or rename preserves the claimed volume/file-number pair; a
+ * nonempty regular file alone could belong to another writer. Unavailable
+ * identity facts do not confirm publication, so recovery retains the image.
  */
 
 /*

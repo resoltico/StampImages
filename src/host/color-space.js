@@ -35,10 +35,10 @@ function known(job, path) {
 }
 
 /*
- * Named for the attempt rather than for the photograph. exiftool's own -w
- * names the file after the source, so a 250-character photograph name asked
- * for a 264-byte filename -- longer than any Mac filesystem takes -- and the
- * failure was swallowed as "this photograph has no profile".
+ * Name the extracted profile for this attempt rather than the source filename.
+ * ExifTool -w extends the source name, which can exceed the filesystem byte
+ * limit for a long valid image name. An explicit workspace path keeps extraction
+ * failure distinct from a genuinely absent profile.
  */
 function extract(job, source, token) {
     const written = `${job.workspace}/profile-${token}.icc`;

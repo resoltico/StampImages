@@ -20,11 +20,9 @@ function broadcast(sinks, state) {
             } catch (caught) {
                 const error = hostError(caught);
                 /*
-                 * Recorded rather than thrown on: letting it out would unwind
-                 * the run from wherever the report was made, and one of those
-                 * places is the middle of a publication, which owns a finished
-                 * copy and a name it has claimed. The loop asks between
-                 * photographs, where stopping is safe.
+                 * Latch cancellation instead of unwinding the reporting call. A report may
+                 * occur during publication while the run owns a finished copy and a claimed
+                 * name; the next safe image-stage checkpoint handles the pending stop.
                  */
                 if (isUserCanceled(error)) { state.stopped = true; }
                 else { failed.add(sink); state.diagnostics?.push({ code: "observer-fault", message: String(error), stack: error?.stack ?? "" }); }

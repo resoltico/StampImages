@@ -4,11 +4,8 @@ const { isRegularFile, isDirectory } = require("./filesystem-probes.js");
 const { pathCandidates } = require("./input.js");
 
 /*
- * Why something the user asked for will not be converted.
- *
- * A rejection is a stated reason rather than the absence of an entry in a
- * list: a silent filter turned a GIF selected alongside two photos into a
- * report that nothing had failed.
+ * Every requested item that cannot be stamped needs a stated reason. A silent
+ * filter could omit a selected GIF while reporting that no requested work failed.
  */
 
 /*

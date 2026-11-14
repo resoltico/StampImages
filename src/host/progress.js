@@ -36,20 +36,10 @@ const SILENT = Object.freeze({
 function lifecycle(state, each) {
     return {
         /*
-         * Asked at every report of what is about to happen, which is what
-         * makes those reports the checkpoints.
-         *
-         * Two ways to arrive at the same answer. A surface can be asked --
-         * the panel reads the modifier keys -- and a surface can say so by
-         * throwing a cancellation at the report it was given, which is what
-         * the host's own dialogs do. Neither is the other's fallback, and
-         * both arrive through the same broadcast: a surface that cannot
-         * answer has not said yes, and must not fail a run over it.
-         *
-         * It latches, because one of those two is a moment rather than a
-         * state: somebody who held the key while a photograph was being
-         * stamped and let go before it finished had asked to stop, and the
-         * answer was no by the time anything asked.
+         * Latch a stop whether a surface reports it directly or raises cancellation
+         * while receiving a report. Surface faults remain diagnostics, not permission
+         * to stop. Keep a transient key or button request latched until a safe checkpoint
+         * consumes it, even if the user releases the control during an image stage.
          */
         stopped() {
             each((sink) => {
