@@ -12,7 +12,11 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { describe, detailOf } = require("../../../src/host/completion.js");
+const { completionMessage } = require("../../../src/host/completion.js");
+const { summarizeRun } = require("../../../src/core/run-summary.js");
+const { headline, reportText } = require("../../../src/core/run-report.js");
+const describe = (result) => headline(summarizeRun(result));
+const detailOf = (result, { commandLine = false } = {}) => commandLine ? reportText(result, false) : completionMessage(result);
 const { runOutcome } = require("../../../src/core/outcomes.js");
 const { reportNothing } = require("../../../src/host/reporting.js");
 
@@ -28,10 +32,10 @@ function recovered(issues = [DENIED]) {
 }
 
 test("a copy kept elsewhere is counted in the headline, not denied", () => {
-    const headline = describe(runOutcome([recovered()]));
+    const message = describe(runOutcome([recovered()]));
 
-    assert.doesNotMatch(headline, /No stamped copy/u);
-    assert.match(headline, /1 copy could not be saved where it was meant to go and was kept elsewhere/u);
+    assert.doesNotMatch(message, /No stamped copy/u);
+    assert.match(message, /1 copy could not be saved where it was meant to go and was kept elsewhere/u);
 });
 
 test("saved and recovered copies are both said", () => {
@@ -83,7 +87,7 @@ test("a crowded stamp says where it went", () => {
 });
 
 test("the detail lists copies by folder, then notes, failures, refusals and the version", () => {
-    const { detailOf: detail } = require("../../../src/host/completion.js");
+    const detail = completionMessage;
     const { VERSION } = require("../../../src/core/version.js");
     const result = runOutcome([
         { source: "/t/a.jpg", state: "saved", output: "/t/a_stamped.jpg", issues: [], missingMetadata: ["GPS coordinates"] },

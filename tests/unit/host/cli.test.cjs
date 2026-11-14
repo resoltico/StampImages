@@ -39,7 +39,10 @@ test("receipts use separate streams and exact statuses without an osascript erro
 });
 
 test("field regression: stopped and partial completion expose unfinished counts immediately", () => {
-    const { describe, detailOf } = require("../../../src/host/completion.js");
+    const { summarizeRun } = require("../../../src/core/run-summary.js");
+    const { headline, reportText } = require("../../../src/core/run-report.js");
+    const describe = (result) => headline(summarizeRun(result));
+    const detailOf = (result) => reportText(result, false);
     const stopped = runOutcome([
         { source: "/a", state: "saved", output: "/out", issues: [] },
         { source: "/b", state: "canceled", issues: [] },

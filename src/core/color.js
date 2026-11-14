@@ -1,7 +1,7 @@
 "use strict";
 const { IssueError } = require("./errors.js");
 
-const { plural } = require("./numbers.js");
+const { plural } = require("./formatting.js");
 
 /*
  * A color, as the one kind of thing it is.

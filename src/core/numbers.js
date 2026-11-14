@@ -5,8 +5,6 @@ const { IssueError } = require("./errors.js");
  * Numeric parsing and formatting shared across the planner.
  */
 
-const MILLISECONDS_PER_SECOND = 1000;
-const SECONDS_PER_MINUTE = 60;
 
 function parseInteger(value, minimum, maximum, label) {
     const numeric = Number(value);
@@ -43,25 +41,6 @@ function zeroPad(value, width) {
     }
 
     return text;
-}
-
-/*
- * "1 image" / "2 images", rather than the "(s)" that stands in for it.
- */
-function plural(count, singular, pluralForm) {
-    return `${count} ${count === 1 ? singular : pluralForm ?? `${singular}s`}`;
-}
-
-function formatDuration(milliseconds) {
-    const totalSeconds = Math.max(0, Math.round(Number(milliseconds) / MILLISECONDS_PER_SECOND));
-    const minutes = Math.floor(totalSeconds / SECONDS_PER_MINUTE);
-    const seconds = totalSeconds % SECONDS_PER_MINUTE;
-
-    if (minutes <= 0) {
-        return plural(seconds, "second");
-    }
-
-    return `${plural(minutes, "minute")}, ${plural(seconds, "second")}`;
 }
 
 /*
@@ -121,7 +100,5 @@ module.exports = {
     truncateToBytes,
     parseInteger,
     positiveIntegerFrom,
-    zeroPad,
-    plural,
-    formatDuration
+    zeroPad
 };

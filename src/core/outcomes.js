@@ -18,10 +18,15 @@ function runOutcome(images = [], rejected = [], excluded = [], issues = []) {
     const incomplete = images.length === 0 || rejected.length > 0 || issues.length > 0 || images.some((image) => image.state !== "saved" || image.issues.length > 0 || image.missingMetadata?.length > 0);
     let state = incomplete ? "incomplete" : "complete";
     if (stopped && incomplete) { state = "canceled"; }
+    if (images.length === 0 && issues.some((issue) => ["settings", "request"].includes(issue.stage))) { state = "invalid"; }
     return { state, images, rejected, excluded, issues, diagnostics: [] };
 }
-function ledgerOf(result) {
-    const count = (state) => result.images.filter((image) => image.state === state).length;
-    return { saved: count("saved"), recovered: count("recovered"), failed: count("failed"), nothing: count("nothing-to-stamp"), canceled: count("canceled"), notStarted: count("not-started"), rejected: result.rejected.length };
+function noImagesOutcome(rejected) {
+    return runOutcome([], rejected, [], [{ code: "no-images", stage: "selection", message: "None of the selected items can be stamped." }]);
 }
-module.exports = { ISSUE, issuesOf, runOutcome, ledgerOf };
+function failedRun(error, outcome = null) {
+    if (outcome && isUserCanceled(error)) { return outcome; }
+    return { ...runOutcome(outcome?.images ?? [], outcome?.rejected ?? [], outcome?.excluded ?? [],
+        [...(outcome?.issues ?? []), ...issuesOf(error, outcome ? "reporting" : "setup")]), diagnostics: outcome?.diagnostics ?? [] };
+}
+module.exports = { ISSUE, issuesOf, runOutcome, noImagesOutcome, failedRun };

@@ -1,5 +1,5 @@
 "use strict";
-const { plural } = require("../core/numbers.js");
+const { plural } = require("../core/formatting.js");
 
 /*
  * What will be created, said before anything is.
