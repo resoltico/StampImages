@@ -2,6 +2,7 @@
 
 function accessible(control) {
     const rect = control.rect ?? control.frame;
+    if (!control.frame) { Object.defineProperty(control, "frame", { get: () => control.rect, set: (frame) => { control.rect = frame; } }); }
     control.bounds = { left: 0, bottom: 0, width: rect.width, height: rect.height };
     control.layer = { sublayers: [], addSublayer(layer) { this.sublayers.push(layer); } };
     control.setAccessibilityLabel = (label) => { control.accessibilityLabel = label; };

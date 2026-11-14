@@ -72,7 +72,7 @@ function installClasses(ns, state, application) {
         NSTextView: { alloc: { initWithFrame: makeTextView } },
         NSScrollView: { alloc: { initWithFrame: makeScrollView } },
         NSColor: colorClass(),
-        CALayer: { get layer() { return {}; } },
+        NSBoxCustom: 4, NSNoBorder: 0, NSNoTitle: 0, NSWindowAbove: 1,
         NSFont: {
             systemFontOfSize: (size) => ({ kind: "font", size }),
             boldSystemFontOfSize: (size) => ({ kind: "font", size, bold: true })
@@ -139,19 +139,30 @@ function createFakeObjC(settings = {}) {
         get: () => state.policy
     });
 
-    const ns = (value) => ({ boxed: value });
+    const ns = (value) => ({ boxed: value, isNil: () => value === undefined || value === null });
 
     installClasses(ns, state, application);
 
     // Classes a run registers, by name, as the runtime would answer for them.
     state.registered = [];
-    ns.NSClassFromString = (name) => ({ isNil: () => !state.registered.some((each) => each.name === name) });
+    ns.NSClassFromString = (name) => ns[name] ?? { isNil: () => true };
     const objc = {
         unwrap: (value) => value,
         import: () => true, block: (types, callback) => callback,
         registerSubclass(definition) {
             state.registered.push(definition);
-            ns[definition.name] = { alloc: { get init() { return { kind: "delegate", of: definition.name }; } } };
+            const instance = (base) => {
+                for (const [selector, method] of Object.entries(definition.methods)) {
+                    const implementation = typeof method === "function" ? method : method.implementation;
+                    if (selector.includes(":")) { base[selector.replace(/:$/u, "")] = implementation; }
+                    else { Object.defineProperty(base, selector, { get: implementation }); }
+                }
+                return base;
+            };
+            ns[definition.name] = { isNil: () => false, alloc: {
+                get init() { return instance({ kind: "delegate", of: definition.name }); },
+                initWithFrame: (rect) => instance(Object.assign(makeView(rect), { kind: "box" }))
+            } };
         }
     };
 

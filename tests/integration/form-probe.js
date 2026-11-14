@@ -15,34 +15,13 @@ function assertNativeStamp(condition, message) {
     if (!condition) { throw new Error(message); }
 }
 
-const MINIMUM_TINT_DIFFERENCE = 0.005;
+const { checkInvalidTint } = require("./invalid-tint.js");
 
-function redExcess(control) {
-    const bitmap = control.bitmapImageRepForCachingDisplayInRect(control.bounds);
-    control.cacheDisplayInRectToBitmapImageRep(control.bounds, bitmap);
-    const color = bitmap.colorAtXY(Math.floor(Number(bitmap.pixelsWide) * 0.75), Math.floor(Number(bitmap.pixelsHigh) * 0.5))
-        .colorUsingColorSpace($.NSColorSpace.deviceRGBColorSpace);
-    return Number(color.redComponent) - Number(color.blueComponent);
-}
-
-function checkInvalidTint(control, key) {
-    const layers = control.layer.sublayers;
-    const fill = Array.from({ length: Number(layers.count) }, (ignored, index) => layers.objectAtIndex(index))
-        .find((layer) => String(ObjC.unwrap(layer.name)) === "InvalidSettingFill");
-    assertNativeStamp(Boolean(fill), `${key}: missing invalid fill layer`);
-    const marked = redExcess(control);
-    // The same native control without only its error fill is the negative control.
-    fill.removeFromSuperlayer;
-    const plain = redExcess(control);
-    control.layer.addSublayer(fill);
-    assertNativeStamp(marked - plain > MINIMUM_TINT_DIFFERENCE, `${key}: invalid tint is hidden by the native control (${marked}, ${plain})`);
-}
-
-function checkInvalidControls(built, spec) {
+function checkInvalidControls(built, spec, path) {
     for (const row of spec.rows) {
         if (row.invalid) {
             const entry = built.controls[row.key];
-            checkInvalidTint(row.optional ? entry.popup : entry.text ?? entry, row.key);
+            checkInvalidTint(row.optional ? entry.popup : entry.text ?? entry, row.key, path);
         }
     }
 }
@@ -76,7 +55,6 @@ function measureStampForm(built, spec) {
                 `Clipped native label or control at index ${index}`);
         }
     }
-    checkInvalidControls(built, spec);
 }
 
 function checkStampToggle(bridge, spec, built) {
@@ -112,6 +90,44 @@ function checkScrollPositions(view) {
     for (let index = 0; index < Number(children.count); index += 1) { checkScrollPositions(children.objectAtIndex(index)); }
 }
 
+function checkCaptionGeometry(caption) {
+    const editor = caption.text;
+    const clip = caption.control.contentView;
+    assertNativeStamp(editor.superview.isEqual(clip), "Caption editor is not in its scroll clip.");
+    assertNativeStamp(Number(editor.frame.origin.x) === 0 && Number(editor.frame.origin.y) === 0, "Caption editor has form coordinates inside its clip.");
+    assertNativeStamp(Math.abs(Number(editor.frame.size.width) - Number(caption.control.contentSize.width)) < 1, "Caption editor does not track its clip width.");
+    const visible = $.NSIntersectionRect(editor.frame, clip.bounds);
+    assertNativeStamp(Number(visible.size.width) > 0 && Number(visible.size.height) > 0, "Caption has no visible mouse/render region.");
+}
+
+function checkScrolledCaption(caption, path) {
+    const editor = caption.text, scroll = caption.control;
+    const original = String(ObjC.unwrap(editor.string));
+    const middle = (Number(editor.frame.size.height) - Number(scroll.contentSize.height)) / 2;
+    assertNativeStamp(middle > 0, "The long caption control did not exceed its clip.");
+    scroll.contentView.scrollToPoint($.NSMakePoint(0, middle));
+    scroll.reflectScrolledClipView(scroll.contentView);
+    assertNativeStamp(Number(scroll.verticalScroller.doubleValue) > 0, "Caption scroll did not move.");
+    checkInvalidTint(editor, "customText-scrolled", path);
+    assertNativeStamp(Boolean(editor.editable) && String(ObjC.unwrap(editor.string)) === original, "Tint changed caption editing or text.");
+    scroll.contentView.scrollToPoint($.NSMakePoint(0, 0));
+    scroll.reflectScrolledClipView(scroll.contentView);
+}
+
+function writeStampPreview(content, path) {
+    const bitmap = content.bitmapImageRepForCachingDisplayInRect(content.bounds);
+    content.cacheDisplayInRectToBitmapImageRep(content.bounds, bitmap);
+    const png = bitmap.representationUsingTypeProperties(4, $.NSDictionary.dictionary);
+    assertNativeStamp(png.writeToFileAtomically(path, true), `Could not write ${path}`);
+}
+
+function checkStampRendering(built, spec, name, path) {
+    checkCaptionGeometry(built.controls.customText);
+    checkInvalidControls(built, spec, path);
+    if (name === "invalid-long-caption") { checkScrolledCaption(built.controls.customText, path); }
+    checkScrollPositions(built.view);
+}
+
 function stampFormSnapshot(folder, scenario, appearance) {
     const bridge = appkitBridge(ObjC, $);
     const spec = formSpec(scenario.answers, scenario.problems, scenario.context);
@@ -126,7 +142,7 @@ function stampFormSnapshot(folder, scenario, appearance) {
         const content = alert.window.contentView;
         content.layoutSubtreeIfNeeded;
         layoutDetails($, alert, [built.details, ...spec.rows.filter((row) => row.kind === "text").map((row) => built.controls[row.key].control)]);
-        checkScrollPositions(built.view);
+        checkStampRendering(built, spec, scenario.name, `${folder}/${scenario.name}-${appearance}`);
         // Against the smallest screen a supported Mac has, not the screen this
         // runs on: a CI runner's virtual display is smaller than any Mac's.
         // 1366 x 768 is the 11-inch MacBook Air of early 2015, which macOS 12
@@ -134,11 +150,8 @@ function stampFormSnapshot(folder, scenario, appearance) {
         const height = Number(alert.window.frame.size.height);
         assertNativeStamp(height <= SMALLEST_VISIBLE_HEIGHT,
             `${scenario.name}: the form is ${height} points tall, more than ${SMALLEST_VISIBLE_HEIGHT}`);
-        const bitmap = content.bitmapImageRepForCachingDisplayInRect(content.bounds);
-        content.cacheDisplayInRectToBitmapImageRep(content.bounds, bitmap);
-        const png = bitmap.representationUsingTypeProperties(4, $.NSDictionary.dictionary);
         const path = `${folder}/${scenario.name}-${appearance}.png`;
-        assertNativeStamp(png.writeToFileAtomically(path, true), `Could not write ${path}`);
+        writeStampPreview(content, path);
         console.log(`Native stamp form checked: ${path}`);
     } finally {
         unbindChoices(spec, built.controls);
@@ -257,6 +270,8 @@ function run(input) {
         { name: "corrections", answers: invalid, problems: readAnswers(invalid, fonts).problems, context },
         { name: "all-invalid-controls", answers: { ...answers, coordinateFormat: "56.9496, 24.1052", customText: "Caption" },
             problems: Object.keys(answers).map((key) => ({ key, message: "Correct this setting." })), context },
+        { name: "invalid-long-caption", answers: { ...answers, customText: Array.from({ length: 40 }, (ignored, index) => `Caption line ${index}: generated correction text.`).join("\n") },
+            problems: [{ key: "customText", message: "Custom text must be 500 characters or fewer." }], context },
         { name: "caption-only", answers: { ...answers, dateFormat: "Do not stamp the date", customText: "A caption\nAnother line" },
             problems: [], context }
     ];

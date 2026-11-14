@@ -27,7 +27,7 @@ test("a bridge that takes the framework is one to build widgets with", () => {
     const objc = objcThat((name) => imported.push(name));
     const bridge = appkitBridge(objc, ns);
 
-    assert.deepEqual(imported, ["AppKit", "QuartzCore"]);
+    assert.deepEqual(imported, ["AppKit"]);
     assert.equal(bridge.objc, objc);
     assert.equal(bridge.ns, ns);
 });

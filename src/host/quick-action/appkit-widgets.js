@@ -10,12 +10,6 @@ const { rectOf } = require("./appkit-bridge.js");
 
 const HINT_FONT_SIZE = 11;
 
-// A tint rather than a solid fill, and drawn from the system red so it
-// follows the appearance the alert is rendered in. A fixed pink would be
-// wrong the moment the form appears in dark mode.
-const INVALID_TINT_ALPHA = 0.18;
-const INVALID_CORNER_RADIUS = 4;
-
 // NSTextAlignmentRight. On macOS right is 1 and center is 2, which is the
 // reverse of UIKit, so the constant is named rather than written inline.
 const ALIGN_RIGHT = 1;
@@ -88,18 +82,7 @@ function addPopupItem(popup, option) {
  * the layout, which knows whether a row is in the problem list; this only
  * draws it.
  */
-function markInvalid(ns, control) {
-    // A native cell can hide its own background color. A noninteractive layer
-    // gives every control the same error tint without changing its behavior.
-    control.wantsLayer = true;
-    const fill = ns.CALayer.layer;
-    fill.name = "InvalidSettingFill";
-    fill.frame = control.bounds;
-    fill.backgroundColor = ns.NSColor.systemRedColor.colorWithAlphaComponent(INVALID_TINT_ALPHA).CGColor;
-    fill.cornerRadius = INVALID_CORNER_RADIUS;
-    fill.zPosition = 1;
-    control.layer.addSublayer(fill);
-}
+const { markInvalid } = require("./invalid-fill.js");
 
 function markHintInvalid(ns, hint) {
     hint.textColor = ns.NSColor.systemRedColor;

@@ -163,3 +163,8 @@ source, ownership and exit checks. It distinguishes issue `message` from entry
 `reason`, known input omissions from finished-copy booleans, and rejects nested
 stack keys. GPS-retention tests include disabled coordinates, caption-only copies,
 invalid-but-retained GPS, metadata-free copies and unbuilt failures.
+
+Invalid-control styling is checked on the actual composed parent region with only
+the native tint view removed as the negative control. Every control keeps its
+geometry, native content, mouse target, focus and accessibility; the long invalid
+caption is checked again after scrolling its real clip.

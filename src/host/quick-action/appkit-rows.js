@@ -28,10 +28,6 @@ function makeChoice(context, row, rect) {
     popup.setAccessibilityLabel(row.label);
     popup.selectItemWithTitle(row.value);
 
-    if (row.invalid) {
-        widgets.markInvalid(ns, popup);
-    }
-
     return popup;
 }
 
@@ -45,7 +41,7 @@ function markRefused(context, row, made) {
         return;
     }
 
-    context.widgets.markInvalid(context.ns, made.field);
+    context.widgets.markInvalid(context.ns, made.field, context.objc);
 
     if (!row.suggests) {
         context.widgets.markHintInvalid(context.ns, made.hint);
@@ -103,7 +99,7 @@ function addText(context, row, rect) {
     view.addSubview(caption.control);
 
     if (row.invalid) {
-        widgets.markInvalid(ns, caption.text);
+        widgets.markInvalid(ns, caption.text, context.objc);
     }
 
     return caption;
@@ -113,6 +109,7 @@ function addChoice(context, row, rect) {
     const popup = makeChoice(context, row, rect);
 
     context.view.addSubview(popup);
+    if (row.invalid) { context.widgets.markInvalid(context.ns, popup, context.objc); }
 
     return popup;
 }

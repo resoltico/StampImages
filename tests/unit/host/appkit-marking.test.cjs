@@ -43,16 +43,12 @@ test("a row named in the problems is marked, and the others are not", () => {
     const bridge = createFakeObjC();
     const { controls } = buildForm(bridge, spec, WIDGETS);
 
-    assert.equal(controls.size.wantsLayer, true);
-    assert.equal(controls.size.layer.sublayers[0].name, "InvalidSettingFill");
-    assert.deepEqual(controls.size.layer.sublayers[0].frame, controls.size.bounds);
-    assert.equal(controls.size.layer.sublayers[0].zPosition, 1);
-    assert.equal(controls.size.layer.sublayers[0].cornerRadius, 4);
-    assert.equal(controls.size.layer.sublayers[0].backgroundColor.name, "systemRed");
-    assert.ok(
-        controls.size.layer.sublayers[0].backgroundColor.alpha < 0.5,
-        "a tint, not a fill: the value must stay readable"
-    );
+    const tint = controls.size.superview.subviews.find((child) => child.relativeTo === controls.size);
+    assert.equal(tint.identifier, "InvalidSettingFill");
+    assert.deepEqual(tint.frame, controls.size.frame);
+    assert.equal(tint.cornerRadius, 4);
+    assert.equal(tint.fillColor.name, "systemRed");
+    assert.ok(tint.fillColor.alpha < 0.5, "the native value remains readable");
 
     for (const key of ["margin", "position", "textColor"]) {
         assert.notEqual(
@@ -81,8 +77,8 @@ test("a choice row can be marked too, not only a typed one", () => {
     const spec = specFor({ ...defaultAnswers(FONTS), position: "Sideways" }, [{ key: "position", message: 'Position: "Sideways" is not one of the choices.' }]);
     const { controls } = buildForm(createFakeObjC(), spec, WIDGETS);
 
-    assert.equal(controls.position.wantsLayer, true);
-    assert.equal(controls.position.layer.sublayers[0].backgroundColor.name, "systemRed");
+    const tint = controls.position.superview.subviews.find((child) => child.relativeTo === controls.position);
+    assert.equal(tint.fillColor.name, "systemRed");
 });
 
 test("a hint that offers is not marked with the value it did not rule out", () => {
@@ -108,4 +104,24 @@ test("a hint that offers is not marked with the value it did not rule out", () =
         "secondaryLabel",
         "and an offer is left alone, however wrong the value beside it"
     );
+});
+
+test("all ten refused controls receive exactly one native sibling after attachment, including optional GPS and the caption clip", () => {
+    const answers = defaultAnswers(FONTS);
+    const spec = specFor(answers, Object.keys(answers).map((key) => ({ key, message: `Correct ${key}.` })));
+    const { controls } = build(spec);
+    assert.equal(spec.rows.length, 10);
+    for (const row of spec.rows) {
+        const entry = controls[row.key];
+        const control = row.optional ? entry.popup : entry.text ?? entry;
+        assert(control.superview, `${row.key}: attached before marking`);
+        const fills = control.superview.subviews.filter((child) => child.relativeTo === control);
+        assert.equal(fills.length, 1, `${row.key}: one fill`);
+        assert.deepEqual(fills[0].frame, control.frame, `${row.key}: control-local frame`);
+        assert.equal(fills[0].fillColor.name, "systemRed");
+        assert.equal(fills[0].hitTest({ left: 1, top: 1 }).isNil(), true);
+        assert.deepEqual(control.layer.sublayers, [], `${row.key}: native backing layer unchanged`);
+    }
+    assert.equal(controls.customText.text.superview, controls.customText.control.contentView);
+    assert.deepEqual(controls.customText.text.frame, { left: 0, bottom: 0, width: controls.customText.control.contentSize.width, height: controls.customText.control.contentSize.height });
 });
