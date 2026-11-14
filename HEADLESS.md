@@ -8,7 +8,7 @@ osascript -l JavaScript Stamp-Images.jxa -- --version
 osascript -l JavaScript Stamp-Images.jxa -- --headless settings.json photo.jpg folder
 ```
 
-`--help` lists every setting with its values and default; `--version` prints
+`--help` lists every setting with its accepted values and a complete JSON example; `--version` prints
 `Stamp Images <version>`. Both print to stdout and exit 0. Anything else that is not
 a complete `--headless` request is a usage error: it names the problem, prints the
 run line and exits 2.
@@ -23,8 +23,10 @@ the terminal language. Paths may be absolute or relative to the working director
 The settings file is UTF-8 JSON without a byte-order mark, and its root is an
 object. All ten fields are required; unknown fields, numeric strings, fractional
 numbers, `null` and wrong types are refused, and every problem is reported together.
+Command-line messages identify JSON keys and distinguish missing fields from wrong
+JSON types; Quick Action messages retain their form labels.
 Duplicate keys follow `JSON.parse`: the last value wins. Declared defaults are
-listed by `--help`; they do not fill omitted fields in a settings file.
+shown in the complete `--help` example; they do not fill omitted fields in a settings file.
 
 Settings and the installed typeface are checked before tool discovery or source
 admission. Invalid settings take precedence over missing tools and exit 2,

@@ -32,7 +32,7 @@
 - Contributors must use Node 26.13.1 and npm 12.2.2; restore refreshed development dependencies with `npm ci --ignore-scripts`.
 - Contributions are accepted under the [contribution terms](CONTRIBUTING.md#contribution-terms), which also let Ervins Strauhmanis license them commercially.
 - Cancel from filesystem, tool and workspace probes now stops the run instead of being treated as a negative probe result.
-- Command-line help now declares Helvetica Neue as the typeface default; settings files still require `font`.
+- Command-line help provides complete settings JSON, caption limits and newline syntax; missing-field and wrong-type errors identify JSON keys.
 - Ultra HDR JPEG photos are accepted and stamped as standard-range JPEG copies without gain maps; capture metadata and color profiles are retained.
 - Unsupported-content refusals use clearer wording and include the vips loader in receipt diagnostics and completion Details.
 

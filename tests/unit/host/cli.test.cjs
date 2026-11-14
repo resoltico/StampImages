@@ -71,14 +71,14 @@ test("a usage error says what was wrong and the one line that would be right, no
     }
 });
 
-test("help lists each setting with its values, captions that add something, and its default", () => {
+test("help lists accepted values separately from its complete JSON example", () => {
     const help = usage();
 
-    assert.match(help, /\n {2}dateFormat — Date\/time format: iso-minutes \(2026-09-09 14:30\) \| iso-date \(2026-09-09\) \| long-date \(September 9, 2026\) \| none \(Do not stamp the date\); default iso-minutes\n/u);
-    assert.match(help, /\n {2}position — Position: bottom-right \| bottom-left \| top-right \| top-left \| bottom-center \| top-center; default bottom-right\n/u);
-    assert.match(help, /\n {2}size — Text size: 8–400 pt; default 36\n/u);
-    assert.match(help, /\n {2}customText — Custom text: text\n/u);
-    assert.match(help, /\n {2}font — Typeface: text; default Helvetica Neue\n/u);
+    assert.match(help, /\n {2}dateFormat — Date\/time format: iso-minutes \(2026-09-09 14:30\) \| iso-date \(2026-09-09\) \| long-date \(September 9, 2026\) \| none \(Do not stamp the date\)\n/u);
+    assert.match(help, /\n {2}position — Position: bottom-right \| bottom-left \| top-right \| top-left \| bottom-center \| top-center\n/u);
+    assert.match(help, /\n {2}size — Text size: 8–400 pt\n/u);
+    assert.match(help, /\n {2}customText — Custom text: text, up to 500 UTF-16 code units; JSON \\n for line breaks\n/u);
+    assert.match(help, /\n {2}font — Typeface: text\n/u);
     assert.match(help, /Paths may be absolute or relative to the working directory\./u);
 });
 
@@ -94,4 +94,41 @@ test("the command-line report separates sections with one blank line and ends wi
 
     reportHeadless({ ...runOutcome(), state: "complete", images: [] }, (text) => empty.push(text), () => 0);
     assert.doesNotMatch(empty[1], /0 saved/u, "zero counts are not printed");
+});
+
+
+test("required help JSON is complete, valid and has no per-field default promises", () => {
+    const help = usage();
+    const example = /Example settings JSON \(all required fields\):\n(?<json>\{[\s\S]*?\n\})/u.exec(help);
+    assert.ok(example);
+    const values = JSON.parse(example.groups.json);
+    assert.deepEqual(values, { dateFormat: "iso-minutes", coordinateFormat: "none", customText: "", font: "Helvetica Neue", size: 36,
+        textColor: "#FFFFFF", outlineWidth: 2, outlineColor: "#202020", position: "bottom-right", margin: 24 });
+    assert.deepEqual(configurationValues(values).settings, values);
+    assert.doesNotMatch(help, /; default /u);
+});
+
+test("CLI messages identify JSON keys, missing values and types without changing core wording", () => {
+    const { validateSettings } = require("../../../src/core/settings.js");
+    const input = { ...settings, size: "36", customText: null, textColor: [], margin: false };
+    delete input.font;
+    const result = runOutcome([], [], [], validateSettings(input).issues);
+    const before = JSON.stringify(result);
+    const writes = [];
+    assert.equal(reportHeadless(result, (text) => writes.push(text), (code) => code), 2);
+    assert.deepEqual(JSON.parse(writes[0]).issues.map((issue) => issue.message), [
+        "`customText` must be a JSON string, not null.", "`font` is missing.",
+        "`size` must be a JSON number, not a string.", "`textColor` must be a JSON string, not an array.",
+        "`margin` must be a JSON number, not a boolean."
+    ]);
+    assert.ok(writes[1].includes("`font` is missing."));
+    assert.equal(JSON.stringify(result), before);
+    const other = runOutcome([], [], [], [...validateSettings({ ...settings, size: 401, textColor: {}, "extra\nkey": true }).issues,
+        { code: "typeface", stage: "settings", field: "font", message: "This Mac has no matching typeface." }]);
+    const output = [];
+    reportHeadless(other, (text) => output.push(text), (code) => code);
+    assert.deepEqual(JSON.parse(output[0]).issues.map((issue) => issue.message), [
+        '"extra\\nkey" is not a recognized setting.', "`size` must be a whole number from 8 to 400.",
+        "`textColor` must be a JSON string, not an object.", "`font`: This Mac has no matching typeface."
+    ]);
 });

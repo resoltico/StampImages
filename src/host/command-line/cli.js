@@ -11,22 +11,24 @@ function choiceCaption(choice) {
     return caption && !restates ? `${choice.value} (${caption})` : choice.value;
 }
 
-// One line per setting: values, then the declared default.
+// List accepted values separately from the complete settings example.
 function settingsHelp() {
     return Object.entries(SETTINGS_SCHEMA).map(([field, rule]) => {
         let values = rule.kind === "color" ? "#RRGGBB" : "text";
         if (rule.choices) { values = rule.choices.map(choiceCaption).join(" | "); }
         else if (rule.minimum !== undefined) { values = `${rule.minimum}–${rule.maximum}${rule.unit ? ` ${rule.unit}` : ""}`; }
-        const fallback = rule.default === undefined || rule.default === "" ? "" : `; default ${rule.default}`;
-        return `  ${field} — ${rule.name}: ${values}${fallback}`;
+        else if (rule.kind === "text") { values = `text, up to ${rule.maximumLength} UTF-16 code units${rule.multiline ? "; JSON \\n for line breaks" : ""}`; }
+        return `  ${field} — ${rule.name}: ${values}`;
     }).join("\n");
 }
+const JSON_INDENT = 2;
+const DEFAULT_SETTINGS = Object.fromEntries(Object.entries(SETTINGS_SCHEMA).map(([field, rule]) => [field, rule.default]));
 const RUN_LINE = "osascript -l JavaScript Stamp-Images.jxa -- --headless <settings.json> <path…>";
 function usage() {
     return `${APP_NAME} ${VERSION}\n\nUsage:\n  osascript -l JavaScript Stamp-Images.jxa -- --help\n` +
         "  osascript -l JavaScript Stamp-Images.jxa -- --version\n" +
         `  ${RUN_LINE}\n\nSettings (all ${Object.keys(SETTINGS_SCHEMA).length} required):\n` +
-        `${settingsHelp()}\n\nPaths may be absolute or relative to the working directory. Settings must be UTF-8 JSON without a BOM.\n`;
+        `${settingsHelp()}\n\nExample settings JSON (all required fields):\n${JSON.stringify(DEFAULT_SETTINGS, null, JSON_INDENT)}\n\nPaths may be absolute or relative to the working directory. Settings must be UTF-8 JSON without a BOM.\n`;
 }
 function requestError(code, message, diagnostic = null) {
     return new OperationError(message, { issues: [{ code, stage: "request", message, ...(diagnostic ? { diagnostic } : {}) }] });

@@ -32,7 +32,7 @@ function textIssue(rule, value) {
     if (UNRENDERABLE_TEXT.test(text)) { return "Custom text contains a null character or incomplete Unicode text. Remove it or paste the text again."; }
     return text.length > rule.maximumLength ? `${rule.name} must be ${rule.maximumLength} characters or fewer.` : "";
 }
-function settingIssue(field, value) {
+function settingValueIssue(field, value) {
     const rule = Object.hasOwn(SETTINGS_SCHEMA, field) ? SETTINGS_SCHEMA[field] : null;
     let code = rule?.kind;
     let message = "";
@@ -46,6 +46,20 @@ function settingIssue(field, value) {
     } else { code = "text"; message = textIssue(rule, value); }
     return message ? { field, code, stage: "settings", message } : null;
 }
+function settingType(value) {
+    if (value === null) { return "null"; }
+    return Array.isArray(value) ? "array" : typeof value;
+}
+
+function settingIssue(field, value) {
+    const issue = settingValueIssue(field, value);
+    if (!issue || !Object.hasOwn(SETTINGS_SCHEMA, field)) { return issue; }
+    if (value === undefined) { return { ...issue, diagnostic: { missing: true } }; }
+    const expectedType = SETTINGS_SCHEMA[field].kind === "integer" ? "number" : "string";
+    const actualType = settingType(value);
+    return actualType === expectedType ? issue : { ...issue, diagnostic: { expectedType, actualType } };
+}
+
 function normalizedValue(field, value) {
     const rule = SETTINGS_SCHEMA[field];
     if (rule.kind === "color") { return normalizeColor(value, rule.name); }
