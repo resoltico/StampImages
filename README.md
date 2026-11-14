@@ -110,7 +110,8 @@ camera RAW are refused, as are files whose content turns out to be damaged.
 Ultra HDR JPEG photos are stamped as standard-range JPEG copies, without gain maps.
 
 Selected folders are searched recursively. The search skips hidden entries,
-packages, links and earlier stamped copies, and reports entries it cannot read.
+packages, links and earlier stamped copies, and reports unreadable entries and
+visible special files such as pipes and sockets.
 Overlapping selections and hard links are stamped once.
 
 A copy of an image found in a selected folder is saved in that selected folder; a

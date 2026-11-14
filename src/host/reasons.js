@@ -18,6 +18,7 @@ const FOLDER = "This is a folder; select the images inside it.";
 const UNSUPPORTED = `This file is not a supported format; use ${supportedFormatList()}.`;
 const NOT_A_FILE = "This file cannot be read; check that it still exists and that you have access.";
 const NOT_A_PATH = "No file or folder exists at this path.";
+const SPECIAL_FILE = "This is not a regular file (a pipe, socket or device).";
 const REMOTE_URL = "Remote URLs are not supported; download the file first.";
 
 function rejectionReason(app, path) {
@@ -58,4 +59,4 @@ function describeUnresolved(item) {
     };
 }
 
-module.exports = { rejectionReason, describeUnresolved, FOLDER, UNSUPPORTED, NOT_A_FILE, NOT_A_PATH, REMOTE_URL };
+module.exports = { rejectionReason, describeUnresolved, FOLDER, UNSUPPORTED, NOT_A_FILE, NOT_A_PATH, REMOTE_URL, SPECIAL_FILE };

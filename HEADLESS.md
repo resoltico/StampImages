@@ -170,6 +170,11 @@ refusal includes `diagnostic.loader`, the vips loader that recognized its conten
 | `inspection` | `unreadable`, `empty`, `not-an-image`, `unsupported-content`, `unsupported-color`, `multiple-images`, `damaged` |
 | `stamping`, `publication`, `recovery`, `cleanup` | `operation`, `fault`, `canceled`, `damaged`, `publication`, `recovery`, `cleanup` |
 
+A supported-looking file opened by an excluded loader is `unsupported-content`,
+with the loader in its diagnostic. Truncated recognized HEIC is `damaged`; text
+with a HEIC extension remains `not-an-image`. Visible pipes, sockets and devices
+inside selected folders are reported as `special-file` without being opened.
+
 `unsupported-color` means the image needs converting to RGB or grayscale. A file
 whose header looks right but whose decoding fails, such as a truncated JPEG, is
 refused as `damaged` at the `stamping` stage, with the decoder's output in its

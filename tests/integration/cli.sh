@@ -87,7 +87,33 @@ test "$BEFORE" = "$(shasum -a 256 < "$WORK/source.png")"
 # Exact content policy, independent of the filename extension.
 printf '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"/>' > "$WORK/disguised.png"
 expect_status 1 --headless "$WORK/settings.json" "$WORK/disguised.png"
-assert_contains "$(cat "$WORK/receipt")" 'not-an-image' 'disguised vector is refused'
+assert_contains "$(cat "$WORK/receipt")" 'unsupported-content' 'recognized excluded vector is refused accurately'
+assert_contains "$(cat "$WORK/receipt")" '"loader":"svgload"' 'excluded content names its real loader'
+vips copy "$WORK/source.png" "$WORK/whole.heic"
+head -c 64 "$WORK/whole.heic" > "$WORK/cut.heic"
+printf 'not an image' > "$WORK/text.heic"
+expect_status 1 --headless "$WORK/settings.json" "$WORK/cut.heic" "$WORK/text.heic"
+node - "$WORK/receipt" <<'JS'
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const receipt=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
+assert.deepEqual(receipt.rejected.map(entry=>[path.basename(entry.path),entry.code]),[['cut.heic','damaged'],['text.heic','not-an-image']]);
+JS
+mkdir "$WORK/special-folder"
+cp "$WORK/source.png" "$WORK/special-folder/good.png"
+printf 'unrelated' > "$WORK/special-folder/notes.txt"
+mkfifo "$WORK/special-folder/pipe.png" "$WORK/special-folder/visible" "$WORK/special-folder/.hidden.png"
+node - "$SCRIPT" "$WORK/settings.json" "$WORK/special-folder" "$WORK/receipt" "$WORK/error" <<'JS'
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const result=require('node:child_process').spawnSync('/usr/bin/osascript',['-l','JavaScript',process.argv[2],'--','--headless',process.argv[3],process.argv[4]],{encoding:'utf8',timeout:30000,killSignal:'SIGKILL'});
+fs.writeFileSync(process.argv[5],result.stdout??'');fs.writeFileSync(process.argv[6],result.stderr??'');
+assert.ifError(result.error);assert.equal(result.status,1,result.stderr);
+JS
+node - "$WORK/receipt" <<'JS'
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const receipt=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
+assert.equal(receipt.images.length,1);assert.equal(receipt.images[0].state,'saved');
+assert.deepEqual(receipt.rejected.map(entry=>[path.basename(entry.path),entry.code]).sort(),[['pipe.png','special-file'],['visible','special-file']]);
+JS
 cp "$WORK/source.png" "$WORK/mismatch.jpg"
 expect_status 0 --headless "$WORK/settings.json" "$WORK/mismatch.jpg"
 test -f "$WORK/mismatch_stamped.png"

@@ -10,13 +10,13 @@ test("backend loader families and core format families cover each other", () => 
     assert.deepEqual(new Set(Object.values(LOADERS).map((facts) => facts.format)), families);
 });
 
-test("empty and vector loaders differ from unmapped raster loaders", () => {
-    for (const loader of ["", "svgload", "pdfload", "pdfiumload"]) {
+test("empty loader differs from all recognized excluded content", () => {
+    for (const loader of [""]) {
         const [issue] = sourceIssues(rawMetadata({ "vips-loader": loader }));
         assert.equal(issue.code, "not-an-image");
         assert.equal(issue.diagnostic, undefined);
     }
-    for (const loader of ["gifload", "not-svgload", "unknown"]) {
+    for (const loader of ["gifload", "svgload", "pdfload", "pdfiumload", "not-svgload", "unknown"]) {
         assert.equal(sourceIssues(rawMetadata({ "vips-loader": loader }))[0].code, "unsupported-content");
     }
 });

@@ -79,3 +79,20 @@ test("the folder that was selected is reported as itself, once", () => {
     assert.deepEqual(outcome.problems, []);
 });
 
+
+
+test("visible special files and exact unreadable facts are reported without opening regular nonimages", () => {
+    const shape = { "/t": ["good.png", "pipe.png", "visible", ".hidden.png", "notes.txt", "link.png", "app.png", "denied.jpg", "unknown.jpg", "no-id.jpg"] };
+    const kinds = { "/t/pipe.png": "other", "/t/visible": "other", "/t/.hidden.png": "other", "/t/link.png": "link", "/t/app.png": "package",
+        "/t/denied.jpg": "unreadable", "/t/unknown.jpg": "unexaminable" };
+    const tree = treeOf(shape, kinds, { "/t/no-id.jpg": "" });
+    const result = imagesInFolder(tree, "/t", new Set());
+    assert.deepEqual(result.found, ["/t/good.png"]);
+    assert.deepEqual(result.problems.map((entry) => [entry.path, entry.reason, entry.excluded]), [
+        ["/t/pipe.png", "This is not a regular file (a pipe, socket or device).", false],
+        ["/t/visible", "This is not a regular file (a pipe, socket or device).", false],
+        ["/t/denied.jpg", "This item could not be read.", false],
+        ["/t/unknown.jpg", "This item could not be examined.", false],
+        ["/t/no-id.jpg", "This item could not be examined.", false]
+    ]);
+});
