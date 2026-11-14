@@ -1,5 +1,6 @@
 "use strict";
-const { isSupportedImage, basename } = require("../core/paths.js");
+const { basename } = require("../core/paths.js");
+const { isSupportedImage } = require("../core/formats.js");
 const { looksStamped } = require("../core/naming.js");
 
 /*

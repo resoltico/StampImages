@@ -1,6 +1,6 @@
 "use strict";
 
-const { utf8Length, truncateToBytes } = require("./numbers.js");
+const { utf8Length, truncateToBytes } = require("./utf8.js");
 const { plural } = require("./formatting.js");
 const { fileStem, sanitizeFilename } = require("./paths.js");
 

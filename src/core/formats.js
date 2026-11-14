@@ -1,59 +1,51 @@
 "use strict";
-const { IssueError } = require("./errors.js");
-
-const { splitExtension } = require("./naming.js");
 
 /*
- * What a stamped copy is saved as, and how well.
+ * The formats vips reads that behave like a photograph: one still image, of
+ * known orientation, that a stamp can be composited onto and saved back as
+ * the same kind of thing.
  *
- * The same kind of file it came from, because a copy of a photograph that
- * arrives as something else is a surprise: a folder of JPEGs should not come
- * back as a folder of PNGs, and a file named .heic that is secretly a JPEG is
- * worse still. The name and the encoder are decided together, in one place,
- * because vips chooses the encoder from the extension it is given -- they are
- * not two decisions that have to be kept in agreement, they are one.
+ * Deliberately excluded, though vips can read them: GIF and animated WebP
+ * (only the first frame would be taken, so the copy would not be the picture
+ * that was stamped), SVG (vector, where a stamp measured in pixels has no
+ * fixed size to be measured against), document formats (a page is not a
+ * photograph), and camera RAW (slow, huge, and a stamped RAW is not a RAW any
+ * application would still develop).
  *
- * The quality is stated because the default is not good enough. Measured:
- * vips writes JPEG at quality 75 and HEIF lower still, so every copy this
- * program made was visibly worse than the photograph it came from and nothing
- * said so. A copy somebody keeps should not be the place a default like that
- * takes effect.
- *
- * 90 rather than 100: at 90 vips also stops subsampling the color channels,
- * which is where visible damage to a stamp's edges would come from, and the
- * difference above it is file size rather than something anybody can see.
+ * The pattern and the list shown to the user are both derived from this table,
+ * so a dialog cannot promise a format the filter would reject.
  */
+const SUPPORTED_FORMATS = [
+    { name: "JPEG", extensions: ["jpg", "jpeg"] },
+    { name: "PNG", extensions: ["png"] },
+    { name: "HEIC", family: "HEIF", compression: "hevc", extensions: ["heic", "heif"] },
+    { name: "TIFF", extensions: ["tif", "tiff"] },
+    { name: "WebP", extensions: ["webp"] },
+    { name: "AVIF", family: "HEIF", compression: "av1", extensions: ["avif"] }
+];
 
-const QUALITY = "[Q=90]";
-const LOSSLESS = "";
-// Retain source color/capture metadata while excluding the stale HDR gain map.
-const SDR_JPEG = "[Q=90,keep=exif:icc:xmp:iptc]";
+const SUPPORTED_EXTENSIONS = SUPPORTED_FORMATS.flatMap(
+    (format) => format.extensions
+);
 
-const { SUPPORTED_FORMATS } = require("./paths.js");
-function sourceFormat(path) {
-    const extension = splitExtension(String(path)).extension.toLowerCase();
-    return { extension, format: SUPPORTED_FORMATS.find((item) => item.extensions.includes(extension.slice(1))) };
-}
-function extensionFor(path, family, compression) {
-    const source = sourceFormat(path);
-    const format = SUPPORTED_FORMATS.find((item) => (item.family ?? item.name) === family && (!item.compression || item.compression === compression));
-    if (!format) { throw new IssueError("The actual image encoding could not be confirmed as a supported format."); }
-    return format.extensions.includes(source.extension.slice(1)) ? source.extension : `.${format.extensions[0]}`;
-}
-function outputFormat(path, gainMap) {
-    const { extension, format } = sourceFormat(path);
-    if (!format) { throw new IssueError("Unsupported output format."); }
-    if (format.name === "JPEG" && gainMap === true) { return { extension, options: SDR_JPEG }; }
-    return { extension, options: ["PNG", "TIFF"].includes(format.name) ? LOSSLESS : QUALITY };
+const SUPPORTED_PATTERN = new RegExp(
+    `\\.(?:${SUPPORTED_EXTENSIONS.join("|")})$`,
+    "iu"
+);
+
+function isSupportedImage(path) {
+    return SUPPORTED_PATTERN.test(String(path));
 }
 
 /*
- * Where vips is told to write, which is the path with the encoder's settings
- * on the end of it. Only ever the argument vips is given: everything that
- * asks whether the file is there asks about the path itself.
+ * "JPEG, PNG, HEIC, TIFF, WebP or AVIF". Worth spelling out to the user,
+ * because the action refuses things people reasonably try, such as GIF and
+ * RAW, and "no images selected" alone would not explain why.
  */
-function savingPath(targetPath, gainMap) {
-    return `${targetPath}${outputFormat(targetPath, gainMap).options}`;
+function supportedFormatList() {
+    const names = SUPPORTED_FORMATS.map((format) => format.name);
+
+    return `${names.slice(0, -1).join(", ")} or ${names.at(-1)}`;
 }
 
-module.exports = { outputFormat, savingPath, extensionFor };
+module.exports = { SUPPORTED_FORMATS, supportedFormatList, isSupportedImage };

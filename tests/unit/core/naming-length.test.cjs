@@ -11,7 +11,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const { nameFrom, collisionPath } = require("../../../src/core/naming.js");
-const { utf8Length } = require("../../../src/core/numbers.js");
+const { utf8Length } = require("../../../src/core/utf8.js");
 
 const BUDGET = 255;
 const TIMESTAMP = "20260907_010203";

@@ -1,5 +1,5 @@
 "use strict";
-const { isSupportedImage } = require("../core/paths.js");
+const { isSupportedImage } = require("../core/formats.js");
 const {
     UNREADABLE,
     isHidden,

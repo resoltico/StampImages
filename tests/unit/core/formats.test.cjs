@@ -1,82 +1,55 @@
 "use strict";
-
-/*
- * What a stamped copy is saved as: the same kind of file it came from.
- *
- * One function answers for both the name and the encoding, because vips
- * chooses the encoder from the extension it is given. A copy that arrived as
- * something other than what it was is a surprise, and a file named .heic that
- * is secretly a JPEG is worse.
- */
-
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const {
-    outputFormat,
-    savingPath
-} = require("../../../src/core/formats.js");
+const { SUPPORTED_FORMATS, supportedFormatList, isSupportedImage } = require("../../../src/core/formats.js");
 
-test("the copy keeps the kind of file the photograph was", () => {
-    for (const extension of [
-        ".jpg", ".jpeg", ".png", ".heic", ".heif", ".tif", ".tiff", ".webp", ".avif"
+test("isSupportedImage accepts the still-image formats vips reads", () => {
+    const accepted = [
+        "/a/b.jpg", "/a/b.JPG", "/a/b.jpeg", "/a/b.png", "/a/b.PNG",
+        "/a/b.heic", "/a/b.HEIF", "/a/b.heif",
+        "/a/b.tif", "/a/b.tiff", "/a/b.TIFF",
+        "/a/b.webp", "/a/b.avif"
+    ];
+
+    for (const path of accepted) {
+        assert.equal(isSupportedImage(path), true, path);
+    }
+});
+
+test("isSupportedImage rejects formats whose semantics would surprise", () => {
+    // vips can read all of these. GIF and animated WebP would contribute only
+    // their first frame, SVG would land as a stamp because the pipeline never
+    // upscales, PDF would rasterise page one of a PDF to build a PDF, and RAW
+    // is a processing job rather than a conversion.
+    for (const rejected of [
+        "/a/b.gif", "/a/b.svg", "/a/b.pdf", "/a/b.cr2", "/a/b.nef",
+        "/a/b.bmp", "/a/b", "/a/pngx", "/a/b.png.txt", "/a/b.heicx"
     ]) {
-        assert.equal(outputFormat(`/a/photo${extension}`, false).extension, extension);
+        assert.equal(isSupportedImage(rejected), false, rejected);
     }
 });
 
-test("the spelling on disk does not decide the spelling written back", () => {
-    // A name is matched however it was typed, and answered in one spelling.
-    assert.equal(outputFormat("/a/PHOTO.JPG", false).extension, ".jpg");
-    assert.equal(outputFormat("/a/photo.JPEG", false).extension, ".jpeg");
-    assert.equal(outputFormat("/a/photo.TiFf", false).extension, ".tiff");
+test("isSupportedImage anchors the extension at the end", () => {
+    // Without the anchor, a file merely containing ".png" would be accepted.
+    assert.equal(isSupportedImage("/a/report.png.txt"), false);
+    assert.equal(isSupportedImage("/a/png.doc"), false);
+    assert.equal(isSupportedImage("/a/b.jpeg.zip"), false);
 });
 
+test("the list shown to the user matches what the filter accepts", () => {
+    // Both are derived from one table, so a format cannot be advertised and
+    // then rejected, or accepted without ever being mentioned.
+    const listed = supportedFormatList();
 
+    for (const { name, extensions } of SUPPORTED_FORMATS) {
+        assert.ok(listed.includes(name), `${name  } should be listed`);
 
-test("a copy is written at a stated quality, not at the encoder's default", () => {
-    // Measured: vips writes JPEG at quality 75 and HEIF lower still, so every
-    // copy this program made was visibly worse than the photograph it came
-    // from and nothing said so.
-    assert.equal(savingPath("/a/photo_stamped.jpg", false), "/a/photo_stamped.jpg[Q=90]");
-    assert.equal(savingPath("/a/photo_stamped.heic", false), "/a/photo_stamped.heic[Q=90]");
-    assert.equal(savingPath("/a/photo_stamped.webp", false), "/a/photo_stamped.webp[Q=90]");
-    assert.equal(savingPath("/a/photo_stamped.avif", false), "/a/photo_stamped.avif[Q=90]");
-});
-
-test("a format that loses nothing is asked for nothing", () => {
-    assert.equal(savingPath("/a/photo_stamped.png", false), "/a/photo_stamped.png");
-    assert.equal(savingPath("/a/photo_stamped.tif", false), "/a/photo_stamped.tif");
-    assert.equal(savingPath("/a/photo_stamped.tiff", false), "/a/photo_stamped.tiff");
-});
-
-test("unsupported output and disguised source formats are refused", () => {
-    const { extensionFor } = require("../../../src/core/formats.js");
-    assert.throws(() => outputFormat("photo.gif", false).extension, /Unsupported/u);
-    assert.equal(extensionFor("photo.jpg", "PNG"), ".png");
-    assert.equal(extensionFor("photo.JPEG", "JPEG"), ".jpeg");
-});
-
-test("actual content families match every supported extension", () => {
-    const { extensionFor } = require("../../../src/core/formats.js");
-    for (const [extension, family] of [["jpg", "JPEG"], ["jpeg", "JPEG"], ["png", "PNG"], ["tif", "TIFF"], ["tiff", "TIFF"], ["heic", "HEIF"], ["heif", "HEIF"], ["avif", "HEIF"], ["webp", "WebP"]]) {
-        assert.equal(extensionFor(`/photo.${extension}`, family, extension === "avif" ? "av1" : "hevc"), `.${extension}`);
-        assert.throws(() => extensionFor(`/photo.${extension}`, "unknown"), /could not be confirmed/u);
+        for (const extension of extensions) {
+            assert.equal(isSupportedImage(`/a/photo.${  extension}`), true, extension);
+        }
     }
 });
 
-test("actual raster encoding determines mislabeled copy extensions", () => {
-    const { extensionFor } = require("../../../src/core/formats.js");
-    assert.equal(extensionFor("photo.jpg", "PNG"), ".png");
-    assert.equal(extensionFor("photo.png", "JPEG"), ".jpg");
-    assert.equal(extensionFor("photo.heic", "HEIF", "av1"), ".avif");
-    assert.equal(extensionFor("photo.avif", "HEIF", "hevc"), ".heic");
-});
-
-
-test("HDR JPEG saves exclude the gain map and retain standard metadata classes", () => {
-    assert.deepEqual(outputFormat("photo.jpg", true), { extension: ".jpg", options: "[Q=90,keep=exif:icc:xmp:iptc]" });
-    assert.equal(savingPath("photo.jpeg", true), "photo.jpeg[Q=90,keep=exif:icc:xmp:iptc]");
-    assert.equal(savingPath("photo.jpg", false), "photo.jpg[Q=90]");
-    assert.equal(savingPath("photo.png", true), "photo.png");
-    assert.equal(savingPath("photo.webp", true), "photo.webp[Q=90]");
+test("the list reads as prose, not as a data dump", () => {
+    assert.equal(supportedFormatList(), "JPEG, PNG, HEIC, TIFF, WebP or AVIF");
 });

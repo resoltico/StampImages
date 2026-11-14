@@ -1,7 +1,8 @@
 "use strict";
 const { IssueError } = require("./errors.js");
 const { ISSUE } = require("./outcomes.js");
-const { SUPPORTED_FORMATS, basename, supportedFormatList } = require("./paths.js");
+const { basename } = require("./paths.js");
+const { SUPPORTED_FORMATS, supportedFormatList } = require("./formats.js");
 const GRAY_ALPHA_BANDS = 2;
 const RGB_BANDS = 3;
 const RGBA_BANDS = 4;

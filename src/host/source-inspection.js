@@ -1,5 +1,5 @@
 "use strict";
-const { extensionFor } = require("../core/formats.js");
+const { extensionFor } = require("../core/output-format.js");
 const { hostError } = require("./cancellation.js");
 const { OperationError, isUserCanceled, errorMessage, commandOf } = require("../core/errors.js");
 const { issuesOf, ISSUE } = require("../core/outcomes.js");

@@ -1,6 +1,7 @@
 "use strict";
 const { summarizeRun } = require("./run-summary.js");
-const { basename, supportedFormatList } = require("./paths.js");
+const { basename } = require("./paths.js");
+const { supportedFormatList } = require("./formats.js");
 const { plural } = require("./formatting.js");
 
 function madeSentence(counts) {

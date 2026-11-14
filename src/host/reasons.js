@@ -1,5 +1,5 @@
 "use strict";
-const { isSupportedImage, supportedFormatList } = require("../core/paths.js");
+const { isSupportedImage, supportedFormatList } = require("../core/formats.js");
 const { isRegularFile, isDirectory } = require("./asking.js");
 const { pathCandidates } = require("./input.js");
 
