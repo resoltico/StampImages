@@ -165,6 +165,18 @@ test("setup advice preserves distinct missing, upgrade and override actions with
     assert.equal(describeSetupProblems([{ tool: "vips", kind: "missing" }], true), "Setup needed.\n\n- vips is not installed.\n\nRun this in Terminal:\n\nbrew install exiftool vips");
     assert.equal(describeSetupProblems([{ tool: "vips", kind: "missing" }, { tool: "exiftool", kind: "unusable", flags: "answer JSON" }], true), "Setup needed.\n\n- vips is not installed.\n- exiftool is installed but does not do what this needs: answer JSON.\n\nRun this in Terminal:\n\nbrew install exiftool vips\nbrew upgrade exiftool vips");
     const override = { tool: "vipsheader", kind: "unusable", override: { name: "STAMP_IMAGES_VIPSHEADER", value: "/usr/bin/false" } };
-    assert.equal(describeSetupProblems([override], true), 'Setup needed.\n\n- STAMP_IMAGES_VIPSHEADER="/usr/bin/false" is not usable as vipsheader.\n\nFix or unset the named tool overrides, then try again.');
-    assert.equal(describeSetupProblems([override, { tool: "vips", kind: "missing" }], true), 'Setup needed.\n\n- STAMP_IMAGES_VIPSHEADER="/usr/bin/false" is not usable as vipsheader.\n- vips is not installed.\n\nFix or unset the named tool overrides, then try again.\n\nRun this in Terminal:\n\nbrew install exiftool vips');
+    assert.equal(describeSetupProblems([override], true), 'Setup needed.\n\n- STAMP_IMAGES_VIPSHEADER="/usr/bin/false" is not usable as vipsheader. vipsheader could not read the built-in PNG image.\n\nFix or unset the named tool overrides, then try again.');
+    assert.equal(describeSetupProblems([override, { tool: "vips", kind: "missing" }], true), 'Setup needed.\n\n- STAMP_IMAGES_VIPSHEADER="/usr/bin/false" is not usable as vipsheader. vipsheader could not read the built-in PNG image.\n- vips is not installed.\n\nFix or unset the named tool overrides, then try again.\n\nRun this in Terminal:\n\nbrew install exiftool vips');
+});
+
+
+test("override context preserves each tool-specific capability reason without installation advice", () => {
+    for (const [tool, flags, reason] of [["vipsheader", "read PNG", "vipsheader could not read the built-in PNG image."],
+        ["vips", "--fail-on=warning", "vips is installed but does not do what this needs: --fail-on=warning."],
+        ["exiftool", "structured raw JSON", "exiftool is installed but does not do what this needs: structured raw JSON."]]) {
+        const message = describeSetupProblems([{ tool, kind: "unusable", flags, override: { name: "TOOL_OVERRIDE", value: "/tool\npath" } }], false);
+        assert.ok(message.includes('TOOL_OVERRIDE="/tool\\npath"'));
+        assert.ok(message.includes(reason));
+        assert.doesNotMatch(message, /brew install|brew upgrade|brew\.sh/u);
+    }
 });

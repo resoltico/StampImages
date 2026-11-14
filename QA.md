@@ -70,6 +70,10 @@ receipts with exit 1 and preserve confirmed output/source integrity. Separate na
 controller probes establish explicit-close restoration; real command-line exit
 reclaims process-owned monitoring resources instead of returning through JS finally.
 Prior-workspace notes must exclude unrelated and temporary-root scan diagnostics.
+The color suite also checks neutral/active/inactive-outline palettes against gray8,
+non8bit-derived gray16, alpha and tagged profiles. It compares every channel outside
+an independent stamp region with the source or explicit ICC reference and verifies
+actual chromatic stamp pixels, saved bit depth/profile and reported expansion.
 CLI transport checks include a genuinely closed descriptor and FIFO readers closed
 before child exec for deterministic EPIPE on stdout/stderr. Source bytes and every
 published image are independently checked; working stderr gets exactly one plain

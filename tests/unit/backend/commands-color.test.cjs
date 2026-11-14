@@ -72,6 +72,6 @@ test("the color is moved into the space the photograph is read in", () => {
 
 test("gray promotion uses explicit sRGB or relative ICC conversion argv", () => {
     const { buildToSrgbArgv } = require("../../../src/backend/coloring.js");
-    assert.deepEqual(buildToSrgbArgv("vips", "in.v", "out.v", ""), ["vips", "colourspace", "in.v", "out.v", "srgb"]);
-    assert.deepEqual(buildToSrgbArgv("vips", "in.v", "out.v", "gray.icc"), ["vips", "icc_transform", "in.v", "out.v", "srgb", "--input-profile", "gray.icc", "--intent", "relative"]);
+    assert.deepEqual(buildToSrgbArgv("vips", "in.v", "out.v", { profilePath: "", interpretation: "b-w" }), ["vips", "colourspace", "in.v", "out.v", "srgb"]);
+    assert.deepEqual(buildToSrgbArgv("vips", "in.v", "out.v", { profilePath: "gray.icc", interpretation: "b-w" }), ["vips", "icc_transform", "in.v", "out.v", "srgb", "--input-profile", "gray.icc", "--intent", "relative"]);
 });

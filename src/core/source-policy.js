@@ -32,6 +32,17 @@ function sourceFileIssue(facts) {
     return Number(facts.size) === 0 ? sourceIssue("empty") : null;
 }
 
+function isGrayImage(facts) {
+    return ["b-w", "grey16"].includes(facts.interpretation) &&
+        INTERPRETATION_BANDS[facts.interpretation].includes(facts.bands);
+}
+
+function expandedColor(source, saved) {
+    return isGrayImage(source) &&
+        Object.hasOwn(INTERPRETATION_BANDS, saved.interpretation) && INTERPRETATION_BANDS[saved.interpretation].includes(saved.bands) &&
+        !isGrayImage(saved);
+}
+
 function sourceIssues(descriptor) {
     if (descriptor.problem) { return [sourceIssue(descriptor.problem, descriptor, descriptor.diagnostic)]; }
     if (!RASTER_FAMILIES.has(descriptor.format)) {
@@ -42,7 +53,7 @@ function sourceIssues(descriptor) {
         .every((value) => Number.isSafeInteger(value) && value > 0) || descriptor.orientation > LAST_ORIENTATION) {
         return [sourceIssue("damaged")];
     }
-    if (!(INTERPRETATION_BANDS[descriptor.interpretation] ?? []).includes(descriptor.bands)) { return [sourceIssue("unsupported-color")]; }
+    if (!Object.hasOwn(INTERPRETATION_BANDS, descriptor.interpretation) || !INTERPRETATION_BANDS[descriptor.interpretation].includes(descriptor.bands)) { return [sourceIssue("unsupported-color")]; }
     return descriptor.pages === 1 ? [] : [sourceIssue("multiple-images", descriptor)];
 }
 
@@ -70,4 +81,4 @@ function changedSourceIssue(path, diagnostic = null) {
     return { code: ISSUE.operation, stage: "capture", source: path,
         message: "The source changed after selection; try again when it is stable.", ...(diagnostic ? { diagnostic } : {}) };
 }
-module.exports = { INTERPRETATION_BANDS, sourceIssue, sourceFileIssue, sourceIssues, orientedSize, sourceRefusal, matchesAdmission, captureIssue, changedSourceIssue };
+module.exports = { INTERPRETATION_BANDS, isGrayImage, expandedColor, sourceIssue, sourceFileIssue, sourceIssues, orientedSize, sourceRefusal, matchesAdmission, captureIssue, changedSourceIssue };

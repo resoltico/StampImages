@@ -86,10 +86,12 @@ function pagesIn(job, path) {
  * content at this boundary avoids creating a full-size intermediate before
  * readPhotograph can transfer ownership of its decoded file to the caller.
  */
+function normalizedKind(kind) { return kind.toLowerCase().replace(/_/gu, "-"); }
+
 function refuseUnfaithful(job, source) {
     const kind = kindOf(job, source);
 
-    if (!Object.hasOwn(INTERPRETATION_BANDS, kind.toLowerCase().replace(/_/gu, "-"))) {
+    if (!Object.hasOwn(INTERPRETATION_BANDS, normalizedKind(kind))) {
         throw new OperationError(
             "This image is not stored as color or gray, so a stamped " +
                 `copy of it would not be the colors it is (${kind || "unreadable"}).`
@@ -106,8 +108,13 @@ function refuseUnfaithful(job, source) {
     }
 }
 
-function hasAlpha(job, path) {
-    return ALPHA_BANDS.includes(bandsOf(job, path));
+function colorFacts(job, path) {
+    const bands = bandsOf(job, path);
+    const interpretation = normalizedKind(kindOf(job, path));
+    if (!Object.hasOwn(INTERPRETATION_BANDS, interpretation) || !INTERPRETATION_BANDS[interpretation].includes(bands)) {
+        throw new OperationError("The image's color representation could not be confirmed as supported RGB or grayscale.");
+    }
+    return { bands, interpretation, hasAlpha: ALPHA_BANDS.includes(bands) };
 }
 
-module.exports = { refuseUnfaithful, hasAlpha, bandsOf, kindOf, pagesIn, positiveHeaderField };
+module.exports = { refuseUnfaithful, colorFacts, bandsOf, kindOf, pagesIn, positiveHeaderField };

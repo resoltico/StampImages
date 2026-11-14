@@ -90,4 +90,6 @@ test "$PR" = "$PG" && test "$PG" = "$PB" ||
 test "$PR" -ge 195 && test "$PR" -le 205 ||
     fail "the picture's grays did not survive the reading: $PR"
 
+settings_file "$WORK/gray-observed.json" "Riga" "bottom-right" "none" "none"
+node "$ROOT/tests/integration/gray-expansion.cjs" "$SCRIPT" "$WORK/gray-matrix" "$WORK/gray-observed.json" "$GRAY_PROFILE"
 printf 'macOS color integration passed\n'

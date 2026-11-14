@@ -123,7 +123,10 @@ A copy keeps its source's format, chosen from the image content rather than its
 extension: a PNG named `photo.jpg` becomes `photo_stamped.png`. PNG and TIFF are
 saved losslessly; JPEG, HEIC, WebP and AVIF are re-encoded at quality 90, which can
 change pixels. EXIF orientation is applied, so the stamp sits along the edge you
-see. A colored stamp on a grayscale image makes the copy RGB, and the copy says so.
+see. Gray originals stay gray with neutral text and outline colors. Active colored
+text or an enabled colored outline makes the copy RGB while retaining 16-bit gray
+precision. Readable profiles are retained or transformed for the copy’s space; the
+receipt reports the actual saved representation.
 
 ## Privacy and safety
 

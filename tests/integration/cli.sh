@@ -56,6 +56,9 @@ for requested_header in /usr/bin/false /opt/homebrew/bin relative-header "$WORK/
     assert_contains "$(cat "$WORK/error")" 'A required tool is missing or unusable.' 'setup has its own headline'
     assert_contains "$(cat "$WORK/error")" 'STAMP_IMAGES_VIPSHEADER=' 'the override variable is named'
     assert_contains "$(cat "$WORK/error")" "$requested_header" 'the requested value is named'
+    if [ "$requested_header" = /usr/bin/false ]; then
+        assert_contains "$(cat "$WORK/error")" 'vipsheader could not read the built-in PNG image.' 'override preserves the actual capability reason'
+    fi
     assert_not_contains "$(cat "$WORK/error")" 'brew install' 'override-only refusal does not suggest reinstalling an unrelated tool'
 done
 node -e 'const fs=require("fs");const value=JSON.parse(fs.readFileSync(process.argv[1]));value.font="StampImages Nonexistent Typeface";fs.writeFileSync(process.argv[2],JSON.stringify(value));' "$WORK/settings.json" "$WORK/missing-font.json"

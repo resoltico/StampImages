@@ -79,8 +79,11 @@ function buildIccArgv(vipsPath, inputPath, outputPath, profilePath) {
  * measured, a value of 200 comes back 200, 200, 200. Without a profile there
  * is nothing to read it through and the numbers are already what they are.
  */
-function buildToSrgbArgv(vipsPath, inputPath, outputPath, profilePath) {
-    return profilePath
+function buildToSrgbArgv(vipsPath, inputPath, outputPath, source) {
+    if (!source || !["b-w", "grey16"].includes(source.interpretation) || typeof source.profilePath !== "string") {
+        throw new TypeError("A gray source interpretation and profile path are required for expansion.");
+    }
+    return source.profilePath
         ? [
             vipsPath,
             "icc_transform",
@@ -88,11 +91,11 @@ function buildToSrgbArgv(vipsPath, inputPath, outputPath, profilePath) {
             outputPath,
             "srgb",
             "--input-profile",
-            profilePath,
+            source.profilePath,
             "--intent",
             "relative"
         ]
-        : [vipsPath, "colourspace", inputPath, outputPath, "srgb"];
+        : [vipsPath, "colourspace", inputPath, outputPath, source.interpretation === "grey16" ? "rgb16" : "srgb"];
 }
 
 module.exports = {

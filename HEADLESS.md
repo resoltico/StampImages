@@ -70,7 +70,9 @@ location metadata their originals carry. Ultra HDR JPEGs produce standard-range
 JPEG copies without gain maps; capture metadata and color profiles are retained.
 
 Copies retain standard EXIF capture fields and GPS across supported output formats,
-plus writable XMP/IPTC and the copy’s color profile. Orientation and EXIF/XMP
+plus writable XMP/IPTC and the copy’s color profile. Neutral palettes retain gray
+representation; active colored text or outline expands gray to RGB without reducing
+16-bit precision. Readable profiles stay gray or are transformed for that RGB copy. Orientation and EXIF/XMP
 dimensions describe the upright stamped pixels. Proprietary maker fields are not
 guaranteed across encoders; existing retained maker data is not deleted.
 
@@ -153,7 +155,7 @@ Saved and recovered records also carry appearance notes, each `true` or `false`:
 | Note | Meaning |
 | --- | --- |
 | `crowded` | The margin was larger than the room; the stamp sits against the opposite edge |
-| `expanded` | A colored stamp on a grayscale image made the copy RGB |
+| `expanded` | A grayscale original was saved with RGB channels, determined from the actual final copy |
 | `unconverted` | The image's color profile could not be read; colors were drawn in sRGB |
 | `substituted` | Some characters were not in the typeface and were drawn in another one |
 

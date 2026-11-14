@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Neutral captions keep grayscale copies gray; colored captions retain 16-bit precision when expanding gray to RGB, and receipts describe the actual saved representation.
+
 - Command-line reports precede JSON receipts; broken stdout exits 1 with one plain stderr line, including help/version, while confirmed copies stay saved.
 
 - Command-line receipts omit stack traces while retaining structured issue reasons and other diagnostics.

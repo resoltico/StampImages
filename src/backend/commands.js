@@ -19,9 +19,12 @@ function buildCompositeArgv(vipsPath, over, outputPath, at) {
         "over"
     ];
 
-    return at
+    const positioned = at
         ? [...argv, "--x", String(at.left), "--y", String(at.top)]
         : argv;
+    return over.compositingSpace
+        ? [...positioned, "--compositing-space", over.compositingSpace]
+        : positioned;
 }
 
 /*

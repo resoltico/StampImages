@@ -1,4 +1,6 @@
 "use strict";
+const { isGrayImage } = require("../core/source-policy.js");
+const { colorFacts } = require("./fidelity.js");
 const { OperationError } = require("../core/errors.js");
 
 const { buildCompositeArgv, buildFlattenArgv } = require("../backend/commands.js");
@@ -31,7 +33,7 @@ function composite(job, base, stamp, token) {
         job.app,
         buildCompositeArgv(
             job.tools.vips,
-            { base: base.path, overlay: stamp.path },
+            { base: base.path, overlay: stamp.path, ...(isGrayImage(base) ? { compositingSpace: base.interpretation } : {}) },
             stamped,
             stamp.at
         ),
@@ -80,6 +82,7 @@ function saveCopy(job, stamped, target, source) {
                 `expected:\n\n${target}`
         );
     }
+    return colorFacts(job, target);
 }
 
 module.exports = { composite, saveCopy };

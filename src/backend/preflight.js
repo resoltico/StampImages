@@ -78,15 +78,17 @@ function isExiftoolUsable(probeOutput) {
 const INSTALL_COMMAND = "brew install exiftool vips";
 const HOMEBREW_URL = "https://brew.sh";
 
-function describeProblem(problem) {
-    if (problem.override) { return `- ${problem.override.name}=${JSON.stringify(problem.override.value)} is not usable as ${problem.tool}.`; }
-    if (problem.tool === "vipsheader" && problem.kind === "unusable") { return "- vipsheader could not read the built-in PNG image."; }
-    if (problem.kind === "missing") {
-        return `- ${problem.tool} is not installed.`;
-    }
+function problemReason(problem) {
+    if (problem.kind === "missing") { return `${problem.tool} is not installed.`; }
+    if (problem.tool === "vipsheader" && problem.kind === "unusable") { return "vipsheader could not read the built-in PNG image."; }
+    return `${problem.tool} is installed but does not do what this needs: ${problem.flags}.`;
+}
 
-    return `- ${problem.tool} is installed but does not do what this needs: ` +
-        `${problem.flags}.`;
+function describeProblem(problem) {
+    const reason = problemReason(problem);
+    return problem.override
+        ? `- ${problem.override.name}=${JSON.stringify(problem.override.value)} is not usable as ${problem.tool}. ${reason}`
+        : `- ${reason}`;
 }
 
 /*

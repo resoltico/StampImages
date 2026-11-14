@@ -78,23 +78,25 @@ function sizeOf(host, [named, knob, fallback]) {
     return String(host[knob] ?? fallback ?? host[photograph[1]] ?? photograph[2]);
 }
 
-function headerField(host, command) {
+function headerField(host, command, path) {
+    const configured = host.headerFacts?.get(path);
+    const observed = configured ? { ...host, ...configured } : host;
     if (command.includes("'interpretation'")) {
-        return interpretationOf(host);
+        return interpretationOf(observed);
     }
 
     if (command.includes("n-pages")) {
-        return pagesOf(host);
+        return pagesOf(observed);
     }
 
     if (command.includes("'orientation'")) {
-        return String(host.orientation ?? 1);
+        return String(observed.orientation ?? 1);
     }
 
     const dimension = measuredBy(command)
         .find(([named]) => command.includes(named));
 
-    return dimension ? sizeOf(host, dimension) : String(host.bands);
+    return dimension ? sizeOf(observed, dimension) : String(observed.bands);
 }
 
 module.exports = { headerField };

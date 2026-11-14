@@ -6,10 +6,10 @@ const { wantsColor } = require("../core/color.js");
 const { runArgv } = require("./shell.js");
 const { verifyFileWritten } = require("./filesystem-probes.js");
 const { sizeOf } = require("./tinting.js");
-const { refuseUnfaithful, hasAlpha, bandsOf } = require("./fidelity.js");
+const { refuseUnfaithful, colorFacts } = require("./fidelity.js");
 const { profileFor } = require("./color-space.js");
 const { OperationError, errorMessage, commandOf } = require("../core/errors.js");
-const { sourceIssue } = require("../core/source-policy.js");
+const { isGrayImage, sourceIssue } = require("../core/source-policy.js");
 
 /*
  * A photograph whose header passed inspection can still be cut short: the
@@ -34,9 +34,6 @@ function damagedOr(error) {
  * stamp on it and saving the result is image.js.
  */
 
-// A photograph that stores only grays, with or without an alpha band.
-const GRAY_BANDS = 2;
-
 /*
  * Orientation is applied rather than carried. A photograph whose tag says to
  * rotate it is shown rotated by everything that displays it, so a stamp
@@ -60,12 +57,12 @@ function orient(job, source, oriented) {
  * instead preserves gray pixel values, such as 200 becoming 200, 200, 200, while
  * allowing the chosen caption color. Gray captions need no expansion.
  */
-function inColor(job, oriented, profile, token) {
+function inColor(job, photograph, profile, token) {
     const expanded = `${job.workspace}/color-${token}.v`;
 
     runArgv(
         job.app,
-        buildToSrgbArgv(job.tools.vips, oriented, expanded, profile),
+        buildToSrgbArgv(job.tools.vips, photograph.path, expanded, { profilePath: profile.path, interpretation: photograph.interpretation }),
         "reading the image"
     );
     verifyFileWritten(job.app, expanded, "the image");
@@ -84,7 +81,7 @@ function readPhotograph(job, source, token) {
         try { orient(job, source, path); }
         catch (error) { throw damagedOr(error); }
 
-        return { path, size: sizeOf(job, path), hasAlpha: hasAlpha(job, path) };
+        return { path, size: sizeOf(job, path), ...colorFacts(job, path) };
     } catch (error) {
         removeOwned(job, path);
         throw error;
@@ -98,12 +95,13 @@ function readPhotograph(job, source, token) {
  * of what the profile is for, so the profile goes with it.
  */
 function prepareColorSpace(job, photograph, profile, token) {
-    if (bandsOf(job, photograph.path) > GRAY_BANDS || !wantsColor(job.settings)) {
+    if (!isGrayImage(photograph) || !wantsColor(job.settings)) {
         return { photograph, profile, expanded: false };
     }
 
+    const path = inColor(job, photograph, profile, token);
     return {
-        photograph: { ...photograph, path: inColor(job, photograph.path, profile.path, token) },
+        photograph: { ...photograph, path, ...colorFacts(job, path) },
         profile: { path: "", failed: profile.failed },
         expanded: true
     };

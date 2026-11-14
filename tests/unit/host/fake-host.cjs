@@ -81,6 +81,7 @@ function filesystemFor(settings) {
 function measurements(settings) {
     return {
         bands: settings.bands ?? 3,
+        headerFacts: new Map(Object.entries(settings.headerFacts ?? {})),
         width: settings.width,
         height: settings.height,
         stampWidth: settings.stampWidth,

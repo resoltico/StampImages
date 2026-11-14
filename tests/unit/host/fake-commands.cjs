@@ -58,7 +58,7 @@ function dispatch(fs, argv, command, host) {
     }
 
     if (command.includes("vipsheader")) {
-        return headerField(host, command);
+        return headerField(host, command, argv.at(-1));
     }
 
     return fs.produce(argv, command);
