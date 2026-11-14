@@ -132,3 +132,29 @@ test("CLI messages identify JSON keys, missing values and types without changing
         "`textColor` must be a JSON string, not an object.", "`font`: This Mac has no matching typeface."
     ]);
 });
+
+
+test("local settings file URLs decode before absolute resolution and native file reading", () => {
+    for (const url of ["file:///settings%20R%C4%ABga%25.json", "FILE://LOCALHOST/settings%20R%C4%ABga%25.json"]) {
+        const read = [], resolved = [];
+        const command = cliCommand(["--headless", url, "photo.jpg"], {
+            absolute(path) { resolved.push(path); return path.startsWith("/") ? path : `/cwd/${path}`; },
+            read(path) { read.push(path); return settings; }
+        });
+        assert.deepEqual(resolved, ["/settings Rīga%.json", "photo.jpg"]);
+        assert.deepEqual(read, ["/settings Rīga%.json"]);
+        assert.deepEqual(command.invocation.settings, settings);
+    }
+    const names = [];
+    cliCommand(["--headless", "./settings:one.json", "photo.jpg"], { absolute: (path) => path, read: (path) => { names.push(path); return settings; } });
+    assert.deepEqual(names, ["./settings:one.json"]);
+});
+
+test("remote, incomplete or undecodable settings URLs are refused before file access", () => {
+    for (const value of ["https://example.invalid/settings.json", "file://example.invalid/settings.json", "file://localhost", "file:/settings.json",
+        "file:///bad%.json", "file:///bad%00.json", "urn:settings:one"]) {
+        assert.throws(() => cliCommand(["--headless", value, "photo.jpg"], {
+            absolute() { throw new Error("must not resolve a refused URL"); }, read() { throw new Error("must not read a refused URL"); }
+        }), (error) => error.issues[0].code === "settings-file" && error.issues[0].stage === "request" && /valid local file URL/u.test(error.message));
+    }
+});

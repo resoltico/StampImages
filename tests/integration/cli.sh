@@ -22,6 +22,15 @@ expect_status() {
 expect_status 0 --help
 assert_contains "$(cat "$WORK/receipt")" 'all 10 required' 'help describes current settings'
 expect_status 0 --version
+cp "$WORK/settings.json" "$WORK/settings Rīga%.json"
+settings_url=$(node -e 'process.stdout.write(require("node:url").pathToFileURL(process.argv[1]).href.replace("file:///","file://localhost/"))' "$WORK/settings Rīga%.json")
+cp "$WORK/source.png" "$WORK/settings-url.png"
+expect_status 0 --headless "$settings_url" "$WORK/settings-url.png"
+node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1]));if(r.state!=="complete")throw Error("local settings URL failed");' "$WORK/receipt"
+for refused_settings in 'https://example.invalid/settings.json' 'file://example.invalid/settings.json' 'file:///bad%00.json'; do
+    expect_status 2 --headless "$refused_settings" "$WORK/source.png"
+    node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1]));if(r.state!=="invalid"||r.issues[0].code!=="settings-file"||r.images.length||r.rejected.length)throw Error("settings URL refusal reached image admission");' "$WORK/receipt"
+done
 for missing_image in "$WORK/not-there" "$WORK/not-there.gif" "$WORK/not-there.jpg"; do
     expect_status 1 --headless "$WORK/settings.json" "$missing_image"
     node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1]));if(r.rejected[0].code!=="not-a-path"||r.rejected[0].reason!=="No file or folder exists at this path.")throw Error("missing path was classified from its extension");' "$WORK/receipt"

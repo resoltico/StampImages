@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Command-line settings files accept local `file://` URLs, including encoded spaces and Unicode; remote and malformed settings URLs are refused before processing.
+
 - Recovered copies have a “Saved elsewhere” section with the actual cause; failed-only headings and separate cleanup issues keep saved work clear.
 
 - Missing image paths are reported before format checks, and remote URL schemes are refused; prefix relative names containing a colon with `./`.

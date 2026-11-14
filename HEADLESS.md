@@ -16,7 +16,7 @@ run line and exits 2.
 A command-line run never opens a dialog and neither reads nor writes remembered
 settings. External tools run in the C locale so message parsing does not depend on
 the terminal language. Paths may be absolute or relative to the working directory. Local
-`file://` image URLs are accepted; remote URLs of any scheme are refused.
+`file://` URLs for settings and images are accepted; remote URLs of any scheme are refused.
 A relative filename containing a colon needs an explicit `./` prefix, for example
 `./photo:one.jpg`, to distinguish it from a URL scheme. Missing paths are reported
 before filename-format checks; permission failures remain distinct.
@@ -149,7 +149,7 @@ refusal includes `diagnostic.loader`, the vips loader that recognized its conten
 | `request` | `usage`, `settings-file` |
 | `settings` | `unknown`, `choice`, `integer`, `text`, `color`, `typeface`, `object`, `empty-stamp` |
 | `setup` | `operation` when a required tool is missing or unusable |
-| `selection` | `folder`, `unsupported-format`, `not-a-file`, `not-a-path`, `package`, `link`, `special-file`, `unreadable`, `unexaminable`, `already-stamped`, `empty-folder`, and the run issue `no-images` |
+| `selection` | `folder`, `unsupported-format`, `not-a-file`, `not-a-path`, `remote-url`, `package`, `link`, `special-file`, `unreadable`, `unexaminable`, `already-stamped`, `empty-folder`, and the run issue `no-images` |
 | `inspection` | `unreadable`, `empty`, `not-an-image`, `unsupported-content`, `unsupported-color`, `multiple-images`, `damaged` |
 | `stamping`, `publication`, `recovery`, `cleanup` | `operation`, `fault`, `canceled`, `damaged`, `publication`, `recovery`, `cleanup` |
 
