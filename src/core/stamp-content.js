@@ -1,4 +1,5 @@
 "use strict";
+const { IssueError } = require("./errors.js");
 
 /*
  * A run that would stamp nothing at all is a run that copies photographs for
@@ -22,7 +23,7 @@ function contentProblem(settings) {
 
 function requireStampContent(settings) {
     if (stampsNothing(settings)) {
-        throw new Error(EMPTY_STAMP_MESSAGE);
+        throw new IssueError(EMPTY_STAMP_MESSAGE);
     }
 
     return settings;

@@ -1,17 +1,9 @@
 "use strict";
-const { UserCanceled } = require("../core/errors.js");
+const { UserCanceled, isUserCanceled, causes } = require("../core/errors.js");
 const CANCEL_ERROR_NUMBER = -128;
 function hostError(error) {
-    let current = error;
-    const maximumDepth = 8;
-    for (let depth = 0; current && depth < maximumDepth; depth += 1) {
-        if (current.errorNumber === CANCEL_ERROR_NUMBER) {
-            const canceled = new UserCanceled();
-            canceled.cause = error;
-            return canceled;
-        }
-        current = current.cause;
-    }
-    return error;
+    if (isUserCanceled(error)) { return error; }
+    return causes(error).some((cause) => cause.errorNumber === CANCEL_ERROR_NUMBER)
+        ? new UserCanceled({ cause: error }) : error;
 }
 module.exports = { hostError };

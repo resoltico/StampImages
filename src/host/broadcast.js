@@ -1,4 +1,5 @@
 "use strict";
+const { hostError } = require("./cancellation.js");
 const { isUserCanceled } = require("../core/errors.js");
 
 /*
@@ -20,7 +21,8 @@ function broadcast(sinks, state) {
         for (const sink of sinks.filter((item) => !failed.has(item))) {
             try {
                 use(sink);
-            } catch (error) {
+            } catch (caught) {
+                const error = hostError(caught);
                 /*
                  * Recorded rather than thrown on: letting it out would unwind
                  * the run from wherever the report was made, and one of those

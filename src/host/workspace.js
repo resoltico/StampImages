@@ -1,6 +1,7 @@
 "use strict";
+const { hostError } = require("./cancellation.js");
 const { MKTEMP, RM, PS } = require("../core/executables.js");
-const { OperationError } = require("../core/errors.js");
+const { OperationError, UserCanceled, isUserCanceled } = require("../core/errors.js");
 const { ISSUE } = require("../core/outcomes.js");
 const { releaseArtifact, hasRetainedArtifacts } = require("../core/artifacts.js");
 const { isWorkspaceName, workspaceDisposition, validWorkspaceOwner } = require("../core/workspaces.js");
@@ -12,7 +13,10 @@ const NONCE_RANGE = 1000000000;
 const RETAIN = "retain";
 const OWNER = "owner.json";
 
-function processOutput(app, argv) { return app.doShellScript(`LC_ALL=C TZ=UTC ${shellJoin(argv)}`); }
+function processOutput(app, argv) {
+    try { return app.doShellScript(`LC_ALL=C TZ=UTC ${shellJoin(argv)}`); }
+    catch (error) { throw hostError(error); }
+}
 
 function removeWorkspace(app, path) {
     return path && WORKSPACE_PATTERN.test(path) ? cleanupArgv(app, [RM, "-rf", path]) : { state: "skipped" };
@@ -43,10 +47,15 @@ function reclaimOne(app, storage, path, processes) {
         if (disposition === "active") { return null; }
         if (disposition === "reclaim") {
             const removed = removeWorkspace(app, path);
+            if (removed.state === "failed" && removed.issue.code === ISSUE.canceled) { throw new UserCanceled({ issues: [removed.issue] }); }
             return removed.state === "failed" ? workspaceDiagnostic("workspace-unreadable", path, "A stale workspace could not be reclaimed.", removed.issue) : null;
         }
         return workspaceDiagnostic(`workspace-${disposition}`, path, "A retained or unreadable workspace was left in place.");
-    } catch (error) { return workspaceDiagnostic("workspace-unreadable", path, "A workspace could not be inspected and was left in place.", error); }
+    } catch (caught) {
+        const error = hostError(caught);
+        if (isUserCanceled(error)) { throw error; }
+        return workspaceDiagnostic("workspace-unreadable", path, "A workspace could not be inspected and was left in place.", error);
+    }
 }
 
 function reclaimWorkspaces(app, storage) {
@@ -55,7 +64,11 @@ function reclaimWorkspaces(app, storage) {
         if (names.length === 0) { return []; }
         const processes = readProcessList(processOutput(app, buildProcessListArgv(PS)));
         return names.map((name) => reclaimOne(app, storage, `${storage.temporary}/${name}`, processes)).filter(Boolean);
-    } catch (error) { return [workspaceDiagnostic("workspace-unreadable", storage.temporary, "Temporary workspaces could not be checked.", error)]; }
+    } catch (caught) {
+        const error = hostError(caught);
+        if (isUserCanceled(error)) { throw error; }
+        return [workspaceDiagnostic("workspace-unreadable", storage.temporary, "Temporary workspaces could not be checked.", error)];
+    }
 }
 
 function retainCandidate(job) { job.storage.write(`${job.workspace}/${RETAIN}`, "validating\n"); }
@@ -64,9 +77,8 @@ function clearRetention(job) {
     if (job.storage.entries(job.workspace).includes(RETAIN)) {
         try { job.storage.remove(`${job.workspace}/${RETAIN}`); }
         catch (error) {
-            const failure = new OperationError("The workspace retention marker could not be cleared.", { cause: error });
-            failure.issues = [{ code: ISSUE.cleanup, stage: "cleanup", message: failure.message, diagnostic: { path: job.workspace } }];
-            throw failure;
+            const message = "The workspace retention marker could not be cleared.";
+            throw new OperationError(message, { cause: error, issues: [{ code: ISSUE.cleanup, stage: "cleanup", message, diagnostic: { path: job.workspace } }] });
         }
     }
 }

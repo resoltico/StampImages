@@ -1,8 +1,9 @@
 "use strict";
+const { IssueError } = require("./errors.js");
 
 /** Owned before bytes exist; validating is retained until validation is resolved. */
 function registerArtifact(artifacts, path) {
-    if (artifacts.has(path)) { throw new Error("Artifact path is already owned."); }
+    if (artifacts.has(path)) { throw new IssueError("Artifact path is already owned."); }
     const artifact = { path, state: "building" };
     artifacts.set(path, artifact);
     return artifact;
@@ -18,7 +19,7 @@ function hasRetainedArtifacts(artifacts) {
 
 function requireValidatedArtifact(artifacts, path) {
     const artifact = artifacts.get(path);
-    if (artifact?.state !== "validated") { throw new Error("Publication requires an owned validated image."); }
+    if (artifact?.state !== "validated") { throw new IssueError("Publication requires an owned validated image."); }
     return artifact;
 }
 

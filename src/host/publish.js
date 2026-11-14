@@ -3,7 +3,7 @@ const { requireValidatedArtifact, isPublished } = require("../core/artifacts.js"
 const { keep, clearAway } = require("./recovery.js");
 const { confirm } = require("./settling.js");
 const { ISSUE, issuesOf } = require("../core/outcomes.js");
-const { errorMessage, isUserCanceled, UserCanceled } = require("../core/errors.js");
+const { IssueError, errorMessage, isUserCanceled, UserCanceled } = require("../core/errors.js");
 const { claimAvailable } = require("./destination.js");
 
 function confirmed(context) {
@@ -27,12 +27,10 @@ function publicationCode(error) {
 
 function retainedAfterStop(context) {
     const { job, paths, area } = context;
-    const failure = new UserCanceled();
-    failure.recovery = paths.staged;
-    failure.issues = [{ code: ISSUE.canceled, stage: "publication", diagnostic: context.diagnostic, message: `Stopped before saving. Keep this finished copy from its temporary workspace before restarting:\n${paths.staged}` }];
-    try { failure.issues.push(...clearAway(job.app, { staging: area })); }
-    catch (error) { failure.issues.push(...issuesOf(error, "cleanup")); }
-    return failure;
+    const issues = [{ code: ISSUE.canceled, stage: "publication", diagnostic: context.diagnostic, message: `Stopped before saving. Keep this finished copy from its temporary workspace before restarting:\n${paths.staged}` }];
+    try { issues.push(...clearAway(job.app, { staging: area })); }
+    catch (error) { issues.push(...issuesOf(error, "cleanup")); }
+    return new UserCanceled({ recovery: paths.staged, issues });
 }
 
 function failedPublication(context, error) {
@@ -53,9 +51,8 @@ function failedPublication(context, error) {
         throw checkpoint;
     }
     const failure = keep(job, paths, { reasons: [errorMessage(error)], staging: area });
-    failure.issues = [{ code: publicationCode(error), stage: "publication",
-        message: "The image could not be saved to its requested destination.", diagnostic: context.diagnostic ?? issuesOf(error, "publication")[0].diagnostic }, ...failure.issues.slice(1)];
-    throw failure;
+    throw new IssueError(failure.message, { cause: failure, recovery: failure.recovery, issues: [{ code: publicationCode(error), stage: "publication",
+        message: "The image could not be saved to its requested destination.", diagnostic: context.diagnostic ?? issuesOf(error, "publication")[0].diagnostic }, ...failure.issues.slice(1)] });
 }
 
 /** Exact native claims retry positively classified collisions using the same validated image. */

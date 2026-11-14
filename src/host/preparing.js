@@ -23,9 +23,7 @@ const LOADER_FAILURE = /\b(?:jpeg|png|heif|tiff|webp|vips)load\b|VipsForeignLoad
 function damagedOr(error) {
     if (!(error instanceof OperationError) || !LOADER_FAILURE.test(errorMessage(error))) { return error; }
     const issue = sourceIssue("damaged", {}, { command: commandOf(error), message: errorMessage(error) });
-    const damaged = new OperationError(issue.message, { cause: error });
-    damaged.issues = [{ ...issue, stage: "stamping" }];
-    return damaged;
+    return new OperationError(issue.message, { cause: error, issues: [{ ...issue, stage: "stamping" }] });
 }
 
 /*

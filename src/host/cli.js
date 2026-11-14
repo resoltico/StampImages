@@ -35,9 +35,7 @@ function usage() {
         `${settingsHelp()}\n\nPaths may be absolute or relative to the working directory. Settings must be UTF-8 JSON without a BOM.\n`;
 }
 function requestError(code, message, diagnostic = null) {
-    const error = new OperationError(message);
-    error.issues = [{ code, stage: "request", message, ...(diagnostic ? { diagnostic } : {}) }];
-    return error;
+    return new OperationError(message, { issues: [{ code, stage: "request", message, ...(diagnostic ? { diagnostic } : {}) }] });
 }
 
 // What was wrong, and the one line that would have been right; the settings are --help's to list.
@@ -73,9 +71,7 @@ function jsonConfiguration(text, path) {
 function configurationValues(configuration) {
     const validated = validateSettings(configuration);
     if (validated.issues.length) {
-        const error = new OperationError(validated.issues.map((issue) => issue.message).join("\n"));
-        error.issues = validated.issues;
-        throw error;
+        throw new OperationError(validated.issues.map((issue) => issue.message).join("\n"), { issues: validated.issues });
     }
     const empty = contentProblem(validated.settings);
     if (empty) { throw requestError("empty-stamp", empty.message); }

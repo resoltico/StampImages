@@ -1,5 +1,6 @@
 "use strict";
-const { OperationError } = require("../core/errors.js");
+const { hostError } = require("./cancellation.js");
+const { OperationError, isUserCanceled } = require("../core/errors.js");
 
 const { RM } = require("../core/executables.js");
 const { shellJoin } = require("../core/shell.js");
@@ -19,7 +20,9 @@ const { errorMessage, summarizeCommand } = require("../core/errors.js");
 function runCommand(app, command, label) {
     try {
         return app.doShellScript(command);
-    } catch (error) {
+    } catch (caught) {
+        const error = hostError(caught);
+        if (isUserCanceled(error)) { throw error; }
         const context = label ? ` while ${label}` : "";
 
         // doShellScript turns the command's newlines into carriage returns,
@@ -27,12 +30,8 @@ function runCommand(app, command, label) {
         const said = errorMessage(error).replace(/\r\n?/gu, "\n").trim();
         const failure = new OperationError(
             `Command failed${context}.\n\n${said}`,
-            { cause: error }
+            { cause: error, command: summarizeCommand(command) }
         );
-
-        // Carried alongside the message so the presenter can decide: shown in
-        // a log, withheld from a dialog.
-        failure.command = summarizeCommand(command);
 
         throw failure;
     }
@@ -69,7 +68,9 @@ function runArgvInto(app, argumentsList, path, label) {
 function tryArgv(app, argumentsList) {
     try {
         return app.doShellScript(shellJoin(argumentsList));
-    } catch {
+    } catch (caught) {
+        const error = hostError(caught);
+        if (isUserCanceled(error)) { throw error; }
         return "";
     }
 }

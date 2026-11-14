@@ -1,4 +1,5 @@
 "use strict";
+const { hostError } = require("./cancellation.js");
 const { UserCanceled, errorMessage } = require("../core/errors.js");
 const { APP_NAME } = require("../core/version.js");
 const { labelsOf, valueOfLabel } = require("./choices.js");
@@ -24,19 +25,21 @@ const { labelsOf, valueOfLabel } = require("./choices.js");
  * puzzle ten questions later.
  */
 function chooseRequired(app, control, opening) {
-    const choice = app.chooseFromList(labelsOf(control), {
-        withTitle: APP_NAME,
-        withPrompt: control.prompt,
-        defaultItems: [opening]
-    });
+    try {
+        const choice = app.chooseFromList(labelsOf(control), {
+            withTitle: APP_NAME,
+            withPrompt: control.prompt,
+            defaultItems: [opening]
+        });
 
-    if (!choice) {
-        throw new UserCanceled();
-    }
+        if (!choice) {
+            throw new UserCanceled();
+        }
 
-    valueOfLabel(control, choice[0]);
+        valueOfLabel(control, choice[0]);
 
-    return choice[0];
+        return choice[0];
+    } catch (error) { throw hostError(error); }
 }
 
 /*
@@ -54,12 +57,17 @@ function chooseRequired(app, control, opening) {
  * displayDialog raises when the person cancels, and that call sits outside
  * the try deliberately: cancelling is a decision, not an unusable answer.
  */
+function dialogResponse(app, message, options) {
+    try { return app.displayDialog(message, options); }
+    catch (error) { throw hostError(error); }
+}
+
 function askUntil(app, question, read) {
     let answer = question.defaultAnswer;
     let problem = "";
 
     for (;;) {
-        const response = app.displayDialog(
+        const response = dialogResponse(app,
             problem ? `${problem}\n\n${question.prompt}` : question.prompt,
             {
                 withTitle: APP_NAME,

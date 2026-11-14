@@ -31,7 +31,9 @@ function pngFacts(sources, path, facts) {
 
 function optionalField(app, tool, path, field) {
     try { return runHeaderArgv(app, buildFieldArgv(tool, field, [path]), "checking optional image metadata"); }
-    catch (error) {
+    catch (caught) {
+        const error = hostError(caught);
+        if (isUserCanceled(error)) { throw error; }
         if (fieldAbsent(errorMessage(error), field)) { return undefined; }
         throw error;
     }
@@ -129,9 +131,7 @@ function inspectCaptured(job, owned, original) {
     const issues = sourceIssues(facts);
     if (issues.length > 0) {
         const issue = { ...issues[0], source: original };
-        const error = new OperationError(`${original}: ${issue.message}`);
-        error.issues = [issue];
-        throw error;
+        throw new OperationError(`${original}: ${issue.message}`, { issues: [issue] });
     }
     return { ...owned, ...facts };
 }

@@ -1,5 +1,5 @@
 "use strict";
-const { errorMessage } = require("../core/errors.js");
+const { IssueError, errorMessage } = require("../core/errors.js");
 const { runOutcome } = require("../core/outcomes.js");
 function executeRun(ports) {
     const request = ports.prepare();
@@ -11,9 +11,7 @@ function executeRun(ports) {
     ports.progress.close();
     try { return ports.present(outcome); }
     catch (cause) {
-        const error = new Error(errorMessage(cause), { cause });
-        error.outcome = outcome;
-        throw error;
+        throw new IssueError(errorMessage(cause), { cause, outcome });
     }
 }
 module.exports = { executeRun };

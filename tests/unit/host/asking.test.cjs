@@ -83,18 +83,12 @@ test("a cancellation is not an answer about a file", () => {
 
     assert.throws(
         () => verifyFileWritten(app, "/tmp/stamped.jpg", "the stamped image"),
-        (error) => error === stopped
+        (error) => error.cause === stopped && error.name === "UserCanceled"
     );
 });
 
-test("every other question still answers no when it cannot be put", () => {
-    // Each of these is asked somewhere a raise would cost something: a
-    // staging place left in somebody's folder, a copy nobody is told the
-    // whereabouts of, a name chosen after the copy exists. What that costs is
-    // a stop landing exactly on a sub-millisecond test going unnoticed.
-    const stopped = new Error("User canceled.");
-
-    stopped.errorNumber = -128;
+test("ordinary failed filesystem questions still answer no", () => {
+    const stopped = new Error("permission denied");
 
     const app = createFakeApp([["/bin/test", stopped]]);
 

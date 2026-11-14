@@ -1,4 +1,5 @@
 "use strict";
+const { hostError } = require("./cancellation.js");
 const { ORDER, controlFor } = require("./form-rows.js");
 const { readAnswer, readAnswers } = require("./answers.js");
 const { labelOfValue } = require("./choices.js");
@@ -124,9 +125,11 @@ function collectDialogSettings(app, answers, context) {
         const problem = contentProblem(read.settings);
 
         if (problem) {
-            app.displayDialog(problem.message, {
-                withTitle: APP_NAME, buttons: ["OK"], defaultButton: "OK"
-            });
+            try {
+                app.displayDialog(problem.message, {
+                    withTitle: APP_NAME, buttons: ["OK"], defaultButton: "OK"
+                });
+            } catch (error) { throw hostError(error); }
         } else {
             reviewSettings(app, read.settings, context);
 

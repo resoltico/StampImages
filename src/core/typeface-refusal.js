@@ -1,4 +1,5 @@
 "use strict";
+const { IssueError } = require("./errors.js");
 
 /*
  * What is said when a typeface cannot be found, and why it is said here.
@@ -61,7 +62,7 @@ function unknownTypeface(known, name) {
  */
 function resolved(known, name) {
     if (!known) {
-        throw new Error("A typeface catalog is required before choosing a face.");
+        throw new IssueError("A typeface catalog is required before choosing a face.");
     }
 
     const found = faceOf(known, name);

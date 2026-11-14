@@ -1,4 +1,5 @@
 "use strict";
+const { IssueError } = require("./errors.js");
 
 const { splitExtension } = require("./naming.js");
 
@@ -36,12 +37,12 @@ function sourceFormat(path) {
 function extensionFor(path, family, compression) {
     const source = sourceFormat(path);
     const format = SUPPORTED_FORMATS.find((item) => (item.family ?? item.name) === family && (!item.compression || item.compression === compression));
-    if (!format) { throw new Error("The actual image encoding could not be confirmed as a supported format."); }
+    if (!format) { throw new IssueError("The actual image encoding could not be confirmed as a supported format."); }
     return format.extensions.includes(source.extension.slice(1)) ? source.extension : `.${format.extensions[0]}`;
 }
 function outputFormat(path, gainMap) {
     const { extension, format } = sourceFormat(path);
-    if (!format) { throw new Error("Unsupported output format."); }
+    if (!format) { throw new IssueError("Unsupported output format."); }
     if (format.name === "JPEG" && gainMap === true) { return { extension, options: SDR_JPEG }; }
     return { extension, options: ["PNG", "TIFF"].includes(format.name) ? LOSSLESS : QUALITY };
 }

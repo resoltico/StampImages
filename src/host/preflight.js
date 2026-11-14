@@ -1,5 +1,6 @@
 "use strict";
-const { OperationError } = require("../core/errors.js");
+const { hostError } = require("./cancellation.js");
+const { OperationError, isUserCanceled } = require("../core/errors.js");
 const { shellJoin, shellQuote } = require("../core/shell.js");
 const {
     buildVipsProbeArgv,
@@ -26,7 +27,9 @@ const { findTool, TOOL_NAMES, TOOL_SEARCH_PATH } = require("./tools.js");
 function probe(app, argv) {
     try {
         return app.doShellScript(`${shellJoin(argv)} 2>&1 || true`);
-    } catch {
+    } catch (caught) {
+        const error = hostError(caught);
+        if (isUserCanceled(error)) { throw error; }
         return "";
     }
 }
@@ -34,7 +37,9 @@ function probe(app, argv) {
 function hasHomebrew(app) {
     try {
         return Boolean(app.doShellScript(`PATH=${shellQuote(TOOL_SEARCH_PATH)}; command -v brew 2>/dev/null || true`));
-    } catch {
+    } catch (caught) {
+        const error = hostError(caught);
+        if (isUserCanceled(error)) { throw error; }
         return false;
     }
 }

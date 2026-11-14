@@ -1,4 +1,5 @@
 "use strict";
+const { hostError } = require("./cancellation.js");
 const { OperationError } = require("../core/errors.js");
 
 const { TEST, CMP } = require("../core/executables.js");
@@ -19,12 +20,8 @@ const { isUserCanceled } = require("../core/errors.js");
  * run at all says no in the same words. Nothing may be deleted or given up
  * on the strength of one.
  *
- * There is one failure this can tell apart, and one place it is safe to let
- * out. A cancellation is not an answer about a file: reported as one it became
- * "the stamped photograph is not a file with anything in it", a wrong
- * diagnosis rather than a late stop. Every other question here is put somewhere
- * a raise would cost something, and those swallow it as before -- the cost of
- * which is that a stop landing on a sub-millisecond test is not noticed.
+ * A cancellation is not an answer about a file. It is translated at this
+ * adapter before callers classify it; every other failed question answers no.
  */
 
 function succeeds(app, argumentsList) {
@@ -32,7 +29,9 @@ function succeeds(app, argumentsList) {
         app.doShellScript(shellJoin(argumentsList));
 
         return true;
-    } catch {
+    } catch (caught) {
+        const error = hostError(caught);
+        if (isUserCanceled(error)) { throw error; }
         return false;
     }
 }
@@ -86,7 +85,8 @@ function isRegularNonEmpty(app, path) {
         app.doShellScript(shellJoin([TEST, "-f", path, "-a", "-s", path]));
 
         return true;
-    } catch (error) {
+    } catch (caught) {
+        const error = hostError(caught);
         if (isUserCanceled(error)) {
             throw error;
         }

@@ -1,4 +1,5 @@
 "use strict";
+const { hostError } = require("./cancellation.js");
 const { isUserCanceled, OperationError } = require("../core/errors.js");
 const { isCliInput } = require("../core/invocation.js");
 const { runOutcome, issuesOf } = require("../core/outcomes.js");
@@ -55,9 +56,10 @@ function application() { const app = Application.currentApplication(); app.inclu
 function handled(app, input, headless) {
     const progress = openProgress(headless);
     try { return execute(app, input, { headless, progress }); }
-    catch (error) {
-        const outcome = error.outcome ?? runOutcome();
-        outcome.issues.push(...issuesOf(error, error.outcome ? "reporting" : "setup"));
+    catch (caught) {
+        const error = hostError(caught);
+        const outcome = caught?.outcome ?? runOutcome();
+        outcome.issues.push(...issuesOf(error, caught?.outcome ? "reporting" : "setup"));
         const failed = runOutcome(outcome.images, outcome.rejected, outcome.excluded, outcome.issues);
         failed.diagnostics.push(...progress.diagnostics);
         if (error.issues?.some((issue) => ["settings", "request"].includes(issue.stage))) { failed.state = "invalid"; }
@@ -68,12 +70,13 @@ function handled(app, input, headless) {
 }
 function request(input) {
     try { return cliCommand(input); }
-    catch (error) { return { kind: "invalid", issues: issuesOf(error, "request") }; }
+    catch (error) { return { kind: "invalid", issues: issuesOf(hostError(error), "request") }; }
 }
 function runCli(input) {
     const command = request(input);
     if (command.kind === "invalid") {
-        const outcome = runOutcome([], [], [], command.issues); outcome.state = "invalid";
+        const outcome = runOutcome([], [], [], command.issues);
+        if (outcome.state !== "canceled") { outcome.state = "invalid"; }
         return reportHeadless(outcome);
     }
     if (command.kind !== "run") { return showCliCommand(command.kind); }

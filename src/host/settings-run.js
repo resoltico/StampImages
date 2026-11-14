@@ -50,9 +50,7 @@ function drawableSettings(settings, context) {
     const answer = resolved(context.known, settings.font);
 
     if (answer.problem) {
-        const error = new OperationError(answer.problem);
-        error.issues = [{ code: "typeface", field: "font", stage: "settings", message: answer.problem }];
-        throw error;
+        throw new OperationError(answer.problem, { issues: [{ code: "typeface", field: "font", stage: "settings", message: answer.problem }] });
     }
 
     return { ...settings, typeface: answer.typeface };

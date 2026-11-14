@@ -1,4 +1,5 @@
 "use strict";
+const { hostError } = require("./cancellation.js");
 const { appkitBridge, MODAL_UNAVAILABLE } = require("./appkit-bridge.js");
 
 const DETAIL_HEIGHT = 140;
@@ -43,13 +44,18 @@ function detailPages(text) {
     return pages;
 }
 
+function detailResponse(app, page, options) {
+    try { return app.displayDialog(page, options); }
+    catch (error) { throw hostError(error); }
+}
+
 function showDetailPages(app, spec) {
     const pages = detailPages(spec.fallbackDetail ?? spec.detail);
     for (const [index, page] of pages.entries()) {
         const action = index === pages.length - 1 ? spec.buttons[0] : "Next";
         const optional = index === pages.length - 1 ? spec.buttons.slice(1) : spec.buttons.slice(-1).filter((button) => button !== spec.buttons[0]);
         const buttons = [...optional, action];
-        const response = app.displayDialog(page, { withTitle: spec.title, buttons,
+        const response = detailResponse(app, page, { withTitle: spec.title, buttons,
             defaultButton: action, ...(buttons.includes("Cancel") ? { cancelButton: "Cancel" } : {}) });
         if (response.buttonReturned !== action) { return spec.buttons.indexOf(response.buttonReturned); }
     }

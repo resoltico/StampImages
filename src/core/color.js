@@ -1,4 +1,5 @@
 "use strict";
+const { IssueError } = require("./errors.js");
 
 const { plural } = require("./numbers.js");
 
@@ -40,7 +41,7 @@ const COLOR_RULE = "must be six hexadecimal digits, for example #C7DAE8. " +
     "The # is optional, and transparency is not supported.";
 
 function refuse(subject) {
-    return new Error(`${subject} ${COLOR_RULE}`);
+    return new IssueError(`${subject} ${COLOR_RULE}`);
 }
 
 function groupsOf(value) {

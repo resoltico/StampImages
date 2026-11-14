@@ -1,4 +1,6 @@
 "use strict";
+const { hostError } = require("./cancellation.js");
+const { isUserCanceled } = require("../core/errors.js");
 const { PRINTENV } = require("../core/executables.js");
 const { shellQuote } = require("../core/shell.js");
 const { tryArgv } = require("./shell.js");
@@ -51,7 +53,9 @@ function searchPath(app, executableName) {
         ).trim();
 
         return found && isExecutable(app, found) ? found : "";
-    } catch {
+    } catch (caught) {
+        const error = hostError(caught);
+        if (isUserCanceled(error)) { throw error; }
         return "";
     }
 }

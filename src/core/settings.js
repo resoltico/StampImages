@@ -1,4 +1,5 @@
 "use strict";
+const { IssueError } = require("./errors.js");
 const { normalizeColor } = require("./color.js");
 const CUSTOM_TEXT_LIMIT = 500;
 // A NUL cannot cross argv; unpaired surrogates are incomplete Unicode, not caption text.
@@ -21,9 +22,7 @@ const SETTINGS_FIELDS = Object.keys(SETTINGS_SCHEMA);
 function isSettingsRecord(value) { return Boolean(value) && typeof value === "object" && !Array.isArray(value); }
 // Each refusal carries the shared receipt code for the kind of value that was wrong.
 function refusal(code, message) {
-    const error = new Error(message);
-    error.code = code;
-    return error;
+    return new IssueError(message, { issues: [{ code, message }] });
 }
 function readChoice(rule, value) {
     if (typeof value !== "string" || !rule.choices.some((choice) => choice.value === value)) {
@@ -64,13 +63,13 @@ function validateSettings(input) {
     const settings = {};
     for (const field of SETTINGS_FIELDS) {
         try { settings[field] = readSetting(field, input[field]); }
-        catch (error) { issues.push({ field, code: error.code, stage: "settings", message: error.message }); }
+        catch (error) { issues.push({ field, code: error.issues[0].code, stage: "settings", message: error.message }); }
     }
     return issues.length ? { issues } : { issues, settings };
 }
 function normalizeSettings(input) {
     const result = validateSettings(input);
-    if (result.issues.length) { const error = new Error(result.issues.map((issue) => issue.message).join("\n")); error.issues = result.issues; throw error; }
+    if (result.issues.length) { throw new IssueError(result.issues.map((issue) => issue.message).join("\n"), { issues: result.issues }); }
     return result.settings;
 }
 module.exports = { SETTINGS_SCHEMA, SETTINGS_FIELDS, CUSTOM_TEXT_LIMIT, isSettingsRecord, readSetting, validateSettings, normalizeSettings };

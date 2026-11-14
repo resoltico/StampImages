@@ -1,4 +1,5 @@
 "use strict";
+const { IssueError } = require("./errors.js");
 
 /*
  * Numeric parsing and formatting shared across the planner.
@@ -16,7 +17,7 @@ function parseInteger(value, minimum, maximum, label) {
         numeric < minimum ||
         numeric > maximum
     ) {
-        throw new Error(
+        throw new IssueError(
             `${label} must be a whole number from ${minimum} to ${maximum}.`
         );
     }

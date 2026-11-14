@@ -1,12 +1,11 @@
 "use strict";
-/* eslint max-classes-per-file: ["error", 2] -- Expected failure and cancellation have different control flow. */
+/* eslint max-classes-per-file: ["error", 3] -- Issue-carrying faults, operation failures and cancellation share constructor fields. */
 
 /*
  * Error classification. The runtime distinguishes a deliberate cancellation,
  * which must stay silent, from a genuine failure, which must be reported.
  */
 
-const CANCEL_ERROR_NUMBER = -128;
 const MAX_COMMAND_LENGTH = 4000;
 const COMMAND_HEAD_LENGTH = 2000;
 const COMMAND_TAIL_LENGTH = 1000;
@@ -23,17 +22,6 @@ function errorMessage(error) {
     return String(error);
 }
 
-/*
- * Cancellation is a decision, not a phrase.
- *
- * This used to be read out of the message text, and every per-image failure
- * carries the name of the image it happened to -- so a file called
- * "User canceled.jpg" that genuinely failed to convert looked exactly like
- * somebody pressing Cancel, and the run ended silently with no dialog at all.
- *
- * The host's own cancellation still arrives as a number, because that is how
- * osascript reports one and there is nothing to mistake it for.
- */
 // Deep enough for the wrapping this code does, and bounded so a cause that
 // refers back to itself cannot spin.
 const MAXIMUM_CAUSE_DEPTH = 8;
@@ -58,13 +46,23 @@ function causes(error) {
     return chain;
 }
 
-class OperationError extends Error {
+class IssueError extends Error {
+    constructor(message, options = {}) {
+        super(message, options);
+        for (const field of ["issues", "recovery", "command", "outcome"]) {
+            if (Object.hasOwn(options, field)) { this[field] = options[field]; }
+        }
+        this.stack = options.stack ?? this.stack;
+    }
+}
+
+class OperationError extends IssueError {
     constructor(message, options) { super(message, options); this.name = "OperationError"; }
 }
 
-class UserCanceled extends Error {
-    constructor() {
-        super("User canceled.");
+class UserCanceled extends IssueError {
+    constructor(options) {
+        super("User canceled.", options);
         this.name = "UserCanceled";
     }
 }
@@ -78,8 +76,7 @@ class UserCanceled extends Error {
  * canceled" in a dialog as though something had gone wrong.
  */
 function isUserCanceled(error) {
-    return causes(error).some((each) => each instanceof UserCanceled ||
-        each.errorNumber === CANCEL_ERROR_NUMBER);
+    return causes(error).some((each) => each instanceof UserCanceled);
 }
 
 /*
@@ -114,26 +111,13 @@ function commandOf(error) {
     return carried ? String(carried.command) : "";
 }
 
-/*
- * The command that failed is invaluable in a log and noise in a dialog: a
- * person who right-clicked in Finder is not going to debug an argv, and it
- * buries the one line that matters underneath it.
- */
-function describeForLog(error) {
-    const command = commandOf(error);
-
-    return command
-        ? `${errorMessage(error)}\n\nCommand:\n${command}`
-        : errorMessage(error);
-}
-
 module.exports = {
+    IssueError,
     OperationError,
     causes,
     UserCanceled,
     errorMessage,
     commandOf,
     isUserCanceled,
-    summarizeCommand,
-    describeForLog
+    summarizeCommand
 };

@@ -16,9 +16,7 @@ const HEADER = /^(?<path>.+):[ \t]+\d+x\d+[ \t]/u;
 function normalized(text) { return String(text).replace(/\r\n?/gu, "\n"); }
 
 function metadataError(message) {
-    const error = new OperationError(message);
-    error.issues = [sourceIssue("damaged", {}, { message })];
-    return error;
+    return new OperationError(message, { issues: [sourceIssue("damaged", {}, { message })] });
 }
 
 function addField(fields, line) {
