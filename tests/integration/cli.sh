@@ -180,5 +180,6 @@ assert.ok(record.issues[0].diagnostic.message.includes('A finished copy was crea
 const directory=path.dirname(record.recovery);assert.match(directory,/\/StampImages\.[A-Za-z0-9]{10}$/u);
 fs.rmSync(directory,{recursive:true});
 JS
+node "$ROOT/tests/integration/cli-transport.cjs" "$SCRIPT" "$WORK/transport" "$WORK/settings.json" "$WORK/source.png"
 node "$ROOT/tests/integration/signals.cjs" "$SCRIPT" "$WORK/settings.json" "$WORK/source.png" "$WORK/signals"
 printf 'macOS CLI and capture lifecycle integration passed\n'

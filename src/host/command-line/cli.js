@@ -3,7 +3,7 @@ const { APP_NAME, VERSION } = require("../../core/version.js");
 const { SETTINGS_SCHEMA, validateSettings, stampIssues } = require("../../core/settings.js");
 const { OperationError } = require("../../core/errors.js");
 const { hasUrlScheme, decodeFileUrl, normalizeInvocationInput } = require("../invocation-syntax.js");
-const { writeReceipt, exitCli } = require("./receipt.js");
+const { writeStdout, exitCli } = require("./receipt.js");
 // A caption that only restates the value ("Bottom right" for bottom-right) is left out.
 function choiceCaption(choice) {
     const caption = choice.label ?? choice.name;
@@ -134,7 +134,7 @@ function cliCommand(input, injected = null) {
 }
 
 function showCliCommand(kind) {
-    writeReceipt(kind === "help" ? usage() : `${APP_NAME} ${VERSION}\n`);
-    return exitCli(0);
+    const written = writeStdout(kind === "help" ? usage() : `${APP_NAME} ${VERSION}\n`);
+    return exitCli(written ? 0 : 1);
 }
 module.exports = { cliCommand, showCliCommand, jsonConfiguration, configurationValues, usage };

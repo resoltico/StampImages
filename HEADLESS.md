@@ -76,8 +76,8 @@ guaranteed across encoders; existing retained maker data is not deleted.
 
 ## Receipt and exit status
 
-Every handled request writes one JSON object, ending in a newline, to stdout, and a
-plain-language report to stderr. `stack` keys are omitted at serialization; other
+Every handled request attempts the plain-language report on stderr before one JSON
+object ending in a newline on stdout. `stack` keys are omitted at serialization; other
 structured diagnostic data is retained. Read both the receipt and the exit status. Recovered copies appear under
 “Saved elsewhere” with a one-line cause; “Could not stamp” lists failed copies
 only, and other cleanup or run problems have their own section.
@@ -85,7 +85,7 @@ only, and other cleanup or run problems have their own section.
 | Exit | Meaning |
 | --- | --- |
 | `0` | Complete |
-| `1` | Incomplete or stopped in any phase; confirmed copies are kept |
+| `1` | Incomplete, stopped or output transport failed; confirmed copies are kept |
 | `2` | Usage error or invalid settings |
 | `3` | Could not start: setup failed |
 
@@ -108,7 +108,12 @@ the command-line process exits and the OS reclaims its signal resources.
 
 `complete` requires every admitted image saved with everything requested, nothing
 rejected and no issues. An abrupt process end or a failed stdout cannot guarantee a
-receipt.
+receipt. If stdout fails, one plain stderr line says "Standard output could not be
+completed." and the exit status is 1; saved copies remain confirmed. Help/version
+use the same stdout failure rule. A stderr refusal still allows one receipt attempt
+before its original failure is retained. SIGPIPE is ignored only during each native
+transport write, with the complete prior disposition restored afterward; processing
+and child commands keep their inherited signal behavior.
 
 Prior workspaces left retained or unreadable, and safely reclaimed stale
 workspaces, appear in a `Temporary work` report section when their exact workspace

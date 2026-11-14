@@ -32,7 +32,7 @@ test("receipts use separate streams and exact statuses without an osascript erro
     const result = runOutcome([{ source: "/source.png", state: "saved", output: "/out.png", issues: [] }]);
     const written = [];
     assert.equal(reportHeadless(result, (text, ignored, stderr) => written.push({ text, stderr }), (code) => code), 0);
-    assert.equal(JSON.parse(written[0].text).images[0].output, "/out.png"); assert.equal(written[1].stderr, true);
+    assert.equal(JSON.parse(written[1].text).images[0].output, "/out.png"); assert.equal(written[0].stderr, true);
     assert.equal(exitCode({ ...result, state: "invalid" }), 2);
     assert.equal(exitCode(runOutcome([], [], [], [{ code: "operation", stage: "setup", message: "missing vips" }])), 3);
     assert.equal(exitCode(runOutcome()), 1);
@@ -87,13 +87,13 @@ test("the command-line report separates sections with one blank line and ends wi
     const result = { ...runOutcome([{ source: "/a.jpg", state: "saved", output: "/o/a_stamped.jpg", issues: [], missingMetadata: [] }]), elapsed: "2 seconds" };
 
     reportHeadless(result, (text, unused, stderr) => written.push({ text, stderr }), () => 0);
-    assert.equal(JSON.parse(written[0].text).elapsed, "2 seconds");
-    assert.equal(written[1].text, "Created 1 stamped copy.\n\n1 saved.\n\nSaved to:\n/o/\na_stamped.jpg\n\nElapsed: 2 seconds\n");
-    assert.doesNotMatch(written[1].text, /Stamp Images \d/u, "no version line on the command line");
+    assert.equal(JSON.parse(written[1].text).elapsed, "2 seconds");
+    assert.equal(written[0].text, "Created 1 stamped copy.\n\n1 saved.\n\nSaved to:\n/o/\na_stamped.jpg\n\nElapsed: 2 seconds\n");
+    assert.doesNotMatch(written[0].text, /Stamp Images \d/u, "no version line on the command line");
     const empty = [];
 
     reportHeadless({ ...runOutcome(), state: "complete", images: [] }, (text) => empty.push(text), () => 0);
-    assert.doesNotMatch(empty[1], /0 saved/u, "zero counts are not printed");
+    assert.doesNotMatch(empty[0], /0 saved/u, "zero counts are not printed");
 });
 
 
@@ -116,18 +116,18 @@ test("CLI messages identify JSON keys, missing values and types without changing
     const before = JSON.stringify(result);
     const writes = [];
     assert.equal(reportHeadless(result, (text) => writes.push(text), (code) => code), 2);
-    assert.deepEqual(JSON.parse(writes[0]).issues.map((issue) => issue.message), [
+    assert.deepEqual(JSON.parse(writes[1]).issues.map((issue) => issue.message), [
         "`customText` must be a JSON string, not null.", "`font` is missing.",
         "`size` must be a JSON number, not a string.", "`textColor` must be a JSON string, not an array.",
         "`margin` must be a JSON number, not a boolean."
     ]);
-    assert.ok(writes[1].includes("`font` is missing."));
+    assert.ok(writes[0].includes("`font` is missing."));
     assert.equal(JSON.stringify(result), before);
     const other = runOutcome([], [], [], [...validateSettings({ ...settings, size: 401, textColor: {}, "extra\nkey": true }).issues,
         { code: "typeface", stage: "settings", field: "font", message: "This Mac has no matching typeface." }]);
     const output = [];
     reportHeadless(other, (text) => output.push(text), (code) => code);
-    assert.deepEqual(JSON.parse(output[0]).issues.map((issue) => issue.message), [
+    assert.deepEqual(JSON.parse(output[1]).issues.map((issue) => issue.message), [
         '"extra\\nkey" is not a recognized setting.', "`size` must be a whole number from 8 to 400.",
         "`textColor` must be a JSON string, not an object.", "`font`: This Mac has no matching typeface."
     ]);

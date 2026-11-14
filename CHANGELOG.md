@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Command-line reports precede JSON receipts; broken stdout exits 1 with one plain stderr line, including help/version, while confirmed copies stay saved.
+
 - Command-line receipts omit stack traces while retaining structured issue reasons and other diagnostics.
 
 - Truncated HEIC is reported as damaged, excluded loaders identify unsupported content, and folder runs report visible special files and unreadable image entries.

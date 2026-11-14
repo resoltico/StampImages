@@ -70,6 +70,10 @@ receipts with exit 1 and preserve confirmed output/source integrity. Separate na
 controller probes establish explicit-close restoration; real command-line exit
 reclaims process-owned monitoring resources instead of returning through JS finally.
 Prior-workspace notes must exclude unrelated and temporary-root scan diagnostics.
+CLI transport checks include a genuinely closed descriptor and FIFO readers closed
+before child exec for deterministic EPIPE on stdout/stderr. Source bytes and every
+published image are independently checked; working stderr gets exactly one plain
+stdout-failure line, and broken stderr still allows the single receipt attempt.
 An unavailable typeface combined with a missing tool and unavailable source must
 report `invalid` with exit 2 before source admission.
 `hdr.sh` checks synthetic Ultra HDR admission, visible stamped SDR JPEGs with no
