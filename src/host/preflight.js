@@ -1,7 +1,7 @@
 "use strict";
 const { hostError } = require("./cancellation.js");
 const { OperationError, isUserCanceled } = require("../core/errors.js");
-const { shellJoin, shellQuote } = require("../core/shell.js");
+const { shellQuote } = require("../core/shell.js");
 const {
     buildVipsProbeArgv,
     buildExiftoolProbeArgv,
@@ -9,6 +9,7 @@ const {
     isExiftoolUsable,
     describeSetupProblems
 } = require("../backend/preflight.js");
+const { probeArgv } = require("./shell.js");
 const { findTool, TOOL_NAMES, TOOL_SEARCH_PATH } = require("./tools.js");
 
 /*
@@ -24,7 +25,7 @@ const { findTool, TOOL_NAMES, TOOL_SEARCH_PATH } = require("./tools.js");
  */
 function probe(app, argv) {
     try {
-        return app.doShellScript(`${shellJoin(argv)} 2>&1 || true`);
+        return probeArgv(app, argv);
     } catch (caught) {
         const error = hostError(caught);
         if (isUserCanceled(error)) { throw error; }

@@ -9,17 +9,21 @@ const { errorMessage, summarizeCommand } = require("../core/errors.js");
 /*
  * Running a command and taking what it printed.
  *
- * Every command is built as an argument vector and quoted here, so no caller
- * ever assembles a command string by concatenation.
+ * Tool arguments are built as vectors and quoted here. Fixed shell syntax
+ * for probes and redirection stays inside this runner; the locale export
+ * applies to the entire shell program.
  *
  * Asking the filesystem a question is a different thing and lives in
  * filesystem-probes.js: a question that comes back "no" has answered, and must not be
  * dressed up as a command that failed.
  */
 
+const LOCALE_PREFIX = "export LC_ALL=C; ";
+
 function runCommand(app, command, label) {
+    const executed = `${LOCALE_PREFIX}${command}`;
     try {
-        return app.doShellScript(command);
+        return app.doShellScript(executed);
     } catch (caught) {
         const error = hostError(caught);
         if (isUserCanceled(error)) { throw error; }
@@ -30,7 +34,7 @@ function runCommand(app, command, label) {
         const said = errorMessage(error).replace(/\r\n?/gu, "\n").trim();
         const failure = new OperationError(
             `Command failed${context}.\n\n${said}`,
-            { cause: error, command: summarizeCommand(command) }
+            { cause: error, command: summarizeCommand(executed) }
         );
 
         throw failure;
@@ -65,13 +69,15 @@ function runArgvInto(app, argumentsList, path, label) {
  */
 function tryArgv(app, argumentsList) {
     try {
-        return app.doShellScript(shellJoin(argumentsList));
+        return runArgv(app, argumentsList);
     } catch (caught) {
         const error = hostError(caught);
         if (isUserCanceled(error)) { throw error; }
         return "";
     }
 }
+
+function probeArgv(app, argv) { return runCommand(app, `${shellJoin(argv)} 2>&1 || true`); }
 
 function cleanupArgv(app, argv) {
     try { runArgv(app, argv, "cleaning temporary work"); return { state: "removed" }; }
@@ -83,7 +89,8 @@ function cleanupArgv(app, argv) {
 }
 function removeFile(app, path) { return path ? cleanupArgv(app, [RM, "-f", path]) : { state: "skipped" }; }
 
-const HEADER_ARGV_BUDGET = 24000;
+const MAXIMUM_HEADER_COMMAND_LENGTH = 24000;
+const HEADER_ARGV_BUDGET = MAXIMUM_HEADER_COMMAND_LENGTH - LOCALE_PREFIX.length;
 const runHeaderArgv = runArgv;
 
-module.exports = { cleanupArgv, HEADER_ARGV_BUDGET, runHeaderArgv, runArgv, runArgvInto, tryArgv, removeFile };
+module.exports = { probeArgv, cleanupArgv, HEADER_ARGV_BUDGET, runHeaderArgv, runArgv, runArgvInto, tryArgv, removeFile };

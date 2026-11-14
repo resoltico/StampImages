@@ -22,6 +22,13 @@ expect_status() {
 expect_status 0 --help
 assert_contains "$(cat "$WORK/receipt")" 'all 10 required' 'help describes current settings'
 expect_status 0 --version
+cp "$WORK/source.png" "$WORK/locale-source.png"
+taken_at "$WORK/locale-source.png" '2026:11:14 12:34:56' 10 20
+settings_file "$WORK/locale.json" 'Riga' bottom-right iso-minutes decimal
+LANG=de_DE.UTF-8 LC_ALL=de_DE.UTF-8 LANGUAGE=de expect_status 0 --headless "$WORK/locale.json" "$WORK/locale-source.png"
+node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1]));if(r.state!=="complete"||r.images[0].missingMetadata?.length)throw Error("locale changed metadata reading");' "$WORK/receipt"
+test "$(exiftool -s3 -DateTimeOriginal "$WORK/locale-source_stamped.png")" = '2026:11:14 12:34:56'
+test "$(exiftool -s3 -n -GPSLatitude "$WORK/locale-source_stamped.png")" = 10
 STAMP_IMAGES_VIPS="$WORK/missing-vips" expect_status 3 --headless "$WORK/settings.json" "$WORK/source.png"
 node -e 'const fs=require("fs");const value=JSON.parse(fs.readFileSync(process.argv[1]));value.font="StampImages Nonexistent Typeface";fs.writeFileSync(process.argv[2],JSON.stringify(value));' "$WORK/settings.json" "$WORK/missing-font.json"
 expect_status 2 --headless "$WORK/missing-font.json" "$WORK/source.png"

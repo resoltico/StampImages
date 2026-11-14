@@ -14,7 +14,8 @@ a complete `--headless` request is a usage error: it names the problem, prints t
 run line and exits 2.
 
 A command-line run never opens a dialog and neither reads nor writes remembered
-settings. Paths may be absolute or relative to the working directory. Local
+settings. External tools run in the C locale so message parsing does not depend on
+the terminal language. Paths may be absolute or relative to the working directory. Local
 `file://` URLs are accepted; remote URLs are refused.
 
 ## Settings file

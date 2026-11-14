@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Command-line runs use a fixed tool-message locale, so image inspection and stamping also work from non-English terminal environments.
+
 - Decoder warnings now refuse damaged images, including JPEG entropy corruption that could previously produce incomplete stamped copies reported as successful.
 
 - The `empty-stamp` receipt issue now uses stage `settings` and field `customText`; update consumers that match its previous request stage.

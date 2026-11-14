@@ -4,6 +4,9 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const {
     runArgv,
+    probeArgv,
+    runArgvInto,
+    HEADER_ARGV_BUDGET,
     tryArgv,
     removeFile
 } = require("../../../src/host/shell.js");
@@ -14,7 +17,7 @@ test("runArgv quotes every argument before running it", () => {
 
     runArgv(app, ["/bin/echo", "two words", "a'b"], "testing");
 
-    assert.equal(app.commands[0], "'/bin/echo' 'two words' 'a'\\''b'");
+    assert.equal(app.commands[0], "export LC_ALL=C; '/bin/echo' 'two words' 'a'\\''b'");
 });
 
 test("runArgv returns the host's output", () => {
@@ -77,7 +80,7 @@ test("removeFile ignores an absent path and a failing removal", () => {
     const app = createFakeApp();
 
     removeFile(app, "/tmp/x");
-    assert.deepEqual(app.commands, ["'/bin/rm' '-f' '/tmp/x'"]);
+    assert.deepEqual(app.commands, ["export LC_ALL=C; '/bin/rm' '-f' '/tmp/x'"]);
 });
 
 test("tryArgv takes silence for an answer", () => {
@@ -87,7 +90,7 @@ test("tryArgv takes silence for an answer", () => {
     const app = createFakeApp([["/bin/stat", failing("No such file")]]);
 
     assert.equal(tryArgv(app, ["/bin/stat", "-f%d:%i:%z", "/gone"]), "");
-    assert.deepEqual(app.commands, ["'/bin/stat' '-f%d:%i:%z' '/gone'"]);
+    assert.deepEqual(app.commands, ["export LC_ALL=C; '/bin/stat' '-f%d:%i:%z' '/gone'"]);
     assert.equal(tryArgv(createFakeApp([["/bin/stat", "16:7:9"]]), ["/bin/stat"]), "16:7:9");
 });
 
@@ -101,4 +104,15 @@ test("a command's carriage returns are given back as line breaks", () => {
 
         return true;
     });
+});
+
+test("one locale applies to probes, redirections and the header byte budget", () => {
+    const app = { commands: [], doShellScript(command) { this.commands.push(command); return "answer"; } };
+    assert.equal(probeArgv(app, ["/tools/vips", "file name"]), "answer");
+    runArgvInto(app, ["/tools/exiftool", "-icc_profile", "source name"], "/owned/profile.icc", "extracting");
+    assert.deepEqual(app.commands, [
+        "export LC_ALL=C; '/tools/vips' 'file name' 2>&1 || true",
+        "export LC_ALL=C; '/tools/exiftool' '-icc_profile' 'source name' > '/owned/profile.icc'"
+    ]);
+    assert.equal(HEADER_ARGV_BUDGET, 23983);
 });
