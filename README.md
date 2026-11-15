@@ -65,6 +65,10 @@ Stamped copies retain standard EXIF capture fields and GPS, writable XMP/IPTC,
 and color profiles. Orientation and dimension metadata describe the upright copy.
 Proprietary maker data already retained by the image backend is preserved; not every
 vendor-specific field or embedded preview can be transferred.
+Original IPTC packets retain their bytes and timezone absence when the format supports
+them; unavailable packet storage is refused. A fresh render’s relocated NikonScan
+directory is repaired only when all existing raw maker facts match the captured
+source and its vendor data can be read without warnings.
 
 ## Settings
 

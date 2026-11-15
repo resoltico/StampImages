@@ -17,13 +17,27 @@ test("all-format capture copy uses raw checked setters while replacing target ge
     const program = argv.find((value) => value.startsWith("Filter="));
     const selectors = /my @captureSelectors=\((?<items>[^;]+)\);/u.exec(program);
     assert.deepEqual(JSON.parse(`[${selectors.groups.items}]`), ["ExifIFD:All", "IFD0:Make", "IFD0:Model", "IFD0:Artist", "IFD0:Copyright", "IFD0:Software", "IFD0:ImageDescription", "IFD0:ModifyDate",
-        "-MakerNotes", "-Orientation", "-ImageWidth", "-ImageHeight", "-ExifImageWidth", "-ExifImageHeight", "-ThumbnailImage", "-PreviewImage", "*:*<XMP:All", "IPTC:All", "-XMP:GPS*"]);
+        "-MakerNotes", "-Orientation", "-ImageWidth", "-ImageHeight", "-ExifImageWidth", "-ExifImageHeight", "-ThumbnailImage", "-PreviewImage", "*:*<XMP:All", "-XMP:GPS*"]);
     const assignments = /for my \$assignment \((?<items>[^)]+)\)/u.exec(program);
     assert.deepEqual(JSON.parse(`[${assignments.groups.items}]`), ["IFD0:Orientation#=1", "ExifIFD:ExifImageWidth=600", "ExifIFD:ExifImageHeight=400", "XMP-tiff:ImageWidth=600", "XMP-tiff:ImageHeight=400", "XMP-exif:ExifImageWidth=600", "XMP-exif:ExifImageHeight=400",
         "XMP-GContainer:All=", "XMP-hdrgm:All=", "XMP-HDRGainMap:All=", "XMP-hdr:All=", "XMP-apdi:All=", "XMP-tiff:Orientation="]);
     assert.ok(program.includes("TargetFile=>$dst")); assert.ok(program.includes("WriteInfo($dst)"));
     assert.doesNotMatch(program, /@@|NEGATIVE_SKIP_LATITUDE/u);
     assert.equal(argv.includes("-TagsFromFile"), false);
+});
+test("the assembled native program declares its callbacks and has no missing-module interpolation", () => {
+    const argv = buildMetadataCopyArgv("/exiftool", source, target, { width: 600, height: 400 });
+    const program = argv.find((value) => value.startsWith("Filter="));
+    function closedCallbacks(text) {
+        assert.doesNotMatch(text, /\bundefined\b/u);
+        const callbacks = new Set([...text.matchAll(/(?<callback>\$[a-z_]\w*)->\(/giu)].map((match) => match.groups.callback));
+        assert.ok(callbacks.size > 0);
+        for (const callback of callbacks) { assert.match(text, new RegExp(`\\bmy\\s+\\${callback}\\b`, "u")); }
+    }
+    closedCallbacks(program);
+    closedCallbacks("my $callback=sub {}; $callback->();");
+    assert.throws(() => closedCallbacks("$callback->();"), assert.AssertionError, "a removed declaration breaks composition");
+    assert.throws(() => closedCallbacks("undefined"), assert.AssertionError, "a missing export cannot become native program text");
 });
 test("source and target spelling stay data, never native program interpolation", () => {
     const original = "/a/'\"$()\\\nsource.jpg";
@@ -63,7 +77,7 @@ test("wrong or missing target echo and wrong source association are refused", ()
     assert.throws(() => metadataCopyResult(packet({}, { SourceFile: "/other.jpg" }), source, target), OperationError);
 });
 test("private notices remain private, including a failed attempted reader view without adopted groups", () => {
-    const notices = { TargetReadWarning: "Known target wrapper.", SourceReadNotice: "Known source wrapper.", ExcludedSourceReaderGroups: ["ICC_Profile", "MakerNotes"],
+    const notices = { TargetIPTCWriteNotice: "Own same-format PNG packet restoration.", TargetReadWarning: "Known target wrapper.", SourceReadNotice: "Known source wrapper.", ExcludedSourceReaderGroups: ["ICC_Profile", "MakerNotes"],
         SourceReaderViewNotice: "Original excluded-group diagnostics.", SourceReaderViewOperationNotice: "Own view operation notice.", PreservedEmptyTargetMakerNotes: "1", RebuiltTargetWebPExif: "1", GPSInputCount: "4" };
     assert.deepEqual(metadataCopyResult(packet(notices), source, target), { locationRetained: true });
     const failed = packet({ WriteStatus: "0", RawWriteStatus: "0", VerifiedGPS: "0", FailureCount: "1", FailureText: "View failed.", SourceReaderViewOperationNotice: "Own attempted view notice." });
@@ -75,7 +89,7 @@ test("malformed private fields cannot become successful metadata receipts", () =
         for (const value of invalid) { assert.throws(() => metadataCopyResult(packet({ [field]: value }), source, target), OperationError); }
     }
     for (const changes of [{ WriteStatus: undefined }, { RawWriteStatus: "3" }, { VerifiedGPS: true }, { RebuiltTargetWebPExif: "2" }, { FailureText: null }, { Unknown: "secret" },
-        { SourceReadNotice: " " }, { TargetReadWarning: 1 }, { SourceReaderViewNotice: "" }, { SourceReaderViewOperationNotice: null },
+        { TargetIPTCWriteNotice: 1 }, { TargetIPTCWriteNotice: " " }, { SourceReadNotice: " " }, { TargetReadWarning: 1 }, { SourceReaderViewNotice: "" }, { SourceReaderViewOperationNotice: null },
         { ExcludedSourceReaderGroups: [] }, { ExcludedSourceReaderGroups: "ICC_Profile" }, { ExcludedSourceReaderGroups: ["ICC_Profile", "ICC_Profile"] }, { ExcludedSourceReaderGroups: ["Other"] }, { ExcludedSourceReaderGroups: ["ICC_Profile", "Other"] },
         { PreservedEmptyTargetMakerNotes: "0" }, { PreservedEmptyTargetMakerNotes: 1 }, { PreservedEmptyTargetMakerNotes: "1", WriteStatus: "0" }]) {
         assert.throws(() => metadataCopyResult(packet(changes), source, target), OperationError);

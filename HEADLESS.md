@@ -77,6 +77,10 @@ representation; active colored text or outline expands gray to RGB without reduc
 16-bit precision. Readable profiles stay gray or are transformed for that RGB copy. Orientation and EXIF/XMP
 dimensions describe the upright stamped pixels. Proprietary maker fields are not
 guaranteed across encoders; existing retained maker data is not deleted.
+Original IPTC packets retain their bytes and timezone absence when the format supports
+them; unavailable packet storage is refused. A fresh render’s relocated NikonScan
+directory is repaired only when all existing raw maker facts match the captured
+source and its vendor data can be read without warnings.
 
 Localized Font Book family/face names are accepted when native matching identifies
 one installed canonical family or face. Ambiguous, hidden and PostScript names

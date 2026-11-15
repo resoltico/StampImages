@@ -13,6 +13,10 @@ function controlProgram(argv, mode, tool) {
     assert.ok(index >= 0); assert.ok(argv[index].includes("TargetFile=>$dst"));
     if (mode === "setter") {
         argv[index] = replaceOnce(argv[index], '"IFD0:Orientation#=1"', '"UnknownRequiredMetadataTag=1"');
+    } else if (mode === "producer-write") {
+        argv[index] = replaceOnce(argv[index], "my $status=$producerWriter->WriteInfo($dst);", "my $status=0;");
+    } else if (mode === "producer-readback") {
+        argv[index] = replaceOnce(argv[index], "$add->('Restored IPTC packet differs from the captured source')", "$actual->{packet}='mismatched read-back'; $add->('Restored IPTC packet differs from the captured source')");
     } else if (mode === "readback") {
         const changed = spawnSync(tool, ["-overwrite_original", "-GPSLatitude=0", "-GPSLatitudeRef=N", target], { encoding: "utf8" });
         assert.equal(changed.status, 0, changed.stderr);

@@ -6,8 +6,10 @@ const { projectionArgv, readProjection } = require("./metadata-projection.js");
 // Standard capture groups, excluding source storage/preview/geometry and maker
 // structures. Raw GPS is queued separately by the checked native program.
 const CAPTURE_SELECTORS = ["ExifIFD:All", "IFD0:Make", "IFD0:Model", "IFD0:Artist", "IFD0:Copyright", "IFD0:Software", "IFD0:ImageDescription", "IFD0:ModifyDate",
-    "-MakerNotes", "-Orientation", "-ImageWidth", "-ImageHeight", "-ExifImageWidth", "-ExifImageHeight", "-ThumbnailImage", "-PreviewImage", "*:*<XMP:All", "IPTC:All", "-XMP:GPS*"];
+    "-MakerNotes", "-Orientation", "-ImageWidth", "-ImageHeight", "-ExifImageWidth", "-ExifImageHeight", "-ThumbnailImage", "-PreviewImage", "*:*<XMP:All", "-XMP:GPS*"];
 const SDR_METADATA = ["XMP-GContainer:All=", "XMP-hdrgm:All=", "XMP-HDRGainMap:All=", "XMP-hdr:All=", "XMP-apdi:All=", "XMP-tiff:Orientation="];
+// The target is a fresh private Vips render of this captured source, never an
+// unrelated existing image. Pixels and rendered profile remain target-owned.
 function buildMetadataCopyArgv(exiftool, source, target, size) {
     if (!size || !Number.isSafeInteger(size.width) || size.width < 1 || !Number.isSafeInteger(size.height) || size.height < 1) {
         throw new TypeError("Metadata copy requires positive whole pixel dimensions.");
@@ -20,7 +22,7 @@ function buildMetadataCopyArgv(exiftool, source, target, size) {
     return projectionArgv(exiftool, source, program, [`source=${source}`, `target=${target}`]);
 }
 const COUNTS = ["GPSInputCount", "RequiredSetCount", "FailureCount"];
-const TEXT_NOTICES = ["TargetReadWarning", "SourceReadNotice", "SourceReaderViewNotice", "SourceReaderViewOperationNotice"];
+const TEXT_NOTICES = ["TargetReadWarning", "SourceReadNotice", "SourceReaderViewNotice", "SourceReaderViewOperationNotice", "TargetIPTCWriteNotice"];
 const FIELDS = ["ExifToolVersion", "TargetFile", "WriteStatus", "RawWriteStatus", "VerifiedGPS", "RebuiltTargetWebPExif", "FailureText", ...COUNTS, ...TEXT_NOTICES, "ExcludedSourceReaderGroups", "PreservedEmptyTargetMakerNotes"];
 function count(value) {
     return typeof value === "string" && /^\d+$/u.test(value) && Number.isSafeInteger(Number(value));

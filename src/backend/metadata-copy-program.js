@@ -3,6 +3,8 @@
 // ExifTool's fixed Filter program uses only public metadata APIs. Paths remain
 // UserParam data; selectors/assignments are supplied by metadata-copy.js.
 // Reader-only views never replace pixel input or actual target profile/maker data.
+const { PRODUCER_METADATA_PROGRAM } = require("./producer-metadata-program.js");
+
 const METADATA_COPY_PROGRAM = String.raw`my $src=$self->Options('UserParam','source');
 my $dst=$self->Options('UserParam','target');
 my @captureSelectors=(@@CAPTURE_SELECTORS@@);
@@ -79,6 +81,7 @@ $sourceReader->Options(SaveFormat=>1,Struct=>1);
 $sourceReader->ExtractInfo($src);
 my $before=$gps->($sourceReader);
 my $sourceMessages=$messages->($sourceReader);
+my $initialSourceMessages=$sourceMessages;
 my $sourceCaptureView;
 my @excludedReaderGroups;
 my $readerViewNotice;
@@ -218,7 +221,7 @@ if(($targetReader->GetValue('MIMEType','ValueConv')||'') eq 'image/webp') {
         }
     }
 }
-$add->($targetWarning) if defined($targetWarning) && !$repair;
+${PRODUCER_METADATA_PROGRAM}
 my $info=$writer->SetNewValuesFromFile($sourceInput,{Type=>'Raw'},@captureSelectors);
 if(ref($info) ne 'HASH') { $add->('Capture metadata could not be read for copying') }
 else { for my $key(keys %$info){$add->($info->{$key}) if $key=~/^(Warning|Error)/} }
@@ -303,7 +306,19 @@ if(!@failures) {
         }
     }
 }
+if(!@failures && defined($nikonExpected)) {
+    my $actual=$makerSnapshot->($dst);
+    $add->($_->{text}) for @{$actual->{messages}};
+    $add->('Final Nikon metadata differs from the captured source') if
+        $actual->{ambiguous} || $actual->{unavailable} || !$same->($nikonExpected,$actual->{tags});
+}
+if(!@failures && defined($sourceIPTC->{packet})) {
+    my $actual=$iptcState->($dst);
+    $add->('Final IPTC packet differs from the captured source') unless
+        defined($actual->{packet}) && !ref($actual->{packet}) && $actual->{packet} eq $sourceIPTC->{packet};
+}
 $_={TargetFile=>$dst,ExifToolVersion=>scalar($self->GetValue('ExifToolVersion','Raw')),WriteStatus=>@failures?0:$rawStatus,RawWriteStatus=>$rawStatus,VerifiedGPS=>$verified,GPSInputCount=>scalar(keys %$before),RequiredSetCount=>$sets,FailureCount=>scalar(@failures),FailureText=>join("\n",@failures),RebuiltTargetWebPExif=>$repair};
+$_->{TargetIPTCWriteNotice}=$targetIPTCNotice if defined($targetIPTCNotice);
 $_->{TargetReadWarning}=$targetWarning if defined($targetWarning);
 
 $_->{SourceReadNotice}=$sourceNotice if defined($sourceNotice);
