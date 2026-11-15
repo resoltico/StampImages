@@ -25,6 +25,7 @@ $add->('Original IPTC tags have no readable binary packet') if !defined($sourceI
 if(!@failures&&defined($sourceIPTC->{packet})) {
     my $original=$sourceIPTC->{packet};my $candidate=$targetIPTC->{packet};
     my $view=$iptcState->($sourceInput);
+    $add->($_->{text}) for @{$view->{messages}};
     $add->('Rendered IPTC digest conflicts with the captured source') if
         defined($targetIPTC->{digest}) && (!defined($sourceIPTC->{current}) || $targetIPTC->{digest} ne $sourceIPTC->{current});
     $add->('Capture reader view changed the original IPTC packet') unless defined($view->{packet})&&!ref($view->{packet})&&$view->{packet}eq$original;

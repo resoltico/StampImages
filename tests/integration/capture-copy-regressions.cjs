@@ -6,7 +6,7 @@ const path = require("node:path");
 const process = require("node:process");
 const { createHash } = require("node:crypto");
 const { execFileSync, spawnSync } = require("node:child_process");
-const { iptcPacket, writeNikonFixtures } = require("./lib/capture-fixtures.cjs");
+const { iptcPacket, writeNikonFixtures, writeMalformedIccFixture } = require("./lib/capture-fixtures.cjs");
 const { parseReceipt } = require("./lib/receipt.cjs");
 const { buildMetadataCopyArgv, metadataCopyResult } = require("../../src/backend/metadata-copy.js");
 const [script, work] = process.argv.slice(2);
@@ -37,7 +37,7 @@ function product(source, status = 0, environment = {}) {
     const result = spawnSync("osascript", ["-l", "JavaScript", script, "--", "--headless", at("settings.json"), source], { encoding: "utf8", timeout: 120000, env: { ...process.env, ...environment } });
     assert.equal(result.status, status, `${result.stdout}\n${result.stderr}`);
     const receipt = parseReceipt(result.stdout); assert.equal(receipt.images[0].state, status === 0 ? "saved" : "failed"); assert.equal(hash(source), before);
-    return receipt.images[0].output;
+    return receipt.images[0];
 }
 fs.writeFileSync(at("settings.json"), JSON.stringify({ font: "Helvetica Neue Bold", size: 28, textColor: "#FFFFFF", outlineColor: "#000000", outlineWidth: 2, position: "bottom-right", margin: 24, dateFormat: "none", coordinateFormat: "none", customText: "Capture" }));
 native("vips", ["black", at("canvas.v"), "900", "600", "--bands", "3"]);
@@ -77,7 +77,7 @@ for (const format of ["jpg", "tif", "png"]) {
     const unavailableBefore = hash(unavailable);
     const unavailableResult = checkedCopy(source, unavailable, "UTC", (program) => program.replace("my $sourceIPTC=$iptcState->($src);", "my $sourceIPTC=$iptcState->($src); $sourceIPTC->{packet}=undef;"));
     assert.throws(unavailableResult.read, /IPTC tags have no readable binary packet/u); assert.equal(hash(unavailable), unavailableBefore);
-    assert.deepEqual(block(product(source), "IPTC"), packet);
+    assert.deepEqual(block(product(source).output, "IPTC"), packet);
 }
 const nikon = writeNikonFixtures(work, at("clean.jpg"));
 for (const source of Object.values(nikon)) {
@@ -93,7 +93,7 @@ const sourceHash = hash(nikon.source); checkedCopy(nikon.source, target).read();
 assert.equal(native("exiftool", ["-s", "-Warning", target]).trim(), "");
 assert.equal(fields(target)["NikonScan:BitDepth"], 16); assert.equal(fields(target)["Nikon:ISO"], "0 400");
 verifyUnchangedPixels(seed, target, "nikon"); assert.equal(hash(nikon.source), sourceHash);
-assert.equal(fields(product(nikon.source))["NikonScan:BitDepth"], 16);
+assert.equal(fields(product(nikon.source).output)["NikonScan:BitDepth"], 16);
 for (const [label, source, candidate] of [["foreign-target", nikon.source, derive(nikon.asymmetric, "nikon-foreign.jpg")], ["invalid-source", nikon.bad, derive(nikon.bad, "nikon-bad.jpg")]]) {
     if (label === "foreign-target") { native("exiftool", ["-overwrite_original", `-IPTC<=${at("prefix.iim")}`, candidate]); }
     const before = hash(candidate); const result = checkedCopy(source, candidate); assert.throws(result.read); assert.equal(hash(candidate), before, label);
@@ -108,7 +108,7 @@ for (const format of ["tif", "png"]) {
     else { assert.equal(fields(combinedSeed)["Nikon:ISO"], undefined, "TIFF encoder omits the vendor block"); }
     checkedCopy(source, combined).read(); assert.deepEqual(block(combined, "IPTC"), packet); assert.equal(fields(combined)["NikonScan:BitDepth"], expectedDepth);
     assert.deepEqual(block(combined, "ICC_Profile"), block(combinedSeed, "ICC_Profile")); verifyUnchangedPixels(combinedSeed, combined, `nikon-combined-${format}`);
-    const published = product(source); assert.deepEqual(block(published, "IPTC"), packet); assert.equal(fields(published)["NikonScan:BitDepth"], expectedDepth);
+    const published = product(source).output; assert.deepEqual(block(published, "IPTC"), packet); assert.equal(fields(published)["NikonScan:BitDepth"], expectedDepth);
 }
 const compound = at("nikon-and-iptc.jpg"); fs.copyFileSync(seed, compound);
 fs.writeFileSync(at("prefix.iim"), packet.subarray(0, 8));
@@ -125,11 +125,24 @@ const malformedBefore = hash(malformedTarget); assert.throws(checkedCopy(malform
 const healthy = at("nikon-healthy-foreign.jpg"); fs.copyFileSync(nikon.asymmetric, healthy);
 checkedCopy(nikon.source, healthy).read(); assert.equal(fields(healthy)["Nikon:ISO"], "0 800"); assert.equal(fields(healthy)["NikonScan:BitDepth"], 8);
 const wrapper = at("metadata-control"); fs.writeFileSync(wrapper, `#!/usr/bin/env node\nrequire(${JSON.stringify(require.resolve("./lib/metadata-failure.cjs"))}).runMetadataFailure(process.argv.slice(2));\n`); fs.chmodSync(wrapper, 0o755);
-for (const mode of ["producer-write", "producer-readback"]) {
+const webp = at("wrapper-source.webp"); native("vips", ["copy", at("clean.jpg"), webp]);
+native("exiftool", ["-overwrite_original", "-DateTimeOriginal=2024:07:15 12:34:56", webp]);
+const malformedIcc = writeMalformedIccFixture(at("clean.jpg"), at("malformed-icc.jpg"));
+assert.match(native("exiftool", ["-s", "-Warning", malformedIcc]), /ICC_Profile/u);
+assert.equal(product(malformedIcc).unconverted, true, "malformed source ICC remains accepted by the existing pixel fallback");
+const cases = ["producer-write", "producer-readback", "final-reader-warning", "fresh-target-wrapper", "fresh-view-same-warning", "cached-target-wrapper"];
+for (const mode of cases) {
     const before = fs.readdirSync(work).filter((name) => name.includes("_stamped"));
     const marker = at(`${mode}.marker`), record = at(`${mode}.json`);
-    product(nikon.source, 1, { STAMP_IMAGES_EXIFTOOL: wrapper, STAMP_IMAGES_REAL_EXIFTOOL: native("/usr/bin/which", ["exiftool"]).trim(), STAMP_IMAGES_METADATA_CONTROL: mode, STAMP_IMAGES_METADATA_MARKER: marker, STAMP_IMAGES_METADATA_CONTROL_RECORD: record });
-    assert.equal(fs.readFileSync(marker, "utf8"), "called"); assert.equal(JSON.parse(fs.readFileSync(record, "utf8")).nativeStatus, 0);
-    assert.deepEqual(fs.readdirSync(work).filter((name) => name.includes("_stamped")), before, "producer write/readback failures publish nothing");
+    let { source } = nikon;
+    if (mode === "fresh-view-same-warning") { source = malformedIcc; }
+    else if (mode.includes("target-wrapper")) { source = webp; }
+    const status = mode === "cached-target-wrapper" ? 0 : 1;
+    product(source, status, { STAMP_IMAGES_EXIFTOOL: wrapper, STAMP_IMAGES_REAL_EXIFTOOL: native("/usr/bin/which", ["exiftool"]).trim(), STAMP_IMAGES_METADATA_CONTROL: mode, STAMP_IMAGES_METADATA_MARKER: marker, STAMP_IMAGES_METADATA_CONTROL_RECORD: record });
+    assert.equal(fs.readFileSync(marker, "utf8"), "called");
+    const evidence = JSON.parse(fs.readFileSync(record, "utf8")); assert.equal(evidence.nativeStatus, 0);
+    if (mode.includes("target-wrapper")) { assert.equal(evidence.packet[0].FileName.RebuiltTargetWebPExif, "1", "the old cached wrapper is actually repaired"); }
+    if (status === 1) { assert.deepEqual(fs.readdirSync(work).filter((name) => name.includes("_stamped")), before, "write/readback/fresh-reader failures publish nothing"); }
+    else { assert.equal(evidence.packet[0].FileName.TargetReadWarning, "[minor] Improper EXIF header", "the cached old warning is independently present"); }
 }
 process.stdout.write("Exact IPTC packets and bounded Nikon producer repair passed, including two timezones and foreign/source-negative controls.\n");

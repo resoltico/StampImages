@@ -55,18 +55,18 @@ test("every file one layer made is one the run can clear away", () => {
     assert.deepEqual(filesOf(paths), Object.values(paths));
 });
 
-test("a drawing is measured in both directions, one question each", () => {
+test("a drawing gets both dimensions from one structurally qualified header", () => {
     const { host, job } = jobOn({ width: 180, height: 64 });
 
     assert.deepEqual(sizeOf(job, "/w/mask.png"), { width: 180, height: 64 });
     assert.deepEqual(
-        host.commands.map((command) => command.split("' '")[2]),
-        ["width", "height"]
+        host.commands.map((command) => command.includes("'-a'")),
+        [true]
     );
 });
 
 test("a measurement that cannot be taken says what was being measured", () => {
-    const { job } = jobOn({ failures: [["'width'", new Error("no header")]] });
+    const { job } = jobOn({ failures: [["'-a'", new Error("no batch header")], ["'width'", new Error("no header")]] });
 
     assert.throws(
         () => sizeOf(job, "/w/mask.png"),

@@ -5,8 +5,7 @@ const { buildToSrgbArgv } = require("../backend/coloring.js");
 const { wantsColor } = require("../core/color.js");
 const { runArgv } = require("./shell.js");
 const { verifyFileWritten } = require("./filesystem-probes.js");
-const { sizeOf } = require("./tinting.js");
-const { refuseUnfaithful, colorFacts } = require("./fidelity.js");
+const { refuseUnfaithful, colorFacts, imageFacts } = require("./fidelity.js");
 const { profileFor } = require("./color-space.js");
 const { OperationError, errorMessage, commandOf } = require("../core/errors.js");
 const { isGrayImage, sourceIssue } = require("../core/source-policy.js");
@@ -81,7 +80,7 @@ function readPhotograph(job, source, token) {
         try { orient(job, source, path); }
         catch (error) { throw damagedOr(error); }
 
-        return { path, size: sizeOf(job, path), ...colorFacts(job, path) };
+        return { path, ...imageFacts(job, path) };
     } catch (error) {
         removeOwned(job, path);
         throw error;

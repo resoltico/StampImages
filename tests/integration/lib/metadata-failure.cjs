@@ -17,6 +17,13 @@ function controlProgram(argv, mode, tool) {
         argv[index] = replaceOnce(argv[index], "my $status=$producerWriter->WriteInfo($dst);", "my $status=0;");
     } else if (mode === "producer-readback") {
         argv[index] = replaceOnce(argv[index], "$add->('Restored IPTC packet differs from the captured source')", "$actual->{packet}='mismatched read-back'; $add->('Restored IPTC packet differs from the captured source')");
+    } else if (mode === "final-reader-warning") {
+        argv[index] = replaceOnce(argv[index], "if(!@failures && defined($sourceIPTC->{packet})) {\n    my $actual=$iptcState->($dst);", "if(!@failures && defined($sourceIPTC->{packet})) {\n    my $actual=$iptcState->($dst); $actual->{messages}=[{kind=>'Warning',text=>'Late metadata read warning'}];");
+    } else if (mode === "fresh-target-wrapper") {
+        argv[index] = replaceOnce(argv[index], "my $nikonMessages=$messages->($nikonProbe);", "my $nikonMessages=$messages->($nikonProbe); $nikonMessages=[{kind=>'Warning',text=>$wrapperWarning}];");
+    } else if (mode === "fresh-view-same-warning") {
+        const query = "$freshBlocks->ImageInfo(\\$sourceCaptureView,'ICC_Profile');";
+        argv[index] = replaceOnce(argv[index], query, `${query} my $originalMessages=$messages; $messages=sub { my($reader)=@_;my $found=$originalMessages->($reader);push @$found,$initialSourceMessages->[0] if $reader eq $freshBlocks;return $found; };`);
     } else if (mode === "readback") {
         const changed = spawnSync(tool, ["-overwrite_original", "-GPSLatitude=0", "-GPSLatitudeRef=N", target], { encoding: "utf8" });
         assert.equal(changed.status, 0, changed.stderr);

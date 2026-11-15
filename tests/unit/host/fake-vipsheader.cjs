@@ -78,9 +78,24 @@ function sizeOf(host, [named, knob, fallback]) {
     return String(host[knob] ?? fallback ?? host[photograph[1]] ?? photograph[2]);
 }
 
+function headerDump(host, command, path) {
+    const dimensions = measuredBy(command);
+    const width = sizeOf(host, dimensions[0]);
+    const height = sizeOf(host, dimensions[1]);
+    const kind = (INTERPRETATIONS[host.stored ?? "color"] ?? host.stored).toLowerCase().replace(/_/gu, "-");
+    const loader = path.endsWith(".v") ? "vipsload" : "jpegload";
+    return [
+        `${path}: ${width}x${height} uchar, ${host.bands} bands, ${kind}, ${loader}`,
+        `width: ${width}`, `height: ${height}`, `bands: ${host.bands}`,
+        "format: uchar", "coding: none", `interpretation: ${kind}`,
+        `filename: ${path}`, `vips-loader: ${loader}`, ""
+    ].join("\n");
+}
+
 function headerField(host, command, path) {
     const configured = host.headerFacts?.get(path);
     const observed = configured ? { ...host, ...configured } : host;
+    if (command.includes("'-a'")) { return headerDump(observed, command, path); }
     if (command.includes("'interpretation'")) {
         return interpretationOf(observed);
     }

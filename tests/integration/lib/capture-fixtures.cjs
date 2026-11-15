@@ -67,4 +67,12 @@ function writeNikonFixtures(directory, cleanJpeg) {
         const file = path.join(directory, `nikon-${name}.jpg`); fs.writeFileSync(file, nikonFixture(jpeg, options)); return [name, file];
     }));
 }
-module.exports = { iptcPacket, writeNikonFixtures };
+function writeMalformedIccFixture(cleanJpeg, target) {
+    const jpeg = fs.readFileSync(cleanJpeg);
+    const payload = Buffer.concat([Buffer.from("ICC_PROFILE\0\x01\x01", "binary"), Buffer.alloc(16)]);
+    const segment = Buffer.alloc(payload.length + 4); segment[0] = 0xff; segment[1] = 0xe2;
+    segment.writeUInt16BE(payload.length + 2, 2); payload.copy(segment, 4);
+    fs.writeFileSync(target, Buffer.concat([jpeg.subarray(0, 2), segment, jpeg.subarray(2)]));
+    return target;
+}
+module.exports = { iptcPacket, writeNikonFixtures, writeMalformedIccFixture };

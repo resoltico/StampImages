@@ -14,7 +14,12 @@ my $pendingIPTCDigest=sub {
 };
 ${NIKON_REPAIR_PROGRAM}
 my @targetMessages=(@{$targetIPTC->{messages}},@$nikonMessages);
-push @targetMessages,{kind=>'Warning',text=>$targetWarning} if defined($targetWarning) && !$repair;
+my @cachedTargetMessages=@{$messages->($targetReader)};
+push @cachedTargetMessages,{kind=>'Warning',text=>$targetWarning} if defined($targetWarning);
+for my $message(@cachedTargetMessages) {
+    next if $repair && $message->{kind} eq 'Warning' && $message->{text} eq $wrapperWarning;
+    push @targetMessages,$message;
+}
 for my $message(@targetMessages) {
         next if $pendingIPTCDigest->($message);
         next if defined($nikonExpected) && $message->{kind} eq 'Warning' && $message->{text} eq '[minor] Bad NikonScanIFD directory';

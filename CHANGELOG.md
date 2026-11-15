@@ -18,6 +18,7 @@
 - Decoder warnings refuse damaged JPEGs and truncated HEIC. Unsupported content names its loader; missing paths precede format checks and folder special files are reported.
 - All output formats retain standard capture metadata, GPS and profiles with upright dimensions; Ultra HDR JPEGs become standard-range JPEG copies without gain maps.
 - Original IPTC packets keep timezone absence; bounded Nikon directory repair preserves supported camera metadata without replacing conflicting target facts.
+- Image measurements use fewer tool launches while retaining geometry, color, alpha and independent fallback checks.
 - 16-bit gray images work. Neutral stamps keep gray; colored stamps retain 16-bit precision, and expansion notes describe the actual saved representation.
 - Invalid GPS references or components are reported and left off the stamp; copies preserve original GPS values without normalization or fail safely.
 - Missing and invalid metadata have distinct notes and survive later failures. Blank/all-zero dates are missing; impossible/nonzero year-0000 dates are invalid, with first-valid capture-date fallback.

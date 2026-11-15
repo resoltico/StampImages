@@ -1,14 +1,12 @@
 "use strict";
 const { isGrayImage } = require("../core/source-policy.js");
-const { colorFacts } = require("./fidelity.js");
-const { OperationError } = require("../core/errors.js");
+const { imageFacts } = require("./fidelity.js");
 
 const { buildCompositeArgv, buildFlattenArgv } = require("../backend/commands.js");
 const { buildMetadataCopyArgv, metadataCopyResult } = require("../backend/metadata-copy.js");
 const { savingPath } = require("../core/output-format.js");
 const { runArgv } = require("./shell.js");
 const { verifyFileWritten } = require("./filesystem-probes.js");
-const { sizeOf } = require("./tinting.js");
 
 /*
  * Putting the stamp on the photograph, and saving what comes out.
@@ -75,16 +73,9 @@ function saveCopy(job, stamped, target, source) {
      * The header is enough -- decoding every pixel of every copy would double
      * the run to catch a failure nothing has produced.
      */
-    const saved = sizeOf(job, target);
-
-    if (saved.width !== source.size.width || saved.height !== source.size.height) {
-        throw new OperationError(
-            `The stamped copy is ${saved.width} by ${saved.height} pixels ` +
-                `where ${source.size.width} by ${source.size.height} were ` +
-                `expected:\n\n${target}`
-        );
-    }
-    return { ...colorFacts(job, target), ...metadata };
+    const expected = { width: source.size.width, height: source.size.height };
+    const { bands, interpretation, hasAlpha } = imageFacts(job, target, expected);
+    return { bands, interpretation, hasAlpha, ...metadata };
 }
 
 module.exports = { composite, saveCopy };

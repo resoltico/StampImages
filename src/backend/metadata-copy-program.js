@@ -51,6 +51,15 @@ my $messages=sub {
     }
     return \@messages;
 };
+# Planning readers may encounter already-recorded diagnostics while extracting a
+# block. Only the existing source-view checks can resolve those known messages.
+my $unrecordedReaderMessages=sub {
+    my($reader,$known)=@_;
+    for my $message(@{$messages->($reader)}) {
+        next if grep { $_->{kind} eq $message->{kind} && $_->{text} eq $message->{text} } @$known;
+        $add->($message->{text});
+    }
+};
 # ICC and explicitly excluded MakerNotes are outside capture-copy scope.
 # Reader views never replace rendered pixels, source or actual target metadata.
 my %captureIfd0=map { my $name=$_;$name=~s/^IFD0://;($name=>1) } grep { /^IFD0:/ } @captureSelectors;
@@ -96,11 +105,13 @@ if(@$sourceMessages && !$knownWebP->($sourceReader,$sourceMessages) &&
     my $blocks=Image::ExifTool->new;
     $blocks->ImageInfo($sourceInput,'ICC_Profile');
     my $block=scalar($blocks->GetValue('ICC_Profile','Raw'));
+    $unrecordedReaderMessages->($blocks,$sourceMessages);
     my @viewGroups;
     push @viewGroups,'ICC_Profile' if defined($block);
     push @viewGroups,'MakerNotes' if $excludeMakerNotes;
     if(@viewGroups) {
         my $captureBefore=$captureSnapshot->($sourceReader);
+        $unrecordedReaderMessages->($sourceReader,$sourceMessages);
         my $memoryWriter=Image::ExifTool->new;
         for my $group(@viewGroups) {
             my($deleted,$deleteError)=$memoryWriter->SetNewValue($group.':All',undef);
@@ -125,25 +136,30 @@ if(@$sourceMessages && !$knownWebP->($sourceReader,$sourceMessages) &&
                 my $fresh=Image::ExifTool->new;
                 $fresh->Options(SaveFormat=>1,Struct=>1);
                 $fresh->ExtractInfo(\$sourceCaptureView);
+                my $pendingViewMessages=$pendingSourceWrapper?[{kind=>'Warning',text=>$wrapperWarning}]:[];
                 my $freshBlocks=Image::ExifTool->new;
                 $freshBlocks->ImageInfo(\$sourceCaptureView,'ICC_Profile');
                 $add->('ICC group remained in capture-reader view') if
                     (grep { $_ eq 'ICC_Profile' } @viewGroups) && defined($freshBlocks->GetValue('ICC_Profile','Raw'));
+                $unrecordedReaderMessages->($freshBlocks,$pendingViewMessages);
                 if(grep { $_ eq 'MakerNotes' } @viewGroups) {
                     my $makerCheck=Image::ExifTool->new;
                     $makerCheck->Options(MakerNotes=>2);
                     $makerCheck->ExtractInfo(\$sourceCaptureView);
                     $add->('MakerNotes remained in capture-reader view') if
                         grep { Image::ExifTool::GetTagName($_)=~/^MakerNote/ } $makerCheck->GetFoundTags;
+                    $unrecordedReaderMessages->($makerCheck,$pendingViewMessages);
                 }
                 $add->('Scoped reader-view exclusion changed raw GPS') unless $same->($before,$gps->($fresh));
                 $add->('Scoped reader-view exclusion changed capture values') unless $same->($captureBefore,$captureSnapshot->($fresh));
+                my $freshMessages=$messages->($fresh);
+                if(@failures) { $add->($_->{text}) for @$freshMessages; }
                 if(!@failures) {
                     @excludedReaderGroups=@viewGroups;
                     $sourceInput=\$sourceCaptureView;
                     $sourceReader=$fresh;
                     $readerViewNotice=join('; ',map { $_->{text} } @$sourceMessages);
-                    $sourceMessages=$messages->($fresh);
+                    $sourceMessages=$freshMessages;
                 }
             }
         }
@@ -155,6 +171,7 @@ if(@$sourceMessages) {
         my $blocks=Image::ExifTool->new;
         $blocks->ImageInfo($sourceInput,'EXIF');
         my $block=scalar($blocks->GetValue('EXIF','Raw'));
+        $unrecordedReaderMessages->($blocks,$sourceMessages);
         my $payload=ref($block) eq 'SCALAR'?$$block:$block;
         if(!defined($payload) || ref($payload) || $payload!~/^(II\x2a\0|MM\0\x2a)/) {
             $add->('Expected original WebP TIFF payload unavailable');
@@ -172,15 +189,15 @@ if(@$sourceMessages) {
                     my $fresh=Image::ExifTool->new;
                     $fresh->Options(SaveFormat=>1,Struct=>1);
                     $fresh->ExtractInfo(\$sourceMemory);
-                    $add->($_->{text}) for @{$messages->($fresh)};
                     my $freshBlocks=Image::ExifTool->new;
                     $freshBlocks->ImageInfo(\$sourceMemory,'EXIF');
-                    $add->($_->{text}) for @{$messages->($freshBlocks)};
                     my $freshBlock=scalar($freshBlocks->GetValue('EXIF','Raw'));
+                    $add->($_->{text}) for @{$messages->($freshBlocks)};
                     my $freshPayload=ref($freshBlock) eq 'SCALAR'?$$freshBlock:$freshBlock;
                     $add->('Source-memory rebuild changed original TIFF payload') unless
                         defined($freshPayload) && !ref($freshPayload) && $freshPayload eq $payload;
                     $add->('Source-memory rebuild changed raw GPS') unless $same->($before,$gps->($fresh));
+                    $add->($_->{text}) for @{$messages->($fresh)};
                     if(!@failures) { $sourceInput=\$sourceMemory;$sourceNotice=$sourceMessages->[0]{text}; }
                 }
             }
@@ -256,8 +273,8 @@ if(!@failures) {
     my $notes=Image::ExifTool->new;
     $notes->Options(MakerNotes=>2,SaveBin=>1,SaveFormat=>1,Duplicates=>1);
     $notes->ExtractInfo($dst);
-    $add->($_->{text}) for @{$messages->($notes)};
     my $blocks=$makerBlocks->($notes);
+    $add->($_->{text}) for @{$messages->($notes)};
     for my $key(keys %$blocks) {
         my @empty=grep { $_->{format} eq 'undef' && length($_->{bytes})==6 && $_->{bytes} eq "\0" x 6 } @{$blocks->{$key}};
         next unless @empty;
@@ -287,18 +304,18 @@ if(!@failures) {
         my $actualReader=Image::ExifTool->new;
         $actualReader->Options(SaveFormat=>1,Struct=>1);
         $actualReader->ExtractInfo($dst);
-        $add->($_->{text}) for @{$messages->($expectedReader)};
-        $add->($_->{text}) for @{$messages->($actualReader)};
         my $expected=$gps->($expectedReader);
         my $actual=$gps->($actualReader);
+        $add->($_->{text}) for @{$messages->($expectedReader)};
+        $add->($_->{text}) for @{$messages->($actualReader)};
         $verified=$same->($expected,$actual)?1:0;
         $add->('Raw GPS read-back differs from the captured source') unless $verified;
         if(%emptyTargetExpected) {
             my $notes=Image::ExifTool->new;
             $notes->Options(MakerNotes=>2,SaveBin=>1,SaveFormat=>1,Duplicates=>1);
             $notes->ExtractInfo($dst);
-            $add->($_->{text}) for @{$messages->($notes)};
             my $blocks=$makerBlocks->($notes);
+            $add->($_->{text}) for @{$messages->($notes)};
             for my $key(keys %emptyTargetExpected) {
                 $add->('Empty target MakerNotes changed: '.$key) unless exists($blocks->{$key}) &&
                     @{$blocks->{$key}} && !grep { $_->{format} ne 'undef' || $_->{bytes} ne $emptyTargetExpected{$key} } @{$blocks->{$key}};
@@ -314,6 +331,7 @@ if(!@failures && defined($nikonExpected)) {
 }
 if(!@failures && defined($sourceIPTC->{packet})) {
     my $actual=$iptcState->($dst);
+    $add->($_->{text}) for @{$actual->{messages}};
     $add->('Final IPTC packet differs from the captured source') unless
         defined($actual->{packet}) && !ref($actual->{packet}) && $actual->{packet} eq $sourceIPTC->{packet};
 }
