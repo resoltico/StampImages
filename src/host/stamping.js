@@ -7,6 +7,7 @@ const { matchesAdmission } = require("../core/source-policy.js");
 const { OperationError } = require("../core/errors.js");
 const { factsFor } = require("./facts.js");
 const { stampFor } = require("./render.js");
+const { expandedColor } = require("../core/source-policy.js");
 const { registerArtifact } = require("../core/artifacts.js");
 const { retainCandidate } = require("./workspace.js");
 const { removeOwned } = require("./owned-cleanup.js");
@@ -73,6 +74,20 @@ function substituted(job, lines) {
     return [...lines.join("")].some((character) => !UNDRAWN.test(character) && !job.covers(character.codePointAt(0)));
 }
 
+function saveValidatedCopy(job, stamped, target, source) {
+    const artifact = registerArtifact(job.artifacts, target);
+    retainCandidate(job);
+    artifact.state = "validating";
+    try {
+        const saved = saveCopy(job, stamped, target, source);
+        artifact.state = "validated";
+        return saved;
+    } catch (error) {
+        if (error instanceof OperationError) { artifact.state = "building"; }
+        throw error;
+    }
+}
+
 function produce(job, image, token, intermediates) {
     const met = preparePhotograph(job, image, token, intermediates);
     const { photograph } = met;
@@ -86,23 +101,14 @@ function produce(job, image, token, intermediates) {
     const target = stagedPath(job.workspace, token, image.extension);
 
     intermediates.push(target);
-    const artifact = registerArtifact(job.artifacts, target);
-    retainCandidate(job);
-    artifact.state = "validating";
-    try { saveCopy(job, drawn.stamped, target, { ...photograph, gainMap: image.gainMap, metadataSource: image.path }); }
-    catch (error) {
-        if (error instanceof OperationError) { artifact.state = "building"; }
-        throw error;
-    }
-    artifact.state = "validated";
+    const saved = saveValidatedCopy(job, drawn.stamped, target, { ...photograph, gainMap: image.gainMap, metadataSource: image.path });
 
     return {
         staged: target,
         crowded: drawn.crowded,
         unconverted: drawn.unconverted,
-        expanded: met.expanded,
-        missing: image.inscription.missing ?? [],
-        invalid: image.inscription.invalid ?? [],
+        expanded: expandedColor(image.admission.image, saved),
+        locationRetained: saved.locationRetained,
         substituted: substituted(job, image.inscription.lines)
     };
 }
@@ -118,11 +124,12 @@ function inscribe(job, image) {
     return inscriptionFor(facts, job.settings);
 }
 
-function stampCaptured(job, image, token) {
+function stampCaptured(job, image, token, metadataReady) {
     const inscription = inscribe(job, image);
+    metadataReady(inscription);
 
     if (inscription.nothing) {
-        return { nothing: inscription.nothing, missing: inscription.missing ?? [], invalid: inscription.invalid ?? [] };
+        return { nothing: inscription.nothing };
     }
 
     const intermediates = [];
@@ -139,14 +146,14 @@ function stampCaptured(job, image, token) {
     }
 }
 
-function stampOne(job, image, token) {
+function stampOne(job, image, token, metadataReady) {
     const source = image.path;
     const capturedPath = `${job.workspace}/source-${token}${image.extension}`;
     try {
         const owned = job.sources.capture(source, capturedPath);
         const captured = inspectCaptured(job, owned, source);
         if (!matchesAdmission(image.admission, captured)) { throw new OperationError("The source changed after selection; try again when it is stable."); }
-        return stampCaptured(job, { ...image, source, path: captured.path, gainMap: captured.gainMap }, token);
+        return stampCaptured(job, { ...image, source, path: captured.path, gainMap: captured.gainMap }, token, metadataReady);
     } finally { removeOwned(job, capturedPath); }
 }
 

@@ -1,6 +1,7 @@
 "use strict";
 const { basename } = require("../core/paths.js");
 const { isSupportedImage } = require("../core/formats.js");
+const { SPECIAL_FILE } = require("./reasons.js");
 const { looksStamped } = require("../core/naming.js");
 
 /*
@@ -45,7 +46,9 @@ function childrenOf(tree, folder, names) {
  * were left alone. Exclusions do not turn a repeated folder run into a failure.
  */
 function passedOver(path, entry) {
-    if (entry.kind === "missing") {
+    if (entry.kind === "other") { return { reason: SPECIAL_FILE, excluded: false }; }
+    if (entry.kind === "unreadable") { return { reason: UNREADABLE, excluded: false }; }
+    if (["missing", "unexaminable"].includes(entry.kind)) {
         return { reason: UNEXAMINABLE, excluded: false };
     }
 
@@ -53,9 +56,8 @@ function passedOver(path, entry) {
         return null;
     }
 
-    return looksStamped(basename(path))
-        ? { reason: ALREADY_STAMPED, excluded: true }
-        : null;
+    if (looksStamped(basename(path))) { return { reason: ALREADY_STAMPED, excluded: true }; }
+    return entry.identity ? null : { reason: UNEXAMINABLE, excluded: false };
 }
 
 module.exports = {

@@ -1,4 +1,5 @@
 "use strict";
+const { parseReceipt } = require("./lib/receipt.cjs");
 const assert = require("node:assert/strict");
 const { Buffer } = require("node:buffer");
 const fs = require("node:fs");
@@ -13,7 +14,7 @@ function run(files, status, environment = {}) {
     const result = spawnSync("osascript", ["-l", "JavaScript", script, "--", "--headless", at("settings.json"), ...files.map(at)], { encoding: "utf8", timeout: 120000, env: { ...process.env, ...environment } });
     assert.ifError(result.error);
     assert.equal(result.status, status, `${result.stdout}\n${result.stderr}`);
-    return JSON.parse(result.stdout);
+    return parseReceipt(result.stdout);
 }
 
 function visibleStamp(output, label) {
@@ -28,10 +29,12 @@ function visibleStamp(output, label) {
 
 function metadataFailure() {
     const wrapper = at("failed-metadata-copy");
+    const marker = at("failed-metadata-attempted");
     const outputs = fs.readdirSync(work).filter((name) => name.includes("_stamped"));
-    fs.writeFileSync(wrapper, '#!/bin/bash\nfor argument in "$@"; do\n  if [ "$argument" = "-TagsFromFile" ]; then\n    echo "synthetic metadata write failure" >&2\n    exit 1\n  fi\ndone\nexec "$STAMP_IMAGES_REAL_EXIFTOOL" "$@"\n');
+    fs.writeFileSync(wrapper, '#!/bin/bash\nfor argument in "$@"; do\n  if [ "$argument" = "-userParam" ]; then\n    printf called >> "$STAMP_IMAGES_METADATA_MARKER"\n    echo "synthetic metadata write failure" >&2\n    exit 1\n  fi\ndone\nexec "$STAMP_IMAGES_REAL_EXIFTOOL" "$@"\n');
     fs.chmodSync(wrapper, 0o755);
-    const failed = run(["photo.jpg"], 1, { STAMP_IMAGES_EXIFTOOL: wrapper, STAMP_IMAGES_REAL_EXIFTOOL: native("/usr/bin/which", ["exiftool"]) });
+    const failed = run(["photo.jpg"], 1, { STAMP_IMAGES_EXIFTOOL: wrapper, STAMP_IMAGES_REAL_EXIFTOOL: native("/usr/bin/which", ["exiftool"]), STAMP_IMAGES_METADATA_MARKER: marker });
+    assert.equal(fs.readFileSync(marker, "utf8"), "called", "the replacement metadata operation was reached");
     assert.equal(failed.images[0].state, "failed");
     assert.match(JSON.stringify(failed.images[0].issues), /synthetic metadata write failure/u);
     assert.deepEqual(fs.readdirSync(work).filter((name) => name.includes("_stamped")), outputs, "failed metadata retention publishes no copy");

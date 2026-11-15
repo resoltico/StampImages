@@ -25,13 +25,24 @@ A finished copy is published with an exact-path hard link, or with an exclusive
 rename of an owned copy on volumes that cannot link. Only a classified name
 collision is retried, with the next `_stamped N` name. Existing files, folders,
 pipes and links are never replaced or written inside. Native identity and size
-confirm the actual output before the workspace copy is released. A volume without
-either exclusive route fails over to recovery instead of exposing a partial file.
+confirm the output and its literal directory-entry basename before the workspace
+copy is released. Destination folders require read/search access for that name
+verification; unavailable or ambiguous listings do not fall back to a canonical
+or guessed path. The original is rechecked before copied recovery and before removal.
+Required directory-stream cleanup failures stop later images while preserving
+validated work and the original failure/cancellation cause. A volume without
+either exclusive route fails over to recovery instead of exposing
+a partial file.
 
 If a copy cannot be published, it is recovered to `~/Downloads` under its intended
 name with the same exclusive rules, or failing that to a confirmed copy in the system
 temporary directory. Only a confirmed recovery releases the workspace copy; otherwise
-the workspace is retained and its location reported. A candidate whose validation
+the workspace is retained and its location reported. If a created copy's stored
+name cannot be verified, that claimed entry is left untouched and the verified
+original stays in its workspace; no additional recovery copy is attempted. Missing,
+replaced or uninspectable originals are not asserted as recoveries or removed. A
+confirmed output can remain saved with a fatal cleanup fault and a retained
+workspace when original cleanup cannot safely proceed. A candidate whose validation
 faulted is reported as unconfirmed, never as a validated recovery. Stop keeps saved
 copies and retains a finished, unpublished copy in its workspace. Temporary storage
 is not permanent: move needed recovered or retained work promptly.
@@ -47,7 +58,10 @@ alone. Help, version and invalid command-line requests do not run this cleanup.
 Copies retain capture metadata, including GPS coordinates, whether or not the
 stamp shows them. HDR JPEG copies are standard-range images without gain maps;
 they retain EXIF/GPS, ICC profiles, IPTC and XMP apart from HDR/gain-map/container
-declarations. A copy is not anonymized: review
+declarations. Metadata copying acts only on a fresh private render tied to the
+captured source. Source-owned IPTC packets and bounded Nikon directory repairs
+never authorize changing rendered pixels or profiles, or replacing conflicting
+target vendor data. A copy is not anonymized: review
 its metadata before sharing it when location or camera details are sensitive.
 The repository commits no real photographs or coordinates; its fixtures are
 generated.
@@ -67,6 +81,13 @@ The action runs with your user permissions and trusts the installed `exiftool`,
 `vips` and supporting system tools. It makes no network requests; installing tools
 and verifying attestations need network access. Diagnostics can contain source and
 output paths and the underlying commands; review them before sharing.
+
+ExifTool's raw-copy program is fixed source; paths are passed as UserParam data,
+never interpolated into native code. It writes only the private candidate. Any
+scoped metadata-reader view or legacy WebP reader repair is memory-only: it does
+not replace source pixels, source files, or the actual target profile/maker data.
+Raw GPS must match a fresh target readback before publication. Unsupported physical
+GPS structures or a failed required setter/readback refuse the copy.
 
 ## Distribution integrity
 

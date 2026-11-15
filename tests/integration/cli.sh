@@ -22,7 +22,45 @@ expect_status() {
 expect_status 0 --help
 assert_contains "$(cat "$WORK/receipt")" 'all 10 required' 'help describes current settings'
 expect_status 0 --version
+cp "$WORK/settings.json" "$WORK/settings Rīga%.json"
+settings_url=$(node -e 'process.stdout.write(require("node:url").pathToFileURL(process.argv[1]).href.replace("file:///","file://localhost/"))' "$WORK/settings Rīga%.json")
+cp "$WORK/source.png" "$WORK/settings-url.png"
+expect_status 0 --headless "$settings_url" "$WORK/settings-url.png"
+node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1]));if(r.state!=="complete")throw Error("local settings URL failed");' "$WORK/receipt"
+for refused_settings in 'https://example.invalid/settings.json' 'file://example.invalid/settings.json' 'file:///bad%00.json'; do
+    expect_status 2 --headless "$refused_settings" "$WORK/source.png"
+    node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1]));if(r.state!=="invalid"||r.issues[0].code!=="settings-file"||r.images.length||r.rejected.length)throw Error("settings URL refusal reached image admission");' "$WORK/receipt"
+done
+for missing_image in "$WORK/not-there" "$WORK/not-there.gif" "$WORK/not-there.jpg"; do
+    expect_status 1 --headless "$WORK/settings.json" "$missing_image"
+    node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1]));if(r.rejected[0].code!=="not-a-path"||r.rejected[0].reason!=="No file or folder exists at this path.")throw Error("missing path was classified from its extension");' "$WORK/receipt"
+done
+for remote_image in 'data:image/png;base64,AA==' 'urn:image:1' 'file://example.invalid/photo.jpg'; do
+    expect_status 1 --headless "$WORK/settings.json" "$remote_image"
+    node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1]));if(r.rejected[0].code!=="remote-url")throw Error("remote URL became a relative path");' "$WORK/receipt"
+done
+cp "$WORK/source.png" "$WORK/photo:one.png"
+(cd "$WORK"; osascript -l JavaScript "$SCRIPT" -- --headless settings.json './photo:one.png' > receipt 2> error)
+node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1]));if(r.state!=="complete"||!r.images[0].source.endsWith("/photo:one.png"))throw Error("explicit relative colon filename was refused");' "$WORK/receipt"
+cp "$WORK/source.png" "$WORK/locale-source.png"
+taken_at "$WORK/locale-source.png" '2026:11:14 12:34:56' 10 20
+settings_file "$WORK/locale.json" 'Riga' bottom-right iso-minutes decimal
+LANG=de_DE.UTF-8 LC_ALL=de_DE.UTF-8 LANGUAGE=de expect_status 0 --headless "$WORK/locale.json" "$WORK/locale-source.png"
+node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1]));if(r.state!=="complete"||r.images[0].missingMetadata?.length)throw Error("locale changed metadata reading");' "$WORK/receipt"
+test "$(exiftool -s3 -DateTimeOriginal "$WORK/locale-source_stamped.png")" = '2026:11:14 12:34:56'
+test "$(exiftool -s3 -n -GPSLatitude "$WORK/locale-source_stamped.png")" = 10
 STAMP_IMAGES_VIPS="$WORK/missing-vips" expect_status 3 --headless "$WORK/settings.json" "$WORK/source.png"
+for requested_header in /usr/bin/false /opt/homebrew/bin relative-header "$WORK/missing-header"; do
+    STAMP_IMAGES_VIPSHEADER="$requested_header" expect_status 3 --headless "$WORK/settings.json" "$WORK/source.png"
+    node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1]));if(r.state!=="invalid"||r.images.length||r.rejected.length)throw Error("broken header tool was not refused before admission");' "$WORK/receipt"
+    assert_contains "$(cat "$WORK/error")" 'A required tool is missing or unusable.' 'setup has its own headline'
+    assert_contains "$(cat "$WORK/error")" 'STAMP_IMAGES_VIPSHEADER=' 'the override variable is named'
+    assert_contains "$(cat "$WORK/error")" "$requested_header" 'the requested value is named'
+    if [ "$requested_header" = /usr/bin/false ]; then
+        assert_contains "$(cat "$WORK/error")" 'vipsheader could not read the built-in PNG image.' 'override preserves the actual capability reason'
+    fi
+    assert_not_contains "$(cat "$WORK/error")" 'brew install' 'override-only refusal does not suggest reinstalling an unrelated tool'
+done
 node -e 'const fs=require("fs");const value=JSON.parse(fs.readFileSync(process.argv[1]));value.font="StampImages Nonexistent Typeface";fs.writeFileSync(process.argv[2],JSON.stringify(value));' "$WORK/settings.json" "$WORK/missing-font.json"
 expect_status 2 --headless "$WORK/missing-font.json" "$WORK/source.png"
 # Invalid settings win even if tools and sources are unavailable.
@@ -52,7 +90,33 @@ test "$BEFORE" = "$(shasum -a 256 < "$WORK/source.png")"
 # Exact content policy, independent of the filename extension.
 printf '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"/>' > "$WORK/disguised.png"
 expect_status 1 --headless "$WORK/settings.json" "$WORK/disguised.png"
-assert_contains "$(cat "$WORK/receipt")" 'not-an-image' 'disguised vector is refused'
+assert_contains "$(cat "$WORK/receipt")" 'unsupported-content' 'recognized excluded vector is refused accurately'
+assert_contains "$(cat "$WORK/receipt")" '"loader":"svgload"' 'excluded content names its real loader'
+vips copy "$WORK/source.png" "$WORK/whole.heic"
+head -c 64 "$WORK/whole.heic" > "$WORK/cut.heic"
+printf 'not an image' > "$WORK/text.heic"
+expect_status 1 --headless "$WORK/settings.json" "$WORK/cut.heic" "$WORK/text.heic"
+node - "$WORK/receipt" <<'JS'
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const receipt=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
+assert.deepEqual(receipt.rejected.map(entry=>[path.basename(entry.path),entry.code]),[['cut.heic','damaged'],['text.heic','not-an-image']]);
+JS
+mkdir "$WORK/special-folder"
+cp "$WORK/source.png" "$WORK/special-folder/good.png"
+printf 'unrelated' > "$WORK/special-folder/notes.txt"
+mkfifo "$WORK/special-folder/pipe.png" "$WORK/special-folder/visible" "$WORK/special-folder/.hidden.png"
+node - "$SCRIPT" "$WORK/settings.json" "$WORK/special-folder" "$WORK/receipt" "$WORK/error" <<'JS'
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const result=require('node:child_process').spawnSync('/usr/bin/osascript',['-l','JavaScript',process.argv[2],'--','--headless',process.argv[3],process.argv[4]],{encoding:'utf8',timeout:30000,killSignal:'SIGKILL'});
+fs.writeFileSync(process.argv[5],result.stdout??'');fs.writeFileSync(process.argv[6],result.stderr??'');
+assert.ifError(result.error);assert.equal(result.status,1,result.stderr);
+JS
+node - "$WORK/receipt" <<'JS'
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const receipt=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
+assert.equal(receipt.images.length,1);assert.equal(receipt.images[0].state,'saved');
+assert.deepEqual(receipt.rejected.map(entry=>[path.basename(entry.path),entry.code]).sort(),[['pipe.png','special-file'],['visible','special-file']]);
+JS
 cp "$WORK/source.png" "$WORK/mismatch.jpg"
 expect_status 0 --headless "$WORK/settings.json" "$WORK/mismatch.jpg"
 test -f "$WORK/mismatch_stamped.png"
@@ -105,4 +169,20 @@ if (result.injected !== 1 || result.publicationAttempts !== 1 || record.state !=
 if (process.argv[3] === 'fault-after-commit' && !record.issues.some(issue => issue.code === 'fault')) throw Error('post-commit fault diagnostic was lost');
 JS
 done
+cp "$WORK/source.png" "$WORK/name-unverified.png"
+osascript -l JavaScript "$WORK/lifecycle.jxa" stored-name-refused "$WORK/replacement.png" --headless "$WORK/settings.json" "$WORK/name-unverified.png" > "$WORK/name-unverified.json"
+node - "$WORK/name-unverified.json" "$WORK/name-unverified_stamped.png" <<'JS'
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {execFileSync}=require('node:child_process');
+const result=JSON.parse(fs.readFileSync(process.argv[2],'utf8')),record=result.images[0];
+assert.equal(result.injected,1);assert.equal(result.publicationAttempts,1);
+assert.equal(record.state,'recovered');assert.equal(Object.hasOwn(record,'output'),false);
+assert.ok(fs.existsSync(record.recovery));assert.ok(fs.existsSync(process.argv[3]));
+assert.equal(execFileSync('vipsheader',['-f','width',record.recovery],{encoding:'utf8'}).trim(),'600');
+assert.ok(record.issues[0].diagnostic.message.includes('A finished copy was created, but its stored filename could not be verified.'));
+const directory=path.dirname(record.recovery);assert.match(directory,/\/StampImages\.[A-Za-z0-9]{10}$/u);
+fs.rmSync(directory,{recursive:true});
+JS
+node "$ROOT/tests/integration/cli-transport.cjs" "$SCRIPT" "$WORK/transport" "$WORK/settings.json" "$WORK/source.png"
+node "$ROOT/tests/integration/signals.cjs" "$SCRIPT" "$WORK/settings.json" "$WORK/source.png" "$WORK/signals"
 printf 'macOS CLI and capture lifecycle integration passed\n'

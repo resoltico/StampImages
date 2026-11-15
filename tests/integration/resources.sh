@@ -33,6 +33,10 @@ STARTED=$(LC_ALL=C TZ=UTC ps -p $$ -o lstart= | sed 's/^ *//;s/ *$//')
 node -e 'require("fs").writeFileSync(process.argv[1],JSON.stringify({pid:Number(process.argv[2]),started:process.argv[3]}))' "$LIVE/owner.json" $$ "$STARTED"
 osascript -l JavaScript "$SCRIPT" -- --headless "$WORK/settings.json" "$WORK/source.png" > "$WORK/receipt" 2> "$WORK/error"
 test ! -e "$DEAD" || fail 'dead unretained workspace was not reclaimed'
+assert_contains "$(cat "$WORK/error")" 'Temporary work:' 'prior work is reported to people'
+assert_contains "$(cat "$WORK/error")" "$DEAD" 'the exact reclaimed workspace is named'
+assert_contains "$(cat "$WORK/error")" "$RETAINED" 'the exact retained workspace is named'
+assert_contains "$(cat "$WORK/error")" 'A stale workspace was reclaimed.' 'successful reclamation is visible'
 test -d "$LIVE" && test -d "$RETAINED" && test -d "$UNKNOWN" || fail 'active or retained/unreadable work was removed'
 mkdir "$WORK/denied" "$WORK/no-downloads"
 cp "$WORK/source.png" "$WORK/denied/source.png"

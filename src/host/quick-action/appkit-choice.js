@@ -53,6 +53,7 @@ function addOptionalChoice(context, row, rects) {
 
     context.view.addSubview(toggle);
     context.view.addSubview(popup);
+    if (row.invalid) { context.widgets.markInvalid(context.ns, popup, context.objc); }
 
     return { control: popup, popup, toggle };
 }

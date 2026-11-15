@@ -2,8 +2,8 @@
 const { APP_NAME, VERSION } = require("../../core/version.js");
 const { SETTINGS_SCHEMA, validateSettings, stampIssues } = require("../../core/settings.js");
 const { OperationError } = require("../../core/errors.js");
-const { normalizeInvocationInput } = require("../invocation-syntax.js");
-const { writeReceipt, exitCli } = require("./receipt.js");
+const { hasUrlScheme, decodeFileUrl, normalizeInvocationInput } = require("../invocation-syntax.js");
+const { writeStdout, exitCli } = require("./receipt.js");
 // A caption that only restates the value ("Bottom right" for bottom-right) is left out.
 function choiceCaption(choice) {
     const caption = choice.label ?? choice.name;
@@ -11,22 +11,24 @@ function choiceCaption(choice) {
     return caption && !restates ? `${choice.value} (${caption})` : choice.value;
 }
 
-// One line per setting: values, then the declared default.
+// List accepted values separately from the complete settings example.
 function settingsHelp() {
     return Object.entries(SETTINGS_SCHEMA).map(([field, rule]) => {
         let values = rule.kind === "color" ? "#RRGGBB" : "text";
         if (rule.choices) { values = rule.choices.map(choiceCaption).join(" | "); }
         else if (rule.minimum !== undefined) { values = `${rule.minimum}–${rule.maximum}${rule.unit ? ` ${rule.unit}` : ""}`; }
-        const fallback = rule.default === undefined || rule.default === "" ? "" : `; default ${rule.default}`;
-        return `  ${field} — ${rule.name}: ${values}${fallback}`;
+        else if (rule.kind === "text") { values = `text, up to ${rule.maximumLength} UTF-16 code units${rule.multiline ? "; JSON \\n for line breaks" : ""}`; }
+        return `  ${field} — ${rule.name}: ${values}`;
     }).join("\n");
 }
+const JSON_INDENT = 2;
+const DEFAULT_SETTINGS = Object.fromEntries(Object.entries(SETTINGS_SCHEMA).map(([field, rule]) => [field, rule.default]));
 const RUN_LINE = "osascript -l JavaScript Stamp-Images.jxa -- --headless <settings.json> <path…>";
 function usage() {
     return `${APP_NAME} ${VERSION}\n\nUsage:\n  osascript -l JavaScript Stamp-Images.jxa -- --help\n` +
         "  osascript -l JavaScript Stamp-Images.jxa -- --version\n" +
         `  ${RUN_LINE}\n\nSettings (all ${Object.keys(SETTINGS_SCHEMA).length} required):\n` +
-        `${settingsHelp()}\n\nPaths may be absolute or relative to the working directory. Settings must be UTF-8 JSON without a BOM.\n`;
+        `${settingsHelp()}\n\nExample settings JSON (all required fields):\n${JSON.stringify(DEFAULT_SETTINGS, null, JSON_INDENT)}\n\nPaths may be absolute or relative to the working directory. Settings must be UTF-8 JSON without a BOM.\n`;
 }
 function requestError(code, message, diagnostic = null) {
     return new OperationError(message, { issues: [{ code, stage: "request", message, ...(diagnostic ? { diagnostic } : {}) }] });
@@ -46,6 +48,13 @@ function usageError(args) {
 
 function settingsFileError(path, cause, diagnostic = null) {
     return requestError("settings-file", `Settings file ${cause}: ${path}`, diagnostic);
+}
+
+function settingsPath(value) {
+    if (!hasUrlScheme(value)) { return value; }
+    const path = decodeFileUrl(value);
+    if (!path) { throw settingsFileError(value, "is not a valid local file URL"); }
+    return path;
 }
 
 function parsedJSON(text, path) {
@@ -95,7 +104,7 @@ function readSettingsFile(context, path) {
 }
 
 function absolutePath(value, context) {
-    if (/^[a-z][a-z\d+.-]*:\/\//iu.test(value)) { return value; }
+    if (hasUrlScheme(value)) { return value; }
     const { objc, ns, manager } = context;
     const path = value.startsWith("/") ? value : `${String(objc.unwrap(manager.currentDirectoryPath))}/${value}`;
     const standardized = String(objc.unwrap(ns(path).stringByStandardizingPath));
@@ -116,15 +125,16 @@ function cliCommand(input, injected = null) {
     if (args[0] !== "--headless" || args.length < minimumArguments || args.some((argument) => argument === "")) {
         throw usageError(args);
     }
+    const configurationPath = settingsPath(args[1]);
     const io = injected ?? nativeCliIO();
-    const configuration = io.read(io.absolute(args[1]));
+    const configuration = io.read(io.absolute(configurationPath));
     const firstImageIndex = 2;
     return { kind: "run", invocation: { ...configurationValues(configuration),
         inputItems: args.slice(firstImageIndex).map((path) => io.absolute(path)) } };
 }
 
 function showCliCommand(kind) {
-    writeReceipt(kind === "help" ? usage() : `${APP_NAME} ${VERSION}\n`);
-    return exitCli(0);
+    const written = writeStdout(kind === "help" ? usage() : `${APP_NAME} ${VERSION}\n`);
+    return exitCli(written ? 0 : 1);
 }
 module.exports = { cliCommand, showCliCommand, jsonConfiguration, configurationValues, usage };

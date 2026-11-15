@@ -2,15 +2,36 @@
 
 ## [Unreleased]
 
-- The `empty-stamp` receipt issue now uses stage `settings` and field `customText`; update consumers that match its previous request stage.
-- Command-line typefaces are checked before tools and image inspection; invalid requests with missing tools now exit 2 instead of 3.
-- Licensed under AGPL-3.0-only instead of MPL-2.0: distributing the script or a modified version requires offering its corresponding source; see [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md).
-- Contributors must use Node 26.13.1 and npm 12.2.2; restore refreshed development dependencies with `npm ci --ignore-scripts`.
-- Contributions are accepted under the [contribution terms](CONTRIBUTING.md#contribution-terms), which also let Ervins Strauhmanis license them commercially.
-- Cancel from filesystem, tool and workspace probes now stops the run instead of being treated as a negative probe result.
-- Command-line help now declares Helvetica Neue as the typeface default; settings files still require `font`.
-- Ultra HDR JPEG photos are accepted and stamped as standard-range JPEG copies without gain maps; capture metadata and color profiles are retained.
-- Unsupported-content refusals use clearer wording and include the vips loader in receipt diagnostics and completion Details.
+- Licensed under AGPL-3.0-only instead of MPL-2.0; distributors must offer corresponding source. See [commercial licensing](LICENSE-COMMERCIAL.md).
+- The `empty-stamp` issue now uses stage `settings` and field `customText`; update consumers matching the old request stage.
+- Setup refusals use receipt state `invalid` and exit 3; invalid command-line settings/typefaces are checked first and exit 2.
+- Canceled runs now always exit 1, including setup. SIGINT/SIGTERM and cancellation in filesystem, tool or workspace probes request the same cooperative stop.
+- `elapsed` now counts image processing only, excluding setup, source inspection, settings and review dialogs.
+- Receipts add `locationRetained` for validated finished copies and omit stack traces; selection entries are documented with `reason`, issues with `message`.
+- Contributors need Node 26.13.1 and npm 12.2.2; restore development dependencies with `npm ci --ignore-scripts`.
+- Contributions follow the [contribution terms](CONTRIBUTING.md#contribution-terms), which also permit commercial licensing by Ervins Strauhmanis.
+- Older ExifTool builds may need upgrading; setup checks every tool and names unusable overrides and their values.
+- Destination folders need read/search access to verify stored filename bytes; uncertain names retain validated originals without guessing paths or deleting claimed copies.
+- Missing or replaced originals are not removed or claimed as recoveries; confirmed outputs survive cleanup faults while affected workspaces are retained.
+- Prefix relative names that look like URI schemes, such as `photo:one.jpg`, with `./`. Local `file://` settings URLs work; remote or malformed URLs are refused.
+- Folder runs save copies beside each original. Legal stems and matching extension case are kept; long names are shortened with room for collision numbers.
+- Decoder warnings refuse damaged JPEGs and truncated HEIC. Unsupported content names its loader; missing paths precede format checks and folder special files are reported.
+- All output formats retain standard capture metadata, GPS and profiles with upright dimensions; Ultra HDR JPEGs become standard-range JPEG copies without gain maps.
+- Original IPTC packets keep timezone absence; bounded Nikon directory repair preserves supported camera metadata without replacing conflicting target facts.
+- Image measurements use fewer tool launches while retaining geometry, color, alpha and independent fallback checks.
+- 16-bit gray images work. Neutral stamps keep gray; colored stamps retain 16-bit precision, and expansion notes describe the actual saved representation.
+- Invalid GPS references or components are reported and left off the stamp; copies preserve original GPS values without normalization or fail safely.
+- Missing and invalid metadata have distinct notes and survive later failures. Blank/all-zero dates are missing; impossible/nonzero year-0000 dates are invalid, with first-valid capture-date fallback.
+- Completion reminds you when embedded GPS remains, including caption-only copies and visible coordinates switched off; this does not assert that coordinates are valid.
+- Invisible-only captions are refused; CRLF normalizes, and mixed-direction multiline text keeps its direction and left alignment. Excessive margins stay on the selected side.
+- Text size hints explain image pixels and larger-photo sizing. Color emoji may appear as silhouettes, and some native weight names can render alike.
+- Localized Font Book family and face names are accepted when they identify an installed catalog choice.
+- The Quick Action uses Finder’s current selection when no input files are supplied.
+- Forms mark every invalid control consistently in both appearances. Scrollable details and captions open at the top and preserve later user scrolling.
+- Stop is a push button with disabled “Stopping…” feedback. Plain stops omit empty Details, and reports omit empty diagnostic values.
+- Recovered copies have a “Saved elsewhere” section with their cause; failed-only headings and separate cleanup issues keep saved work clear.
+- Command-line reports precede JSON; stdout failures, including help/version, exit 1 with one plain stderr line while confirmed copies stay saved.
+- Command-line help offers complete settings JSON, caption limits and newline syntax; missing/wrong-type errors name JSON keys, and tool messages use a fixed locale.
 
 ## [2.0.0] - 2026-11-05
 

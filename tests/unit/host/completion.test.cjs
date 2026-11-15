@@ -53,7 +53,7 @@ test("nothing made at all is still said plainly", () => {
 });
 
 test("the reason a folder refused the copy is in the words a person reads", () => {
-    assert.match(detailOf(runOutcome([recovered()])), /requested destination\. Its folder cannot be written \(permission denied\)\./u);
+    assert.match(detailOf(runOutcome([recovered()])), /Saved elsewhere:[\s\S]*Permission denied/u);
     const unknown = { ...DENIED, diagnostic: { state: "unknown" } };
 
     assert.match(detailOf(runOutcome([recovered([unknown])])), /requested destination\.\n\n/u);
@@ -83,7 +83,7 @@ test("each rejection is printed once", () => {
 test("a crowded stamp says where it went", () => {
     const result = runOutcome([{ source: "/a.jpg", state: "saved", output: "/o.jpg", issues: [], crowded: true }]);
 
-    assert.match(detailOf(result), /placed against the opposite edge/u);
+    assert.match(detailOf(result), /keep the stamp on the selected side/u);
 });
 
 test("the detail lists copies by folder, then notes, failures, refusals and the version", () => {
@@ -93,15 +93,15 @@ test("the detail lists copies by folder, then notes, failures, refusals and the 
         { source: "/t/a.jpg", state: "saved", output: "/t/a_stamped.jpg", issues: [], missingMetadata: ["GPS coordinates"] },
         { source: "/t/b.jpg", state: "saved", output: "/t/b_stamped.jpg", issues: [], crowded: true },
         { source: "/u/c.jpg", state: "failed", issues: [{ code: "damaged", message: "This image is damaged or incomplete." }] },
-        { source: "/u/d.jpg", state: "nothing-to-stamp", reason: "it does not say when it was taken", issues: [] },
+        { source: "/u/d.jpg", state: "nothing-to-stamp", reason: "It does not say when it was taken.", issues: [] },
         { source: "/u/e.jpg", state: "not-started", issues: [] }
     ], [{ path: "/u/x.gif", name: "x.gif", reason: "This file is not a supported format." }]);
 
     assert.equal(detail(result), [
-        "2 saved; 1 failed; 1 with nothing to stamp; 1 not started; 1 not included; 1 copy missing requested metadata.",
+        "2 saved; 1 failed; 1 with nothing to stamp; 1 not started; 1 not included; 1 copy with requested metadata left off.",
         "Saved to:\n/t/\na_stamped.jpg\nb_stamped.jpg",
-        "Notes:\na_stamped.jpg: Missing requested metadata: GPS coordinates.\nb_stamped.jpg: The margin is larger than this image has room for, so the stamp was placed against the opposite edge.",
-        "Nothing to stamp:\n/u/d.jpg: it does not say when it was taken",
+        "Notes:\na_stamped.jpg: Missing requested metadata: GPS coordinates.\nb_stamped.jpg: The margin was reduced to keep the stamp on the selected side of the image.",
+        "Nothing to stamp:\n/u/d.jpg: It does not say when it was taken.",
         "Could not stamp:\n/u/c.jpg: This image is damaged or incomplete.",
         "Not started: 1",
         "Not included from your selection:\n/u/x.gif: This file is not a supported format.",
@@ -155,4 +155,27 @@ test("unmapped-loader evidence is available through completion Details", () => {
     showCompletion(app, result);
     assert.match(seen[1], /loader: gifload/u);
     assert.doesNotMatch(seen[0], /gifload/u);
+});
+
+test("a plain stopped run offers no empty Details and empty values stay out of diagnostic text", () => {
+    const { diagnosticLines, showCompletion } = require("../../../src/host/quick-action/completion.js");
+    const { createFakeApp } = require("./fake-app.cjs");
+    const app = createFakeApp();
+    const stopped = runOutcome([{ source: "/a.jpg", state: "canceled", issues: [{ code: "canceled", stage: "stamping", message: "User canceled.", diagnostic: { command: "", stack: "private stack" } }], missingMetadata: [] }]);
+    assert.equal(describe(stopped), "Stopped. No stamped copy was created.");
+    showCompletion(app, stopped);
+    assert.deepEqual(app.dialogs[0].options.buttons, ["OK"]);
+    assert.deepEqual(diagnosticLines({ empty: "", whitespace: " \t", missing: undefined, none: null, zero: 0, disabled: false }), ["zero: 0", "disabled: false"]);
+});
+
+test("meaningful per-image diagnostic fields retain Details even when their values are zero or false", () => {
+    const { showCompletion } = require("../../../src/host/quick-action/completion.js");
+    const { createFakeApp } = require("./fake-app.cjs");
+    const app = createFakeApp();
+    const answers = ["Details", "Back", "OK"];
+    app.displayDialog = (message, options) => { app.dialogs.push({ message, options }); return { buttonReturned: answers.shift() }; };
+    const result = runOutcome([{ source: "/a.jpg", state: "failed", issues: [], diagnostics: [{ code: "inspection-detail", count: 0, retry: false, empty: "", stack: "private" }], missingMetadata: [] }]);
+    showCompletion(app, result);
+    assert.match(app.dialogs[1].message, /count: 0\nretry: false/u);
+    assert.doesNotMatch(app.dialogs[1].message, /empty:|private/u);
 });

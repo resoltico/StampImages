@@ -28,6 +28,8 @@ function jobOn(settings = {}, host = createFakeHost({ files: ["/a/one.jpg"] })) 
 
 function grayPhotograph(host, settings) {
     host.bands = 1;
+    host.stored = "gray";
+    host.headerFacts.set(`${WORKSPACE}/color-1.v`, { bands: 3, stored: "color" });
 
     return { ...makeJob(host, settings), workspace: WORKSPACE };
 }
@@ -38,7 +40,7 @@ test("a gray photograph and a gray caption meet where they already are", () => {
     // photograph was.
     const host = createFakeHost({ files: ["/a/one.jpg"] });
     const job = grayPhotograph(host, { textColor: "#FFFFFF", outlineColor: "#202020" });
-    const met = prepareColorSpace(job, { path: `${WORKSPACE}/oriented-1.v` }, GRAY, "1");
+    const met = prepareColorSpace(job, { path: `${WORKSPACE}/oriented-1.v`, bands: 1, interpretation: "b-w", hasAlpha: false }, GRAY, "1");
 
     assert.equal(met.expanded, false);
     assert.equal(met.profile, GRAY, "and the color is still moved into its space");
@@ -51,10 +53,12 @@ test("a gray photograph and a gray caption meet where they already are", () => {
 test("a gray photograph and a colored caption meet in sRGB", () => {
     const host = createFakeHost({ files: ["/a/one.jpg"] });
     const job = grayPhotograph(host, { textColor: "#FF3B30", outlineWidth: 0 });
-    const met = prepareColorSpace(job, { path: `${WORKSPACE}/oriented-1.v` }, GRAY, "1");
+    const met = prepareColorSpace(job, { path: `${WORKSPACE}/oriented-1.v`, bands: 1, interpretation: "b-w", hasAlpha: false }, GRAY, "1");
 
     assert.equal(met.expanded, true);
     assert.equal(met.photograph.path, `${WORKSPACE}/color-1.v`);
+    assert.equal(met.photograph.interpretation, "srgb");
+    assert.equal(met.photograph.bands, 3);
     assert.deepEqual(
         met.profile,
         { path: "", failed: false },
@@ -68,14 +72,14 @@ test("a photograph with no profile is read into sRGB by its numbers", () => {
     const host = createFakeHost({ files: ["/a/one.jpg"] });
     const job = grayPhotograph(host, { textColor: "#FF3B30", outlineWidth: 0 });
 
-    prepareColorSpace(job, { path: `${WORKSPACE}/oriented-1.v` }, { path: "", failed: false }, "1");
+    prepareColorSpace(job, { path: `${WORKSPACE}/oriented-1.v`, bands: 1, interpretation: "b-w", hasAlpha: false }, { path: "", failed: false }, "1");
 
     assert.ok(host.commands.some((command) => command.includes("'colourspace'")));
 });
 
 test("a color photograph is left exactly as it is", () => {
     const { host, job } = jobOn({ textColor: "#FF3B30" });
-    const met = prepareColorSpace(job, { path: `${WORKSPACE}/oriented-1.v` }, GRAY, "1");
+    const met = prepareColorSpace(job, { path: `${WORKSPACE}/oriented-1.v`, bands: 3, interpretation: "srgb", hasAlpha: false }, GRAY, "1");
 
     assert.equal(met.expanded, false);
     assert.equal(
@@ -157,6 +161,16 @@ test("a decode that fails for another reason keeps its own description", () => {
         assert.equal(error.issues, undefined);
         assert.match(error.message, /No space left on device/u);
 
+        return true;
+    });
+});
+
+test("a bare JPEG entropy warning is damaged even without a loader suffix", () => {
+    const { job } = jobOn({}, createFakeHost({ files: ["/a/one.jpg"], failures: [["'autorot'", new Error("VipsJpeg: Corrupt JPEG data: premature end of data segment")]] }));
+    assert.throws(() => preparePhotograph(job, imageOf("/a/one.jpg"), "1", []), (error) => {
+        assert.equal(error.issues[0].code, "damaged");
+        assert.equal(error.issues[0].stage, "stamping");
+        assert.match(error.issues[0].diagnostic.message, /premature end of data segment/u);
         return true;
     });
 });

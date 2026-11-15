@@ -142,12 +142,12 @@ test("every mapped loader states whether it carries an HDR gain map", () => {
     }
 });
 
-test("an unmapped loader is refused with its name, while a vector or missing loader is not an image", () => {
+test("every nonempty unmapped loader is refused with its name while absence is not an image", () => {
     const { raw: gif } = readMetadata(base.replace("jpegload", "gifload"));
     assert.deepEqual([gif.format, gif.gainMap, gif.problem, gif.diagnostic], [undefined, false, "unsupported-content", { loader: "gifload" }]);
-    for (const loader of ["svgload", "pdfload", "pdfload_source"]) {
+    for (const loader of ["svgload", "pdfload", "pdfload_source", "constructor", "__proto__"]) {
         const { raw } = readMetadata(base.replace("jpegload", loader));
-        assert.deepEqual([raw.problem, raw.diagnostic], ["not-an-image", undefined], loader);
+        assert.deepEqual([raw.problem, raw.diagnostic], ["unsupported-content", { loader }], loader);
     }
     const { raw: missing } = readMetadata("width: 1\n");
     assert.deepEqual([missing.problem, missing.diagnostic], ["not-an-image", undefined]);
@@ -172,4 +172,12 @@ test("batch headers accept single-digit dimensions and wider separators", () => 
     const paths = ["/a.png", "/b.png"];
     const block = (path, gap) => `${path}:${gap}4x2 uchar, 3 bands, srgb, jpegload\n${base.split("\n").filter(Boolean).map((line) => `${path}: ${line}`).join("\n")}\n`;
     assert.deepEqual(readMetadataBatch(`${block(paths[0], " ")}${block(paths[1], "  ")}`, paths).map((entry) => entry.raw.width), [400, 400]);
+});
+
+
+test("the actual anchored lowercase HEIF domain identifies damaged content without suffix guessing", () => {
+    assert.equal(headerFailureCode("/tmp/cut.heic: bad seek\nheif: Invalid input: No meta box"), "damaged");
+    assert.equal(headerFailureCode("Command failed.\rvipsheader: heif: Insufficient data"), "damaged");
+    assert.equal(headerFailureCode("/tmp/heif: text is not a known file format"), "not-an-image");
+    assert.equal(headerFailureCode("VipsForeignLoad: text.heic is not a known file format"), "not-an-image");
 });

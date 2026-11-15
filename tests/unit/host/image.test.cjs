@@ -49,7 +49,7 @@ test("an even band count is the alpha, after orientation", () => {
 
     for (const [bands, hasAlpha] of [[1, false], [2, true], [3, false], [4, true]]) {
         assert.equal(
-            readPhotograph(jobOn({ bands }).job, "/a/one.jpg", "1").hasAlpha,
+            readPhotograph(jobOn({ bands, stored: bands <= 2 ? "gray" : "color" }).job, "/a/one.jpg", "1").hasAlpha,
             hasAlpha,
             `${bands} bands`
         );

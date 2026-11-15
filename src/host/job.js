@@ -7,7 +7,7 @@ function destinationFor(image) { return `${image.folder}${nameFrom(image.origina
 function runJob(job, images) {
     return executeJob({
         begin: (image, index) => job.progress.beginning(index + 1, image.originalName),
-        stamp: (image, index) => stampOne(job, image, String(index + 1)),
+        stamp: (image, index, metadataReady) => stampOne(job, image, String(index + 1), metadataReady),
         publish(path, image) {
             const saved = publishImage(job, path, destinationFor(image));
             saved.issues = [...new Set([...job.cleanupIssues.splice(0), ...saved.issues])];

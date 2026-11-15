@@ -151,4 +151,6 @@ vips abs "$WORK/line-diff.v" "$WORK/line-abs.v"
 test "$(vips max "$WORK/line-abs.v" | cut -d. -f1)" -le 1 ||
     fail "a right-to-left caption changed how the date line is drawn"
 
+node "$ROOT/tools/build-probe.mjs" tests/integration/localized-font-probe.js "$WORK/localized-catalog.jxa"
+node "$ROOT/tests/integration/localized-font.cjs" "$SCRIPT" "$WORK/localized" "$WORK/bidi.png" "$WORK/ltr.json" "$WORK/localized-catalog.jxa"
 printf 'macOS typeface integration passed\n'

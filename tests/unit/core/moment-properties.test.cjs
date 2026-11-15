@@ -43,6 +43,7 @@ test("a day past the end of its month is not a date", () => {
 
 test("a field outside its range is not a moment", () => {
     const BROKEN = fc.oneof(
+        fc.record({ field: fc.constant("year"), value: fc.constant(0) }),
         fc.record({
             field: fc.constant("month"),
             value: fc.oneof(fc.constant(0), fc.integer({ min: 13, max: 99 }))
@@ -53,7 +54,7 @@ test("a field outside its range is not a moment", () => {
     );
 
     fc.assert(fc.property(WHEN, BROKEN, (date, { field, value }) => {
-        const fields = { ...fieldsOf(date), [field]: pad(value) };
+        const fields = { ...fieldsOf(date), [field]: pad(value, field === "year" ? 4 : 2) };
 
         assert.equal(readMoment(exif(fields)), null, exif(fields));
     }));

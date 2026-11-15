@@ -41,6 +41,7 @@ const INSTALLED_TOOLS = [
  * the shape the adapter parses.
  */
 function setupAnswer(host, command) {
+    if (command.includes("image-tool-probe")) { return host.vipsheaderProbe ?? "1"; }
     if (command.includes("nonexistent-stamp-images-preflight")) {
         return host.preflight ?? "VipsForeignLoad: file does not exist";
     }
@@ -80,6 +81,7 @@ function filesystemFor(settings) {
 function measurements(settings) {
     return {
         bands: settings.bands ?? 3,
+        headerFacts: new Map(Object.entries(settings.headerFacts ?? {})),
         width: settings.width,
         height: settings.height,
         stampWidth: settings.stampWidth,

@@ -9,6 +9,7 @@ const {
     isExiftoolUsable,
     describeSetupProblems
 } = require("../../../src/backend/preflight.js");
+function usable(answer) { return isExiftoolUsable(answer, "/x"); }
 
 test("the vips probe uses the flags the pipeline depends on", () => {
     const argv = buildVipsProbeArgv("/opt/homebrew/bin/vips");
@@ -16,6 +17,7 @@ test("the vips probe uses the flags the pipeline depends on", () => {
     assert.ok(argv.includes("--size=down"));
     assert.ok(argv.includes("--export-profile"));
     assert.ok(argv.includes("srgb"));
+    assert.ok(argv.includes("--fail-on=warning"));
     // Against a path that cannot exist, so nothing is written anywhere.
     assert.ok(argv.some((argument) => /nonexistent/u.test(argument)));
 });
@@ -29,7 +31,8 @@ test("the exiftool probe asks a question it can answer", () => {
     const argv = buildExiftoolProbeArgv("/opt/homebrew/bin/exiftool");
 
     assert.ok(argv.includes("-json"));
-    assert.ok(argv.includes("-n"));
+    assert.ok(argv.includes("StructFormat=JSONQ"));
+    assert.equal(argv.includes("-n"), false);
     assert.equal(argv[0], "/opt/homebrew/bin/exiftool");
     assert.equal(argv.at(-1), "/opt/homebrew/bin/exiftool", "asked about itself");
 });
@@ -54,15 +57,15 @@ test("exiftool is usable only when it answers in the shape that is read", () => 
     // Not a substring of the output but the thing the adapter will do with
     // it: a list, with an entry, naming the file it was asked about.
     assert.equal(
-        isExiftoolUsable('[{"SourceFile": "/opt/homebrew/bin/exiftool"}]'),
+        usable('[{"SourceFile":"/x","FileName":{"ExifToolVersion":"13.55"}}]'),
         true
     );
-    assert.equal(isExiftoolUsable("Error: File not found - /x.jpg"), false);
-    assert.equal(isExiftoolUsable("[]"), false, "an empty list answers nothing");
-    assert.equal(isExiftoolUsable('{"SourceFile": "/x"}'), false, "not a list");
-    assert.equal(isExiftoolUsable('[{"FileType": "JPEG"}]'), false, "no source named");
-    assert.equal(isExiftoolUsable(""), false);
-    assert.equal(isExiftoolUsable("warning\n[{}]"), false, "not parseable");
+    assert.equal(usable("Error: File not found - /x.jpg"), false);
+    assert.equal(usable("[]"), false, "an empty list answers nothing");
+    assert.equal(usable('{"SourceFile": "/x"}'), false, "not a list");
+    assert.equal(usable('[{"FileType": "JPEG"}]'), false, "no source named");
+    assert.equal(usable(""), false);
+    assert.equal(usable("warning\n[{}]"), false, "not parseable");
 });
 
 test("a missing tool is described plainly, with the command that fixes it", () => {
@@ -132,5 +135,50 @@ test("the vips probe names a file that cannot exist", () => {
         for (const argument of argv) {
             assert.notEqual(argument, "", "an empty argument is not a probe");
         }
+    }
+});
+
+test("vipsheader is tested with a bounded built-in RGB PNG and an exact width response", () => {
+    const { VIPSHEADER_PROBE_IMAGE, buildVipsheaderProbeArgv, isVipsheaderUsable } = require("../../../src/backend/preflight.js");
+    const { Buffer } = require("node:buffer");
+    const bytes = Buffer.from([...VIPSHEADER_PROBE_IMAGE.matchAll(/\\0(?<octal>[0-7]{3})/gu)].map((match) => Number.parseInt(match.groups.octal, 8)));
+    assert.equal(bytes.length, 69);
+    assert.deepEqual([...bytes.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+    assert.equal(bytes.readUInt32BE(16), 1);
+    assert.equal(bytes.readUInt32BE(20), 1);
+    assert.deepEqual(buildVipsheaderProbeArgv("/tools/header"), ["/tools/header", "-f", "width"]);
+    for (const text of ["1", "1\n", " 1 "]) { assert.equal(isVipsheaderUsable(text), true); }
+    for (const text of ["", "900", "width: 1", "1\nwarning", "not an image"]) { assert.equal(isVipsheaderUsable(text), false); }
+});
+
+test("override-only refusals give override advice without an unrelated Homebrew install", () => {
+    const override = { tool: "vipsheader", kind: "unusable", override: { name: "STAMP_IMAGES_VIPSHEADER", value: "/usr/bin/false" } };
+    const text = describeSetupProblems([override], true);
+    assert.match(text, /STAMP_IMAGES_VIPSHEADER="\/usr\/bin\/false"/u);
+    assert.match(text, /Fix or unset the named tool overrides, then try again\./u);
+    assert.doesNotMatch(text, /brew|Homebrew/u);
+    assert.equal(describeSetupProblems([{ tool: "vipsheader", kind: "unusable" }], true).includes("vipsheader could not read the built-in PNG image."), true);
+    const mixed = describeSetupProblems([override, { tool: "vips", kind: "missing" }], true);
+    assert.match(mixed, /Fix or unset/u);
+    assert.match(mixed, /brew install exiftool vips/u);
+});
+
+test("setup advice preserves distinct missing, upgrade and override actions with one blank line per section", () => {
+    assert.equal(describeSetupProblems([{ tool: "vips", kind: "missing" }], true), "Setup needed.\n\n- vips is not installed.\n\nRun this in Terminal:\n\nbrew install exiftool vips");
+    assert.equal(describeSetupProblems([{ tool: "vips", kind: "missing" }, { tool: "exiftool", kind: "unusable", flags: "answer JSON" }], true), "Setup needed.\n\n- vips is not installed.\n- exiftool is installed but does not do what this needs: answer JSON.\n\nRun this in Terminal:\n\nbrew install exiftool vips\nbrew upgrade exiftool vips");
+    const override = { tool: "vipsheader", kind: "unusable", override: { name: "STAMP_IMAGES_VIPSHEADER", value: "/usr/bin/false" } };
+    assert.equal(describeSetupProblems([override], true), 'Setup needed.\n\n- STAMP_IMAGES_VIPSHEADER="/usr/bin/false" is not usable as vipsheader. vipsheader could not read the built-in PNG image.\n\nFix or unset the named tool overrides, then try again.');
+    assert.equal(describeSetupProblems([override, { tool: "vips", kind: "missing" }], true), 'Setup needed.\n\n- STAMP_IMAGES_VIPSHEADER="/usr/bin/false" is not usable as vipsheader. vipsheader could not read the built-in PNG image.\n- vips is not installed.\n\nFix or unset the named tool overrides, then try again.\n\nRun this in Terminal:\n\nbrew install exiftool vips');
+});
+
+
+test("override context preserves each tool-specific capability reason without installation advice", () => {
+    for (const [tool, flags, reason] of [["vipsheader", "read PNG", "vipsheader could not read the built-in PNG image."],
+        ["vips", "--fail-on=warning", "vips is installed but does not do what this needs: --fail-on=warning."],
+        ["exiftool", "structured raw JSON", "exiftool is installed but does not do what this needs: structured raw JSON."]]) {
+        const message = describeSetupProblems([{ tool, kind: "unusable", flags, override: { name: "TOOL_OVERRIDE", value: "/tool\npath" } }], false);
+        assert.ok(message.includes('TOOL_OVERRIDE="/tool\\npath"'));
+        assert.ok(message.includes(reason));
+        assert.doesNotMatch(message, /brew install|brew upgrade|brew\.sh/u);
     }
 });

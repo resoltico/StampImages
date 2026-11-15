@@ -122,4 +122,5 @@ assert_contains "$PIPE" "not a regular file" "a pipe is refused as what it is"
 assert_contains "$PIPE" '"code":"special-file"' "with a code a receipt reader can use"
 assert_not_contains "$PIPE" "a link;" "and not as a link"
 
+node "$ROOT/tests/integration/folder-names.cjs" "$SCRIPT" "$WORK/nested-destinations" "$WORK/settings.json" "$WORK/first.png"
 printf 'macOS selection passed\n'

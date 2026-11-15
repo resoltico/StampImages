@@ -1,4 +1,5 @@
 "use strict";
+const { isWorkspaceName } = require("./workspaces.js");
 const { summarizeRun } = require("./run-summary.js");
 const { basename } = require("./paths.js");
 const { supportedFormatList } = require("./formats.js");
@@ -12,6 +13,7 @@ function madeSentence(counts) {
     return [saved, recovered].filter(Boolean).join(" ") || "No stamped copy was created.";
 }
 function headline(summary) {
+    if (summary.kind === "setup") { return "A required tool is missing or unusable."; }
     if (summary.kind === "invalid") { return "The request is invalid."; }
     if (summary.kind === "nothing-to-stamp") { return "Nothing to stamp."; }
     let prefix = "Finished with issues. ";
@@ -33,17 +35,19 @@ function countsLine(summary) {
     const labels = { saved: "saved", recovered: "recovered", failed: "failed", "nothing-to-stamp": "with nothing to stamp", canceled: "canceled", "not-started": "not started" };
     const parts = Object.entries(labels).filter(([key]) => summary.counts[key] > 0).map(([key, label]) => `${summary.counts[key]} ${label}`);
     if (summary.refusals.length > 0) { parts.push(`${summary.refusals.length} not included`); }
-    if (summary.missing > 0) { parts.push(`${plural(summary.missing, "copy", "copies")} missing requested metadata`); }
+    if (summary.missing > 0) { parts.push(`${plural(summary.missing, "copy", "copies")} with requested metadata left off`); }
     return parts.length > 0 ? `${parts.join("; ")}.` : "";
 }
 function notesOf(image) {
+    const absent = (image.missingMetadata ?? []).filter((field) => !image.invalidMetadata?.includes(field));
     return [
-        image.missingMetadata?.length ? `Missing requested metadata: ${image.missingMetadata.join(", ")}.` : "",
+        absent.length ? `Missing requested metadata: ${absent.join(", ")}.` : "",
         image.invalidMetadata?.length ? `Recorded but not valid, so left off: ${image.invalidMetadata.join(", ")}.` : "",
-        image.crowded ? "The margin is larger than this image has room for, so the stamp was placed against the opposite edge." : "",
-        image.expanded ? "Written in color to preserve the caption color." : "",
+        image.crowded ? "The margin was reduced to keep the stamp on the selected side of the image." : "",
+        image.expanded ? "Written in color from a grayscale original." : "",
         image.substituted ? "Some characters are not in the chosen typeface and were drawn in another one." : "",
-        image.unconverted ? "The caption color could not be converted to the image's color profile." : ""
+        image.unconverted ? "The caption color could not be converted to the image's color profile." : "",
+        image.locationRetained ? "Embedded GPS metadata was retained." : ""
     ].filter(Boolean);
 }
 
@@ -55,21 +59,41 @@ function describeRejections(rejected, heading = "Not included from your selectio
     return section(heading, rejected.map((entry) => `${entry.path || entry.name}: ${entry.reason}`));
 }
 
+function recoveryReason(cause) {
+    const diagnostic = cause?.diagnostic;
+    const reason = [diagnostic?.message, ...(Array.isArray(diagnostic) ? diagnostic : []), cause ? issueLines(cause)[0] : undefined]
+        .find((value) => typeof value === "string" && value.trim());
+    return reason ? reason.replace(/\s+/gu, " ").trim() : "The requested destination was not used.";
+}
+
+function problemLine({ source, issue }) {
+    return `${source ? `${source}: ` : ""}${issue.message}${issue.diagnostic?.path ? `\n${issue.diagnostic.path}` : ""}`;
+}
+
 function summaryText(summary, includeHeadline = true) {
     const saved = summary.saved.map((group) => `${group.folder}\n${group.outputs.map((output) => output.name).join("\n")}`).join("\n\n");
+    const problems = summary.problems.map(problemLine);
     return [includeHeadline ? headline(summary) : "", countsLine(summary), saved ? `Saved to:\n${saved}` : "",
         section("Notes:", summary.notes.flatMap((image) => notesOf(image).map((note) => `${basename(image.output ?? image.source)}: ${note}`))),
         section("Nothing to stamp:", summary.nothingToStamp.map((image) => `${image.source}: ${image.reason}`)),
         section("Could not stamp:", summary.failures.map((image) => `${image.source}: ${image.issues.flatMap(issueLines).join(" ") || image.state}`)),
-        section("Recovered copies:", summary.recoveries.map((image) => `${image.recovery}\n${[image.source, ...image.issues.flatMap(issueLines)].join("\n")}`)),
+        section("Saved elsewhere:", summary.recoveries.map((image) => `${image.recovery}\n${recoveryReason(image.cause)}`)),
         summary.notStarted > 0 ? `Not started: ${summary.notStarted}` : "", describeRejections(summary.refusals),
-        ...summary.issues.filter((issue) => issue.code !== "no-images").map((issue) => `${issue.message}${issue.diagnostic?.path ? `\n${issue.diagnostic.path}` : ""}`),
+        ["invalid", "setup"].includes(summary.kind) ? problems.join("\n\n") : section("Other issues:", problems),
         summary.excluded.length > 0 ? `Left alone: ${plural(summary.excluded.length, "stamped copy", "stamped copies")} from an earlier run.` : ""
     ].filter(Boolean).join("\n\n");
 }
 
+function workspaceText(diagnostics) {
+    const workspaces = diagnostics.filter((entry) => entry.stage === "workspace" &&
+        ["workspace-retained", "workspace-reclaimed", "workspace-unreadable"].includes(entry.code) &&
+        typeof entry.message === "string" && entry.message.trim() &&
+        typeof entry.diagnostic?.path === "string" && isWorkspaceName(basename(entry.diagnostic.path)));
+    return workspaces.length > 0 ? `Temporary work:\n${workspaces.map((entry) => `${entry.message}\n${entry.diagnostic.path}`).join("\n\n")}` : "";
+}
+
 function reportText(result, includeHeadline = true) {
-    return [summaryText(summarizeRun(result), includeHeadline), result.elapsed ? `Elapsed: ${result.elapsed}` : ""].filter(Boolean).join("\n\n");
+    return [summaryText(summarizeRun(result), includeHeadline), workspaceText(result.diagnostics), result.elapsed ? `Elapsed: ${result.elapsed}` : ""].filter(Boolean).join("\n\n");
 }
 function noImagesHeadline(rejected) { return rejected.length > 0 ? "Nothing to stamp." : "No images selected."; }
 function describeNoImages(rejected, includeHeadline = true) {

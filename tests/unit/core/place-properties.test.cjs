@@ -24,6 +24,7 @@ const { coordinates } = require("../../../src/core/metadata.js");
 
 // The bound metadata.js holds a longitude to, which is the wider of the two:
 // the same code writes both halves of a place.
+const { exifFacts } = require("./gps-fixtures.cjs");
 const WORLD = 180;
 const DEGREES = fc.double({ min: -WORLD, max: WORLD, noNaN: true });
 
@@ -35,26 +36,21 @@ const WRITTEN =
 const DECIMAL = /^-?\d+\.\d{4}$/u;
 
 test("whatever a photograph says, the place is refused or written whole", () => {
-    // Any value exiftool could hand over -- a number of any size, text, or
-    // nothing -- goes through the same bounding a run does.
-    const TAG = fc.oneof(fc.double(), fc.string(), fc.constant(undefined));
-
-    fc.assert(fc.property(
-        fc.record({ GPSLatitude: TAG, GPSLongitude: TAG }),
-        (facts) => {
-            const found = coordinates(facts);
-
+    const valid = fc.record({ latitude: fc.integer({ min: 0, max: 89 }), longitude: fc.integer({ min: 0, max: 179 }),
+        minutes: fc.integer({ min: 0, max: 59 }), tenths: fc.integer({ min: 0, max: 599 }), south: fc.boolean(), west: fc.boolean() });
+    fc.assert(fc.property(valid, fc.jsonValue(), (parts, arbitrary) => {
+        const latitude = [[String(parts.latitude), "1"], [String(parts.minutes), "1"], [String(parts.tenths), "10"]];
+        const longitude = [[String(parts.longitude), "1"], [String(parts.minutes), "1"], [String(parts.tenths), "10"]];
+        const facts = exifFacts(latitude, longitude, parts.south ? "S" : "N", parts.west ? "W" : "E");
+        const positive = coordinates(facts);
+        assert.notEqual(positive, null, "every generated valid raw coordinate must reach formatting");
+        for (const found of [positive, coordinates(exifFacts(arbitrary, longitude))]) {
             if (found !== null) {
-                for (const half of place.sexagesimalPlace(found).split(" ")) {
-                    assert.match(half, WRITTEN);
-                }
-
-                for (const half of place.decimalPlace(found).split(", ")) {
-                    assert.match(half, DECIMAL);
-                }
+                for (const half of place.sexagesimalPlace(found).split(" ")) { assert.match(half, WRITTEN); }
+                for (const half of place.decimalPlace(found).split(", ")) { assert.match(half, DECIMAL); }
             }
         }
-    ));
+    }));
 });
 
 test("no minute is the sixtieth of a degree, and no second of a minute", () => {

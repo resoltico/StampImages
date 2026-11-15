@@ -10,11 +10,6 @@ const { rectOf } = require("./appkit-bridge.js");
 
 const HINT_FONT_SIZE = 11;
 
-// A tint rather than a solid fill, and drawn from the system red so it
-// follows the appearance the alert is rendered in. A fixed pink would be
-// wrong the moment the form appears in dark mode.
-const INVALID_TINT_ALPHA = 0.18;
-
 // NSTextAlignmentRight. On macOS right is 1 and center is 2, which is the
 // reverse of UIKit, so the constant is named rather than written inline.
 const ALIGN_RIGHT = 1;
@@ -87,11 +82,7 @@ function addPopupItem(popup, option) {
  * the layout, which knows whether a row is in the problem list; this only
  * draws it.
  */
-function markInvalid(ns, control) {
-    control.drawsBackground = true;
-    control.backgroundColor = ns.NSColor.systemRedColor
-        .colorWithAlphaComponent(INVALID_TINT_ALPHA);
-}
+const { markInvalid } = require("./invalid-fill.js");
 
 function markHintInvalid(ns, hint) {
     hint.textColor = ns.NSColor.systemRedColor;

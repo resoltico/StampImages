@@ -1,4 +1,5 @@
 "use strict";
+const { sameName } = require("../core/typeface.js");
 // The shared font catalog is the command line's only AppKit dependency.
 function fontBridge(objc, ns) {
     if (!objc || !ns) { return null; }
@@ -58,6 +59,45 @@ function postScriptFrom(bridge, name) {
     return row ? { family, face: String(row.js[FACE_NAME].js) } : null;
 }
 
+// Mandatory descriptor keys match installed aliases without native fallback fonts.
+function matching(bridge, name, key) {
+    const { ns } = bridge;
+    const attributes = ns.NSDictionary.dictionaryWithObjectForKey(ns(name), key);
+    const descriptor = ns.NSFontDescriptor.fontDescriptorWithFontAttributes(attributes);
+    const found = descriptor.matchingFontDescriptorsWithMandatoryKeys(ns.NSSet.setWithObject(key));
+    return found && !found.isNil() ? found.js ?? [] : [];
+}
+function familyOf(bridge, families, descriptor) {
+    const candidate = String(bridge.objc.unwrap(descriptor.objectForKey(bridge.ns.NSFontFamilyAttribute)));
+    return families.find((each) => sameName(each, candidate)) ?? null;
+}
+function postScriptOf(bridge, descriptor) {
+    return String(bridge.objc.unwrap(descriptor.objectForKey(bridge.ns.NSFontNameAttribute)));
+}
+function visibleAlias(bridge, families, name, matches) {
+    if (matches.length !== 1) { return null; }
+    const [selected] = matches;
+    const postScript = postScriptOf(bridge, selected);
+    if (sameName(name, postScript)) { return null; }
+    const family = familyOf(bridge, families, selected);
+    if (!family) { return null; }
+    const { ns, objc } = bridge;
+    const rows = ns.NSFontManager.sharedFontManager.availableMembersOfFontFamily(ns(family)).js ?? [];
+    const row = rows.find((each) => String(objc.unwrap(each.js[POSTSCRIPT_NAME])) === postScript);
+    return row ? { family, face: String(objc.unwrap(row.js[FACE_NAME])) } : null;
+}
+function localizedNamed(bridge, families, value) {
+    const name = String(value).trim();
+    if (name === "") { return null; }
+    const visible = matching(bridge, name, bridge.ns.NSFontVisibleNameAttribute);
+    if (visible.length > 0) { return visibleAlias(bridge, families, name, visible); }
+    const members = matching(bridge, name, bridge.ns.NSFontFamilyAttribute);
+    if (members.length === 0 || members.some((each) => sameName(name, postScriptOf(bridge, each)))) { return null; }
+    const canonical = members.map((each) => familyOf(bridge, families, each));
+    const [family] = canonical;
+    return family && canonical.every((each) => each === family) ? { family, face: "" } : null;
+}
+
 /*
  * Whether the chosen face has a glyph for a character. Pango draws a
  * character the face lacks in another face without saying so -- measured,
@@ -101,6 +141,7 @@ function catalog(bridge = fontBridge(globalThis.ObjC, globalThis.$)) {
 
             return faces.get(family);
         },
+        localizedNamed: (name) => localizedNamed(bridge, families, name),
         postScriptNamed: (name) => postScriptFrom(bridge, name),
         coverageOf: (typeface) => coverageFrom(bridge, typeface)
     };

@@ -2,6 +2,7 @@
 // Native CLI transport keeps receipt JSON and prose on separate UTF-8 streams.
 // Exit status is explicit; no osascript return-value or thrown-error wrapper.
 
+const brokenPipe = require("./broken-pipe.js");
 const UTF8_ENCODING = 4;
 
 /*
@@ -28,13 +29,23 @@ function writeReceipt(text, ns = foundation(globalThis.ObjC, globalThis.$), stde
         return false;
     }
 
-    (stderr ? ns.NSFileHandle.fileHandleWithStandardError : ns.NSFileHandle.fileHandleWithStandardOutput).writeData(
-        ns(String(text)).dataUsingEncoding(UTF8_ENCODING)
-    );
+    const handle = stderr ? ns.NSFileHandle.fileHandleWithStandardError : ns.NSFileHandle.fileHandleWithStandardOutput;
+    const data = ns(String(text)).dataUsingEncoding(UTF8_ENCODING);
+    return brokenPipe.withoutSigpipe(() => { handle.writeData(data); return true; });
+}
 
-    return true;
+function writeStdout(text, write = writeReceipt) {
+    try { if (write(text) !== false) { return true; } }
+    catch {
+        // The caller cannot rely on a complete stdout payload.
+    }
+    try { write("Standard output could not be completed.\n", undefined, true); }
+    catch {
+        // A second broken stream cannot replace the output failure.
+    }
+    return false;
 }
 
 function exitCli(code) { ObjC.import("stdlib"); return $.exit(code); }
 
-module.exports = { exitCli, writeReceipt };
+module.exports = { exitCli, writeReceipt, writeStdout };

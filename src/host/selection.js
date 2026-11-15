@@ -74,9 +74,9 @@ function isFolder(root) {
 /*
  * Path order, which puts an ancestor before anything inside it: a folder's
  * path is a proper prefix of every path under it, and a prefix sorts first.
- * So the images in an overlap belong to the outermost folder that was
- * selected, whichever order the selection arrived in. Identities are unique
- * by now, so there is no third case.
+ * Traverse an ancestor before its descendants so its walk establishes the
+ * identity ledger first. Output destinations still come from each original's
+ * parent, independently of which overlapping request discovered it.
  */
 function byPath(left, right) {
     return left.path < right.path ? -1 : 1;

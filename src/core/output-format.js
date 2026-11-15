@@ -17,14 +17,14 @@ const SDR_JPEG = "[Q=90,keep=exif:icc:xmp:iptc]";
 
 const { SUPPORTED_FORMATS } = require("./formats.js");
 function sourceFormat(path) {
-    const extension = splitExtension(String(path)).extension.toLowerCase();
-    return { extension, format: SUPPORTED_FORMATS.find((item) => item.extensions.includes(extension.slice(1))) };
+    const { extension } = splitExtension(String(path));
+    return { extension, format: SUPPORTED_FORMATS.find((item) => item.extensions.includes(extension.slice(1).toLowerCase())) };
 }
 function extensionFor(path, family, compression) {
     const source = sourceFormat(path);
     const format = SUPPORTED_FORMATS.find((item) => (item.family ?? item.name) === family && (!item.compression || item.compression === compression));
     if (!format) { throw new IssueError("The actual image encoding could not be confirmed as a supported format."); }
-    return format.extensions.includes(source.extension.slice(1)) ? source.extension : `.${format.extensions[0]}`;
+    return format.extensions.includes(source.extension.slice(1).toLowerCase()) ? source.extension : `.${format.extensions[0]}`;
 }
 function outputFormat(path, gainMap) {
     const { extension, format } = sourceFormat(path);

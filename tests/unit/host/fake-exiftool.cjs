@@ -20,7 +20,7 @@ function describe(state, argv) {
     }
 
     return JSON.stringify([
-        { SourceFile: path, ...state.metadata.get(path) }
+        { SourceFile: path, FileName: { ExifToolVersion: "13.55", ...state.metadata.get(path) } }
     ]);
 }
 
@@ -53,4 +53,15 @@ function extractProfile(state, argv) {
     return "";
 }
 
-module.exports = { describe, extractProfile };
+function copied(state, argv) {
+    const parameters = argv.filter((value, index) => argv[index - 1] === "-userParam");
+    const source = parameters.find((value) => value.startsWith("source=")).slice("source=".length);
+    const target = parameters.find((value) => value.startsWith("target=")).slice("target=".length);
+    const written = state.files.has(target);
+    const gps = Object.keys(state.metadata.get(source) ?? {}).filter((key) => /^(?:EXIF|XMP)GPS/u.test(key));
+    return JSON.stringify([{ SourceFile: source, FileName: { ExifToolVersion: "13.55", TargetFile: target,
+        WriteStatus: written ? "1" : "0", RawWriteStatus: written ? "1" : "0", VerifiedGPS: written ? "1" : "0",
+        GPSInputCount: String(gps.length), RequiredSetCount: "13", FailureCount: written ? "0" : "1",
+        FailureText: written ? "" : "No private candidate.", RebuiltTargetWebPExif: "0" } }]);
+}
+module.exports = { describe, extractProfile, copied };

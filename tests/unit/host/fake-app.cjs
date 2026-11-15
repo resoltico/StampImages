@@ -120,7 +120,7 @@ function createFakeApp(responses = []) {
 }
 
 function failing(message) {
-    return new Error(message);
+    return Object.assign(new Error(message), { errorNumber: 1 });
 }
 
 module.exports = { createFakeApp, failing };

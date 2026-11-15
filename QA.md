@@ -48,18 +48,64 @@ live in package.json, package-lock.json, .node-version and mise.toml; clean rest
 
 The integration scripts under `tests/integration/` exercise real stamp pixels,
 placement, supported formats, source hashes, date/GPS content, alpha, profiles,
-grayscale color expansion, fonts, damaged/multi-image refusal, selection,
+grayscale color expansion, fonts, damaged/multi-image refusal (including JPEG decoder warnings), selection,
 publication collisions, cross-volume/card behavior, measurement failures and
-native form geometry/accessibility in both appearances. `resources.sh` checks
+native form geometry/accessibility in both appearances. Stop exposes an actual
+accessibility button, acknowledges its action with disabled feedback and fits its
+full title; a toggle control is the negative control. Invalid controls are checked
+with native pixels against the same controls with only their error tint removed. Actual modal checks verify
+first-line initialization and later user scrolling for details, notes and multiline
+captions; caption documents use clip-local coordinates. Callback tests guard
+registration, teardown and reentrant native visibility getters. `resources.sh` checks
 confirmed temporary recovery and dead/live/retained/unreadable workspace ownership;
-`concurrency.sh` checks 12 two-process publication rounds. CLI and lifecycle probes
+`concurrency.sh` checks 12 two-process publication rounds. Copy naming checks
+compare receipt basename buffers to raw directory entries for NFC/NFD, case and
+normalization collisions, hidden/legal stem spelling, matching extension case,
+long byte-budget names, and accented recovery names. Folder checks verify copies
+beside each original, per-folder collisions and exclusions on repeated runs.
+Ownership controls cover name-readback refusal, original replacement during copy
+and after name lookup, explicit no-recovery faults and confirmed-output retention. CLI and lifecycle probes
 also cover strict settings, statuses, source capture, recovery and cancellation.
+Signal controller unit checks cover native adapter ownership and complete saved
+signal actions. Actual command-line SIGINT/SIGTERM/repeat runs must produce canceled
+receipts with exit 1 and preserve confirmed output/source integrity. Separate native
+controller probes establish explicit-close restoration; real command-line exit
+reclaims process-owned monitoring resources instead of returning through JS finally.
+Content checks generate blank/all-zero, year-zero and impossible calendar dates,
+verify distinct absence/invalid notes, and compare actual stamp pixels with
+caption-only or valid-secondary controls while keeping every source unchanged.
+Prior-workspace notes must exclude unrelated and temporary-root scan diagnostics.
+The color suite also checks neutral/active/inactive-outline palettes against gray8,
+non8bit-derived gray16, alpha and tagged profiles. It compares every channel outside
+an independent stamp region with the source or explicit ICC reference and verifies
+actual chromatic stamp pixels, saved bit depth/profile and reported expansion.
+CLI transport checks include a genuinely closed descriptor and FIFO readers closed
+before child exec for deterministic EPIPE on stdout/stderr. Source bytes and every
+published image are independently checked; working stderr gets exactly one plain
+stdout-failure line, and broken stderr still allows the single receipt attempt.
 An unavailable typeface combined with a missing tool and unavailable source must
 report `invalid` with exit 2 before source admission.
 `hdr.sh` checks synthetic Ultra HDR admission, visible stamped SDR JPEGs with no
 gain map/MPF or stale HDR XMP declarations, retained EXIF/GPS, ICC, XMP and IPTC,
 orientations 6/8, damaged HDR
-and unmapped-loader diagnostics. A metadata-write failure must publish no copy.
+and unmapped-loader diagnostics. A metadata-write failure must publish no copy. `formats.sh` also checks EXIF/GPS
+and ICC across six encoder families, upright 6/8 JPEG/TIFF pixels and EXIF/XMP
+dimensions, opaque alpha and an independent unmarked-source caption control.
+
+`formats.sh` runs [capture-copy-regressions.cjs](tests/integration/capture-copy-regressions.cjs)
+with literal, generated IIM packets and Nikon external Scan directories. Checks
+preserve packet bytes and timezone absence in two timezones, exercise joint
+producer repairs, and compare source hashes, pixels, profiles and raw vendor facts.
+Conflicting target facts and unavailable input facts must refuse. Malformed ICC
+has its own accepted/unconverted positive. Cached old wrapper diagnostics may be
+resolved; fresh post-repair wrapper warnings and same-text excluded-group probe
+diagnostics must refuse. Process-success
+write, readback and late-reader failure controls must publish no copy.
+
+`measurements.sh` retains its source/page/scalar guards and exercises the live
+staged-file `-a` path with positive-but-wrong width and band facts: each must refuse
+without publication. Duplicate dumps must use all four independent scalar fields
+and preserve alpha. These checks establish fidelity, not batch throughput.
 
 Probe entrypoints import production modules and are built by
 `tools/build-probe.mjs` using the production scoped bundler. Ordinary end-to-end tests invoke
@@ -110,3 +156,37 @@ Shortcuts, or retain a clearly named harness with its inputs for repeatable rete
 Record artifact hash, host, commands, statuses, full failures and skips outside
 operational documentation. Passing evidence applies only to its actual inputs and
 artifact; a changed build needs new evidence.
+
+Localized-font checks compare Japanese full-name, style and bare-family outputs
+to canonical Hiragino Sans pixels, verify distinct W3/W6 native font identities, and refuse unknown,
+hidden and PostScript names without publishing a copy.
+
+Mixed-direction layout checks compare complete RTL punctuation/number rasters with
+single-line controls for LF and Unicode paragraph separators, while checking left
+alignment. Oversized-margin checks compare actual stamp pixel bounds with native
+mask geometry at all six positions, including whole-pixel selected-half limits.
+
+Raw-GPS regressions generate thirteen malformed/valid cases in all six supported
+formats without Python, downloads or field fixtures. Independent native Raw/Rational
+and physical TIFF tag checks verify the inputs and unchanged decoded pixels. Actual
+copy builders retain raw values or refuse unsupported wire structures; product
+copies omit invalid visible coordinates while retaining known input classifications.
+Live native setter/readback failures and missing/wrong target echoes publish nothing.
+
+The receipt schema checks actual serialized native ledgers alongside existing pixel,
+source, ownership and exit checks. It distinguishes issue `message` from entry
+`reason`, known input omissions from finished-copy booleans, and rejects nested
+stack keys. GPS-retention tests include disabled coordinates, caption-only copies,
+invalid-but-retained GPS, metadata-free copies and unbuilt failures.
+
+Invalid-control styling is checked on the actual composed parent region with only
+the native tint view removed as the negative control. Every control keeps its
+geometry, native content, mouse target, focus and accessibility; the long invalid
+caption is checked again after scrolling its real clip.
+
+Stored-name prerequisites rename an owned Node-created ASCII file through ordinary
+C rename, then check source-backed readback against independent raw Buffer names,
+dev/inode/size and payload. They run on local, HFS+, FAT32 and exFAT even when a
+provider lacks exclusive claims. Existing real-image/collision/recovery assertions
+remain. Required close-only and primary-plus-close failures stop later images while
+preserving causes, validated originals, claimed entries and every cleanup issue.

@@ -12,11 +12,11 @@ const {
     stagedPath
 } = require("../../../src/core/naming.js");
 
-test("a name is the source stem, sanitized, with what the caller adds", () => {
+test("a name preserves the legal source stem and appends the supplied suffix", () => {
     // The extension comes from the caller because what is written is not
     // always what was read: a HEIC photograph can be saved as a JPEG.
     assert.equal(nameFrom("IMG_1234.HEIC", "_stamped.jpg"), "IMG_1234_stamped.jpg");
-    assert.equal(nameFrom("A:B.png", "_stamped.png"), "A_B_stamped.png");
+    assert.equal(nameFrom("A:B.png", "_stamped.png"), "A:B_stamped.png");
     assert.equal(nameFrom("holiday.jpeg", "_T.jpeg"), "holiday_T.jpeg");
 });
 
@@ -95,4 +95,15 @@ test("what a walk left alone is said once, for the run", () => {
     // else underneath.
     assert.match(describeExcluded([{}, {}]), /^Left alone: 2 stamped copies/u);
     assert.match(describeExcluded([{}]), /^Left alone: 1 stamped copy/u);
+});
+
+
+test("leading dots, underscores and spaces stay exact while controls cannot create output lines", () => {
+    for (const stem of [".explicit", "__name__", " spaced ", "trailing.", "A:B", "a\\b", "مرحبا", "rīga"]) {
+        assert.equal(nameFrom(`${stem}.jpg`, "_stamped.jpg"), `${stem}_stamped.jpg`);
+    }
+    assert.equal(nameFrom("line\nbreak.JPG", "_stamped.JPG"), "line_break_stamped.JPG");
+    assert.equal(nameFrom("a\r\tb.png", "_stamped.png"), "a__b_stamped.png");
+    assert.equal(nameFrom("a\u2028b.png", "_stamped.png"), "a_b_stamped.png");
+    assert.equal(nameFrom("", "_stamped.png"), "image_stamped.png");
 });

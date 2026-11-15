@@ -10,9 +10,14 @@ const { accessible } = require("./fake-controls.cjs");
  */
 
 function makeView(rect) {
-    const view = { kind: "view", rect, subviews: [] };
+    const view = { kind: "view", rect, frame: rect, subviews: [] };
 
-    view.addSubview = (child) => view.subviews.push(child);
+    view.addSubview = (child) => { child.superview = view; return view.subviews.push(child); };
+    view.addSubviewPositionedRelativeTo = (child, order, sibling) => {
+        child.superview = view; child.order = order; child.relativeTo = sibling;
+        view.subviews.splice(view.subviews.indexOf(sibling) + 1, 0, child);
+    };
+    view.setAccessibilityElement = (value) => { view.accessibilityElement = value; };
 
     return view;
 }
@@ -48,13 +53,17 @@ function makeField(rect) {
  * `stringValue`, which is the distinction the form has to get right.
  */
 function makeTextView(rect) {
-    return accessible({ kind: "textview", rect, string: "", textContainer: {} });
+    const view = accessible({ kind: "textview", rect, string: "", textContainer: {} });
+    view.scrollRangeToVisible = (range) => { view.scrolledRange = range; };
+    return view;
 }
 
 function makeScrollView(rect) {
     const scroll = { kind: "scroll", rect, contentSize: { width: rect.width, height: rect.height }, documentView: null, reflected: 0 };
 
-    scroll.contentView = { scrollToPoint(point) { scroll.scrolledTo = point; } };
+    scroll.contentView = makeView({ left: 0, bottom: 0, width: rect.width, height: rect.height });
+    scroll.contentView.scrollToPoint = (point) => { scroll.scrolledTo = point; };
+    Object.defineProperty(scroll, "documentView", { get: () => scroll.document, set: (view) => { scroll.document = view; scroll.contentView.addSubview(view); } });
     scroll.reflectScrolledClipView = () => { scroll.reflected += 1; };
 
     return scroll;
@@ -106,7 +115,8 @@ function makePopup(rect, pullsDown) {
 function makeAlert(state) {
     const alert = {
         kind: "alert",
-        window: {},
+        window: { contentView: {} },
+        layoutPasses: 0,
         buttons: [],
         accessoryView: null,
         messageText: "",
@@ -114,6 +124,7 @@ function makeAlert(state) {
     };
 
     alert.addButtonWithTitle = (title) => alert.buttons.push(title);
+    Object.defineProperty(alert, "layout", { get: () => { alert.layoutPasses += 1; return undefined; } });
     Object.defineProperty(alert, "runModal", {
         get: () => {
             state.alerts.push(alert);

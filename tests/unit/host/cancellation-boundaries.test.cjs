@@ -16,6 +16,7 @@ function boundary(front, stage = "execute", fault = { errorNumber: -128 }) {
     const shown = [];
     const progress = { diagnostics: [{ code: "observer-fault" }], close: () => undefined };
     const overrides = {
+        "./signal-controller.js": { createSignalController: () => ({ poll: () => false, close: () => undefined }) },
         "../progress.js": { createProgress: () => progress },
         "../main.js": { application: () => ({}), execute: () => { throw fault; } },
         "./surfaces.js": { openProgress: () => progress },

@@ -83,7 +83,7 @@ function faceOf(known, name) {
         }
     }
 
-    return null;
+    return known.localizedNamed?.(words.join(" ")) ?? null;
 }
 
 /*

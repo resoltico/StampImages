@@ -13,7 +13,7 @@ const PROMPTS = {
     textColor: "Color of the text:",
     outlineColor: "Color of the outline:"
 };
-const NUMBER_NAMES = { size: "Text size in points", outlineWidth: "Outline width in pixels", margin: "Margin in pixels" };
+const NUMBER_NAMES = { size: "Text size in image pixels; larger photos need larger sizes", outlineWidth: "Outline width in pixels", margin: "Margin in pixels" };
 function control(field) {
     const rule = SETTINGS_SCHEMA[field];
     return { field, label: `${rule.name}:`, prompt: rule.kind === "integer" ? `${NUMBER_NAMES[field]} (${rule.minimum}–${rule.maximum}):` : PROMPTS[field],

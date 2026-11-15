@@ -168,3 +168,17 @@ test("each refused setting carries the shared code for its kind of value", () =>
     assert.deepEqual(codes, { extra: "unknown", position: "choice", size: "integer", textColor: "color", font: "text", customText: "text" });
     assert.throws(() => readSetting("nope", 1), (error) => error.issues[0].code === "unknown");
 });
+
+
+test("shared setting issues distinguish absent fields, JSON types and semantic values", () => {
+    const { settingIssue } = require("../../../src/core/settings.js");
+    assert.deepEqual(settingIssue("size", undefined).diagnostic, { missing: true });
+    for (const [value, actualType] of [[null, "null"], [[], "array"], [{}, "object"], ["36", "string"], [false, "boolean"]]) {
+        assert.deepEqual(settingIssue("size", value).diagnostic, { expectedType: "number", actualType });
+    }
+    assert.deepEqual(settingIssue("customText", 4).diagnostic, { expectedType: "string", actualType: "number" });
+    assert.equal(settingIssue("size", 401).diagnostic, undefined);
+    assert.equal(settingIssue("font", "").diagnostic, undefined);
+    assert.equal(settingIssue("size", 36), null);
+    assert.deepEqual(settingIssue("unknown", undefined), { code: "unknown", field: "unknown", stage: "settings", message: "Unknown setting: unknown." });
+});

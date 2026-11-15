@@ -13,7 +13,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const {
     refuseUnfaithful,
-    hasAlpha,
+    colorFacts,
     kindOf,
     pagesIn
 } = require("../../../src/host/fidelity.js");
@@ -31,7 +31,7 @@ function checking(settings) {
 }
 
 test("a color photograph and a gray one are both copied faithfully", () => {
-    for (const stored of ["color", "gray", "deep"]) {
+    for (const stored of ["color", "gray", "deep", "GREY16"]) {
         assert.doesNotThrow(checking({ stored }), stored);
     }
 });
@@ -75,7 +75,7 @@ test("an even band count is the alpha, once ink is out of the question", () => {
     // Measured, because the band count alone cannot tell them apart: a CMYK
     // JPEG and a PNG with transparency both report four.
     for (const [bands, alpha] of [[1, false], [2, true], [3, false], [4, true]]) {
-        assert.equal(hasAlpha(jobOn({ bands }), "/a/one.jpg"), alpha, `${bands}`);
+        assert.equal(colorFacts(jobOn({ bands, stored: bands <= 2 ? "gray" : "color" }), "/a/one.jpg").hasAlpha, alpha, `${bands}`);
     }
 });
 
@@ -92,4 +92,18 @@ test("the reason a file is refused says which file it is about", () => {
         checking({ stored: "print" }),
         /would not be the colors it is/u
     );
+});
+
+test("the native GREY16 enum is accepted without inventing a GRAY16 alias", () => {
+    assert.equal(kindOf(jobOn({ stored: "GREY16" }), "/a/one.tif"), "GREY16");
+    assert.doesNotThrow(checking({ stored: "GREY16" }));
+    assert.throws(checking({ stored: "GRAY16" }), /not stored as color or gray/u);
+});
+
+
+test("measured final color facts require a recognized model and its matching band layout", () => {
+    for (const options of [{ stored: "", bands: 3 }, { stored: "print", bands: 4 }, { stored: "color", bands: 2 }]) {
+        assert.throws(() => colorFacts(jobOn(options), "/saved.png"), /color representation.*supported/u);
+    }
+    assert.deepEqual(colorFacts(jobOn({ stored: "GREY16", bands: 2 }), "/saved.png"), { bands: 2, interpretation: "grey16", hasAlpha: true });
 });

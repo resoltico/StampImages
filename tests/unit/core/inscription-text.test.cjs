@@ -15,10 +15,11 @@ const {
     wantsMetadata
 } = require("../../../src/core/inscription.js");
 
+const { rigaFacts } = require("./gps-fixtures.cjs");
+
 const TAKEN = {
     DateTimeOriginal: "2026:09:09 14:30:05",
-    GPSLatitude: 56.9496,
-    GPSLongitude: 24.1052
+    ...rigaFacts()
 };
 
 function settings(overrides = {}) {
@@ -74,4 +75,10 @@ test("a caption of your own is not a question for the photograph", () => {
         wantsMetadata(settings({ dateFormat: "none", coordinateFormat: "none" })),
         false
     );
+});
+
+test("caption line endings and trailing invisible lines do not add empty rendered paragraphs", () => {
+    const result = inscriptionFor({}, { dateFormat: "none", coordinateFormat: "none", customText: "A\r\nB\rC\r\n\u200b" });
+    assert.deepEqual(result.lines, ["A", "B", "C"]);
+    assert.doesNotMatch(result.text, /\r/u);
 });

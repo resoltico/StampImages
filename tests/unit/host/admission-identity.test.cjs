@@ -94,8 +94,8 @@ test("what a selected path is, is asked once", () => {
 
 test("a folder inside a selected folder is not reported as empty", () => {
     // Everything in it is already in the run by the time it is walked, which
-    // is not the same as it holding nothing -- and the images belong to the
-    // outermost folder that was selected, whichever order they arrived in.
+    // is not the same as it holding nothing. Each copy still belongs beside
+    // its original, whichever order the overlapping selections arrived in.
     const tree = treeOf({ "/Trip": ["Berlin"], "/Trip/Berlin": ["1.png"] });
 
     for (const selection of [
@@ -109,8 +109,8 @@ test("a folder inside a selected folder is not reported as empty", () => {
         );
 
         assert.deepEqual(images.map((image) => image.path), ["/Trip/Berlin/1.png"]);
-        assert.deepEqual(images.map((image) => image.folder), ["/Trip/"],
-            `the outermost selection owns it, for ${selection.join(" then ")}`);
+        assert.deepEqual(images.map((image) => image.folder), ["/Trip/Berlin/"],
+            `the original parent is the destination, for ${selection.join(" then ")}`);
         assert.deepEqual(rejected, []);
     }
 });

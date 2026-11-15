@@ -22,6 +22,16 @@ for format in jpg jpeg png tif tiff webp heic heif avif; do
     test "$BEFORE" = "$(shasum -a 256 < "$WORK/photo.$format")"
     test "$(stamped_pixels "$WORK/photo_stamped.$format" 200 270 400 130 110)" -gt 100 || fail "$format drew no caption"
 done
+vips extract_band "$WORK/source.png" "$WORK/gray.v" 0
+vips linear "$WORK/gray.v" "$WORK/gray-scaled.v" 257 0
+vips cast "$WORK/gray-scaled.v" "$WORK/gray-deep.v" ushort
+vips copy "$WORK/gray-deep.v" "$WORK/gray16.tif" --interpretation grey16
+assert_contains "$(vipsheader -f interpretation "$WORK/gray16.tif")" 'GREY16' 'fixture is native 16-bit grayscale'
+GRAY_BEFORE=$(shasum -a 256 < "$WORK/gray16.tif")
+osascript -l JavaScript "$SCRIPT" -- --headless "$WORK/settings.json" "$WORK/gray16.tif" > "$WORK/receipt" 2> "$WORK/error"
+test -f "$WORK/gray16_stamped.tif"
+test "$(vipsheader -f width "$WORK/gray16_stamped.tif")" = 600
+test "$GRAY_BEFORE" = "$(shasum -a 256 < "$WORK/gray16.tif")"
 cp "$WORK/photo.avif" "$WORK/misnamed.heic"
 osascript -l JavaScript "$SCRIPT" -- --headless "$WORK/settings.json" "$WORK/misnamed.heic" > "$WORK/receipt" 2> "$WORK/error"
 test -f "$WORK/misnamed_stamped.avif"
@@ -47,4 +57,7 @@ for file in animated.png animated.webp multiple.tif; do
     assert_contains "$(cat "$WORK/receipt")" 'multiple-images' 'multi-image content is refused'
     test ! -e "$WORK/${file%.*}_stamped.${file##*.}"
 done
+node "$ROOT/tests/integration/capture-copy-regressions.cjs" "$SCRIPT" "$WORK/capture-regressions"
+node "$ROOT/tests/integration/metadata-contract.cjs" "$SCRIPT" "$WORK"
+node "$ROOT/tests/integration/gps-contract.cjs" "$SCRIPT" "$WORK/gps-regressions"
 printf 'macOS format and animation integration passed\n'

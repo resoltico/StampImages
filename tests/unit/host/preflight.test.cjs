@@ -89,7 +89,7 @@ test("an exiftool that cannot answer in JSON is reported the same way", () => {
 
         assert.throws(() => checkTools(app), (error) => {
             assert.match(error.message, /exiftool is installed but does not do/u);
-            assert.match(error.message, /answer -json -n with readable JSON/u);
+            assert.match(error.message, /structured raw capture projection with JSONQ/u);
 
             return true;
         }, answer);
@@ -139,4 +139,31 @@ test("a failing Homebrew check is treated as Homebrew being absent", () => {
 test("a missing tool is something to install, reported as an operation issue rather than a fault", () => {
     const { issuesOf } = require("../../../src/core/outcomes.js");
     assert.throws(() => checkTools(machineWith([])), (error) => issuesOf(error, "setup")[0].code === "operation");
+});
+
+test("an unusable vipsheader refuses setup before image admission", () => {
+    const { failedRun } = require("../../../src/core/outcomes.js");
+    const { reportHeadless } = require("../../../src/host/command-line/reporting.js");
+    const app = machineWith(ALL_TOOLS, { vipsheaderProbe: "" });
+    let error = null;
+    try { checkTools(app); } catch (caught) { error = caught; }
+    assert.ok(error);
+    const result = failedRun(error);
+    assert.equal(result.state, "invalid");
+    assert.deepEqual(result.images, []);
+    assert.deepEqual(result.rejected, []);
+    const written = [];
+    assert.equal(reportHeadless(result, (text, ignored, stderr) => { if (stderr) { written.push(text); } }, (code) => code), 3);
+    assert.match(written[0], /^A required tool is missing or unusable\./u);
+    assert.doesNotMatch(written[0], /Could not stamp|No stamped copy/u);
+});
+
+test("a tool adapter programming fault is not reclassified as an invalid setup operation", () => {
+    const { failedRun } = require("../../../src/core/outcomes.js");
+    let error = null;
+    try { checkTools({ doShellScript() { throw new TypeError("broken adapter"); } }); } catch (caught) { error = caught; }
+    assert.ok(error);
+    const result = failedRun(error);
+    assert.equal(result.state, "incomplete");
+    assert.equal(result.issues[0].code, "fault");
 });

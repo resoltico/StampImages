@@ -1,0 +1,166 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Stamp Images receipt (HEADLESS.md and actual serialization)",
+  "type": "object",
+  "required": ["state", "images", "rejected", "excluded", "issues", "diagnostics"],
+  "additionalProperties": false,
+  "properties": {
+    "state": {"enum": ["complete", "incomplete", "canceled", "invalid"]},
+    "images": {"type": "array", "items": {"$ref": "#/definitions/image"}},
+    "rejected": {"type": "array", "items": {"$ref": "#/definitions/entry"}},
+    "excluded": {"type": "array", "items": {"$ref": "#/definitions/entry"}},
+    "issues": {"type": "array", "items": {"$ref": "#/definitions/issue"}},
+    "diagnostics": {"type": "array", "items": {"$ref": "#/definitions/diagnostic"}},
+    "elapsed": {"type": "string"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"state": {"const": "complete"}}, "required": ["state"]},
+      "then": {
+        "properties": {
+          "images": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "properties": {"state": {"const": "saved"}, "issues": {"type": "array", "maxItems": 0}, "missingMetadata": {"type": "array", "maxItems": 0}}
+            }
+          },
+          "rejected": {"type": "array", "maxItems": 0},
+          "issues": {"type": "array", "maxItems": 0}
+        }
+      }
+    }
+  ],
+  "definitions": {
+    "value": {
+      "anyOf": [
+        {"type": "object", "propertyNames": {"not": {"const": "stack"}}, "additionalProperties": {"$ref": "#/definitions/value"}},
+        {"type": "array", "items": {"$ref": "#/definitions/value"}},
+        {"type": "string"},
+        {"type": "number"},
+        {"type": "boolean"},
+        {"type": "null"}
+      ]
+    },
+    "diagnostic": {
+      "type": "object",
+      "required": ["code", "message"],
+      "propertyNames": {"not": {"const": "stack"}},
+      "properties": {"code": {"type": "string"}, "message": {"type": "string"}, "stage": {"type": "string"}},
+      "additionalProperties": {"$ref": "#/definitions/value"}
+    },
+    "issue": {
+      "type": "object",
+      "required": ["code", "stage", "message"],
+      "additionalProperties": false,
+      "properties": {
+        "code": {"type": "string"},
+        "stage": {"type": "string"},
+        "message": {"type": "string"},
+        "field": {"type": "string"},
+        "source": {"type": "string"},
+        "diagnostic": {"$ref": "#/definitions/value"}
+      }
+    },
+    "entry": {
+      "type": "object",
+      "required": ["path", "name", "reason", "code", "stage"],
+      "additionalProperties": false,
+      "properties": {
+        "path": {"type": "string"},
+        "name": {"type": "string"},
+        "reason": {"type": "string"},
+        "code": {"type": "string"},
+        "stage": {"type": "string"},
+        "diagnostic": {"$ref": "#/definitions/value"}
+      }
+    },
+    "image": {
+      "type": "object",
+      "required": ["source", "state", "issues", "missingMetadata"],
+      "additionalProperties": false,
+      "properties": {
+        "source": {"type": "string", "pattern": "^/"},
+        "state": {"enum": ["saved", "recovered", "nothing-to-stamp", "failed", "canceled", "not-started"]},
+        "issues": {"type": "array", "items": {"$ref": "#/definitions/issue"}},
+        "missingMetadata": {"type": "array", "uniqueItems": true, "items": {"enum": ["date/time", "GPS coordinates"]}},
+        "invalidMetadata": {"type": "array", "uniqueItems": true, "items": {"enum": ["date/time", "GPS coordinates"]}, "minItems": 1},
+        "output": {"type": "string", "pattern": "^/"},
+        "recovery": {"type": "string", "pattern": "^/"},
+        "reason": {"type": "string"},
+        "crowded": {"type": "boolean"},
+        "expanded": {"type": "boolean"},
+        "unconverted": {"type": "boolean"},
+        "substituted": {"type": "boolean"},
+        "locationRetained": {"type": "boolean"},
+        "diagnostics": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/diagnostic"}
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"state": {"const": "saved"}}, "required": ["state"]},
+          "then": {"required": ["output"], "properties": {"output": {}}},
+          "else": {"not": {"required": ["output"], "properties": {"output": {}}}}
+        },
+        {
+          "if": {"properties": {"state": {"const": "recovered"}}, "required": ["state"]},
+          "then": {"required": ["recovery"], "properties": {"recovery": {}}},
+          "else": {"not": {"required": ["recovery"], "properties": {"recovery": {}}}}
+        },
+        {
+          "if": {"properties": {"state": {"const": "nothing-to-stamp"}}, "required": ["state"]},
+          "then": {"required": ["reason"], "properties": {"reason": {}}},
+          "else": {"not": {"required": ["reason"], "properties": {"reason": {}}}}
+        },
+        {
+          "if": {"properties": {"state": {"enum": ["saved", "recovered"]}}, "required": ["state"]},
+          "then": {
+            "required": ["crowded", "expanded", "unconverted", "substituted", "locationRetained"],
+            "properties": {"crowded": {}, "expanded": {}, "unconverted": {}, "substituted": {}, "locationRetained": {}}
+          }
+        },
+        {
+          "if": {"properties": {"state": {"enum": ["nothing-to-stamp", "not-started"]}}, "required": ["state"]},
+          "then": {
+            "not": {
+              "anyOf": [
+                {"required": ["crowded"], "properties": {"crowded": {}}},
+                {"required": ["expanded"], "properties": {"expanded": {}}},
+                {"required": ["unconverted"], "properties": {"unconverted": {}}},
+                {"required": ["substituted"], "properties": {"substituted": {}}},
+                {"required": ["locationRetained"], "properties": {"locationRetained": {}}}
+              ]
+            }
+          }
+        },
+        {
+          "if": {"required": ["locationRetained"], "properties": {"locationRetained": {}}},
+          "then": {
+            "required": ["crowded", "expanded", "unconverted", "substituted"],
+            "properties": {"crowded": {}, "expanded": {}, "unconverted": {}, "substituted": {}}
+          }
+        },
+        {
+          "if": {"anyOf": [
+            {"required": ["crowded"], "properties": {"crowded": {}}},
+            {"required": ["expanded"], "properties": {"expanded": {}}},
+            {"required": ["unconverted"], "properties": {"unconverted": {}}},
+            {"required": ["substituted"], "properties": {"substituted": {}}}
+          ]},
+          "then": {"required": ["locationRetained"], "properties": {"locationRetained": {}}}
+        },
+        {
+          "if": {"required": ["invalidMetadata"], "properties": {"invalidMetadata": {"type": "array", "contains": {"const": "date/time"}}}},
+          "then": {"properties": {"missingMetadata": {"type": "array", "contains": {"const": "date/time"}}}}
+        },
+        {
+          "if": {"required": ["invalidMetadata"], "properties": {"invalidMetadata": {"type": "array", "contains": {"const": "GPS coordinates"}}}},
+          "then": {"properties": {"missingMetadata": {"type": "array", "contains": {"const": "GPS coordinates"}}}}
+        }
+      ]
+    }
+  }
+}

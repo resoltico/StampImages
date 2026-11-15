@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Real native checkbox/binding, accessibility and geometry. No modal or image preview feature.
+# Native controls, invalid tint, accessibility, geometry and actual modal scroll lifecycle.
 set -euo pipefail
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 WORK=$(mktemp -d -t StampImages-form)

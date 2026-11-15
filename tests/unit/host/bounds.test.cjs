@@ -19,6 +19,7 @@ const {
 const CONTROLS = [SIZE, MARGIN, OUTLINE_WIDTH];
 
 test("a number is offered with its bounds and a default inside them", () => {
+    assert.match(SIZE.prompt, /image pixels; larger photos need larger sizes/u);
     for (const control of [SIZE, MARGIN, OUTLINE_WIDTH]) {
         const value = Number(control.defaultAnswer);
 

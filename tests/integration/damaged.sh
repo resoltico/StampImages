@@ -39,6 +39,12 @@ cut_short() {
 settings_file "$WORK/config.json" "Riga"
 solid "$WORK/whole.jpg" 900 600 "#235789"
 solid "$WORK/whole.png" 900 600 "#235789"
+corrupt_jpeg_entropy "$WORK/whole.jpg" "$WORK/entropy.jpg"
+# Preserve a readable header and demonstrate the warning-only defect.
+vips avg "$WORK/entropy.jpg[fail_on=error]" >/dev/null
+if vips avg "$WORK/entropy.jpg[fail_on=warning]" >/dev/null 2>&1; then
+    fail "entropy fixture does not trigger the warning threshold"
+fi
 cut_short "$WORK/whole.jpg" "$WORK/cut.jpg" 55
 cut_short "$WORK/whole.png" "$WORK/cut.png" 55
 
@@ -55,13 +61,13 @@ test "$(vipsheader -f width "$WORK/cut.png")" = 900 ||
 # ---------------------------------------------------------------------------
 
 if stamp "$WORK/config.json" \
-    "$WORK/whole.jpg" "$WORK/cut.jpg" "$WORK/whole.png" "$WORK/cut.png"; then
+    "$WORK/whole.jpg" "$WORK/cut.jpg" "$WORK/entropy.jpg" "$WORK/whole.png" "$WORK/cut.png"; then
     fail "a run that could not stamp everything reported complete success"
 fi
 
 RECEIPT=$(cat "$WORK/receipt")
 
-for damaged in cut.jpg cut.png; do
+for damaged in cut.jpg entropy.jpg cut.png; do
     assert_contains "$RECEIPT" "/$damaged\"" "the receipt names $damaged"
     test ! -e "$WORK/${damaged%.*}_stamped.${damaged##*.}" ||
         fail "a copy was published from $damaged"

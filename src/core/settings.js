@@ -1,7 +1,7 @@
 "use strict";
 const { IssueError } = require("./errors.js");
 const { normalizeColor } = require("./color.js");
-const { contentProblem } = require("./stamp-content.js");
+const { contentProblem, normalizeCustomText } = require("./stamp-content.js");
 const { resolved } = require("./typeface-refusal.js");
 const CUSTOM_TEXT_LIMIT = 500;
 // A NUL cannot cross argv; unpaired surrogates are incomplete Unicode, not caption text.
@@ -9,14 +9,14 @@ const CUSTOM_TEXT_LIMIT = 500;
 const UNRENDERABLE_TEXT = /\u0000|[\uD800-\uDFFF]/u;
 function choiceRule(name, labels) { const choices = Object.entries(labels).map(([value, label]) => ({ value, label })); return { kind: "choice", name, default: choices[0].value, choices }; }
 function integerRule(rule) {
-    return { kind: "integer", ...rule, hint: `${rule.minimum}–${rule.maximum} ${rule.unit}${rule.note ? `, ${rule.note}` : ""}` };
+    return { kind: "integer", ...rule, hint: `${rule.minimum}–${rule.maximum} ${rule.hintUnit ?? rule.unit}${rule.note ? `, ${rule.note}` : ""}` };
 }
 const SETTINGS_SCHEMA = Object.freeze({
     dateFormat: choiceRule("Date/time format", { "iso-minutes": "2026-09-09 14:30", "iso-date": "2026-09-09", "long-date": "September 9, 2026", none: "Do not stamp the date" }),
     coordinateFormat: choiceRule("Coordinate format", { none: "Do not stamp the coordinates", decimal: "56.9496, 24.1052", sexagesimal: "56°56'58.6\"N 24°6'18.7\"E" }),
     customText: { kind: "text", name: "Custom text", maximumLength: CUSTOM_TEXT_LIMIT, multiline: true, default: "" },
     font: { kind: "typeface", name: "Typeface", default: "Helvetica Neue", hint: "or type a name", suggestions: ["Helvetica Neue", "Arial", "Verdana", "Avenir Next", "Gill Sans", "Georgia", "Palatino", "Baskerville", "Menlo", "Courier New"] },
-    size: integerRule({ name: "Text size", minimum: 8, maximum: 400, unit: "pt", default: 36 }),
+    size: integerRule({ name: "Text size", minimum: 8, maximum: 400, unit: "pt", hintUnit: "pixels", default: 36, note: "increase for larger photos" }),
     textColor: { kind: "color", name: "Text color", default: "#FFFFFF", hint: "or type #RRGGBB", presets: ["#FFFFFF", "#000000", "#FFD400", "#FF3B30"] },
     outlineWidth: integerRule({ name: "Outline", minimum: 0, maximum: 20, unit: "px", default: 2, note: "0 for none" }),
     outlineColor: { kind: "color", name: "Outline color", default: "#202020", hint: "or type #RRGGBB", presets: ["#202020", "#000000", "#FFFFFF"] },
@@ -28,10 +28,11 @@ function isSettingsRecord(value) { return Boolean(value) && typeof value === "ob
 function textIssue(rule, value) {
     if (typeof value !== "string") { return `${rule.name} must be text.`; }
     if (rule.kind === "typeface") { return value.trim() === "" ? `${rule.name}: name a face to draw with.` : ""; }
-    if (UNRENDERABLE_TEXT.test(value)) { return "Custom text contains a null character or incomplete Unicode text. Remove it or paste the text again."; }
-    return value.length > rule.maximumLength ? `${rule.name} must be ${rule.maximumLength} characters or fewer.` : "";
+    const text = normalizeCustomText(value);
+    if (UNRENDERABLE_TEXT.test(text)) { return "Custom text contains a null character or incomplete Unicode text. Remove it or paste the text again."; }
+    return text.length > rule.maximumLength ? `${rule.name} must be ${rule.maximumLength} characters or fewer.` : "";
 }
-function settingIssue(field, value) {
+function settingValueIssue(field, value) {
     const rule = Object.hasOwn(SETTINGS_SCHEMA, field) ? SETTINGS_SCHEMA[field] : null;
     let code = rule?.kind;
     let message = "";
@@ -45,9 +46,24 @@ function settingIssue(field, value) {
     } else { code = "text"; message = textIssue(rule, value); }
     return message ? { field, code, stage: "settings", message } : null;
 }
+function settingType(value) {
+    if (value === null) { return "null"; }
+    return Array.isArray(value) ? "array" : typeof value;
+}
+
+function settingIssue(field, value) {
+    const issue = settingValueIssue(field, value);
+    if (!issue || !Object.hasOwn(SETTINGS_SCHEMA, field)) { return issue; }
+    if (value === undefined) { return { ...issue, diagnostic: { missing: true } }; }
+    const expectedType = SETTINGS_SCHEMA[field].kind === "integer" ? "number" : "string";
+    const actualType = settingType(value);
+    return actualType === expectedType ? issue : { ...issue, diagnostic: { expectedType, actualType } };
+}
+
 function normalizedValue(field, value) {
     const rule = SETTINGS_SCHEMA[field];
     if (rule.kind === "color") { return normalizeColor(value, rule.name); }
+    if (rule.kind === "text") { return normalizeCustomText(value); }
     return rule.kind === "typeface" ? value.trim() : value;
 }
 function readSetting(field, value) {

@@ -19,37 +19,24 @@ function buildCompositeArgv(vipsPath, over, outputPath, at) {
         "over"
     ];
 
-    return at
+    const positioned = at
         ? [...argv, "--x", String(at.left), "--y", String(at.top)]
         : argv;
+    return over.compositingSpace
+        ? [...positioned, "--compositing-space", over.compositingSpace]
+        : positioned;
 }
 
 /*
- * The photograph, and the policy this reads it under.
- *
- * This is the one stage that decodes the file that was selected, and it is
- * where this program stops taking a tool's exit status as evidence of what it
- * was asked to do. libvips is permissive by default: measured on 8.18.6, a
- * JPEG or a PNG cut off inside its image data is salvaged into a partial
- * picture and vips exits zero. Every check after this one then passes -- the
- * copy exists, it is an image, it is the size the photograph said it was --
- * so half a photograph gets a name and a place in somebody's folder.
- *
- * `error` is the level that covers truncation and serious decoding errors.
- * `warning` would also refuse files that merely have a quirk, which is a
- * different decision about what counts as a photograph.
- *
- * It rides on the path because autorot is not a load operation and has no
- * flag of its own: vips reads a loader's settings off the end of the path it
- * is given, exactly as it reads an encoder's off the end of the path it is
- * told to write. Measured: vips tries the whole string as a filename before
- * it splits the trailing group off, so a photograph whose own name ends in
- * brackets is still read as itself.
+ * Refuse decoder warnings as damage. JPEG entropy corruption can be reported
+ * only as a warning while decoding still succeeds with incomplete pixels.
+ * Apply the same threshold to the runtime loader and the capability probe.
  */
-const FAIL_ON_DAMAGE = "[fail_on=error]";
+const DAMAGE_THRESHOLD = "warning";
+const FAIL_ON_DAMAGE = `--fail-on=${DAMAGE_THRESHOLD}`;
 
 function readingPath(sourcePath) {
-    return `${sourcePath}${FAIL_ON_DAMAGE}`;
+    return `${sourcePath}[fail_on=${DAMAGE_THRESHOLD}]`;
 }
 
 /*
@@ -70,4 +57,4 @@ function buildFlattenArgv(vipsPath, inputPath, outputPath) {
     return [vipsPath, "flatten", inputPath, outputPath, "--background=255,255,255"];
 }
 
-module.exports = { readingPath, buildCompositeArgv, buildOrientArgv, buildFlattenArgv };
+module.exports = { FAIL_ON_DAMAGE, readingPath, buildCompositeArgv, buildOrientArgv, buildFlattenArgv };

@@ -32,7 +32,7 @@ test("receipts use separate streams and exact statuses without an osascript erro
     const result = runOutcome([{ source: "/source.png", state: "saved", output: "/out.png", issues: [] }]);
     const written = [];
     assert.equal(reportHeadless(result, (text, ignored, stderr) => written.push({ text, stderr }), (code) => code), 0);
-    assert.equal(JSON.parse(written[0].text).images[0].output, "/out.png"); assert.equal(written[1].stderr, true);
+    assert.equal(JSON.parse(written[1].text).images[0].output, "/out.png"); assert.equal(written[0].stderr, true);
     assert.equal(exitCode({ ...result, state: "invalid" }), 2);
     assert.equal(exitCode(runOutcome([], [], [], [{ code: "operation", stage: "setup", message: "missing vips" }])), 3);
     assert.equal(exitCode(runOutcome()), 1);
@@ -51,7 +51,7 @@ test("field regression: stopped and partial completion expose unfinished counts 
     assert.match(detailOf(stopped).split("\n\n")[0], /1 saved; 1 canceled; 1 not started/u);
     const partial = runOutcome([{ source: "/a", state: "saved", output: "/out", issues: [], missingMetadata: ["date/time"] }]);
     assert.match(describe(partial), /issues/u);
-    assert.match(detailOf(partial).split("\n\n")[0], /1 copy missing requested metadata/u);
+    assert.match(detailOf(partial).split("\n\n")[0], /1 copy with requested metadata left off/u);
 });
 
 test("a usage error says what was wrong and the one line that would be right, not the whole help", () => {
@@ -71,14 +71,14 @@ test("a usage error says what was wrong and the one line that would be right, no
     }
 });
 
-test("help lists each setting with its values, captions that add something, and its default", () => {
+test("help lists accepted values separately from its complete JSON example", () => {
     const help = usage();
 
-    assert.match(help, /\n {2}dateFormat — Date\/time format: iso-minutes \(2026-09-09 14:30\) \| iso-date \(2026-09-09\) \| long-date \(September 9, 2026\) \| none \(Do not stamp the date\); default iso-minutes\n/u);
-    assert.match(help, /\n {2}position — Position: bottom-right \| bottom-left \| top-right \| top-left \| bottom-center \| top-center; default bottom-right\n/u);
-    assert.match(help, /\n {2}size — Text size: 8–400 pt; default 36\n/u);
-    assert.match(help, /\n {2}customText — Custom text: text\n/u);
-    assert.match(help, /\n {2}font — Typeface: text; default Helvetica Neue\n/u);
+    assert.match(help, /\n {2}dateFormat — Date\/time format: iso-minutes \(2026-09-09 14:30\) \| iso-date \(2026-09-09\) \| long-date \(September 9, 2026\) \| none \(Do not stamp the date\)\n/u);
+    assert.match(help, /\n {2}position — Position: bottom-right \| bottom-left \| top-right \| top-left \| bottom-center \| top-center\n/u);
+    assert.match(help, /\n {2}size — Text size: 8–400 pt\n/u);
+    assert.match(help, /\n {2}customText — Custom text: text, up to 500 UTF-16 code units; JSON \\n for line breaks\n/u);
+    assert.match(help, /\n {2}font — Typeface: text\n/u);
     assert.match(help, /Paths may be absolute or relative to the working directory\./u);
 });
 
@@ -87,11 +87,96 @@ test("the command-line report separates sections with one blank line and ends wi
     const result = { ...runOutcome([{ source: "/a.jpg", state: "saved", output: "/o/a_stamped.jpg", issues: [], missingMetadata: [] }]), elapsed: "2 seconds" };
 
     reportHeadless(result, (text, unused, stderr) => written.push({ text, stderr }), () => 0);
-    assert.equal(JSON.parse(written[0].text).elapsed, "2 seconds");
-    assert.equal(written[1].text, "Created 1 stamped copy.\n\n1 saved.\n\nSaved to:\n/o/\na_stamped.jpg\n\nElapsed: 2 seconds\n");
-    assert.doesNotMatch(written[1].text, /Stamp Images \d/u, "no version line on the command line");
+    assert.equal(JSON.parse(written[1].text).elapsed, "2 seconds");
+    assert.equal(written[0].text, "Created 1 stamped copy.\n\n1 saved.\n\nSaved to:\n/o/\na_stamped.jpg\n\nElapsed: 2 seconds\n");
+    assert.doesNotMatch(written[0].text, /Stamp Images \d/u, "no version line on the command line");
     const empty = [];
 
     reportHeadless({ ...runOutcome(), state: "complete", images: [] }, (text) => empty.push(text), () => 0);
-    assert.doesNotMatch(empty[1], /0 saved/u, "zero counts are not printed");
+    assert.doesNotMatch(empty[0], /0 saved/u, "zero counts are not printed");
+});
+
+
+test("required help JSON is complete, valid and has no per-field default promises", () => {
+    const help = usage();
+    const example = /Example settings JSON \(all required fields\):\n(?<json>\{[\s\S]*?\n\})/u.exec(help);
+    assert.ok(example);
+    const values = JSON.parse(example.groups.json);
+    assert.deepEqual(values, { dateFormat: "iso-minutes", coordinateFormat: "none", customText: "", font: "Helvetica Neue", size: 36,
+        textColor: "#FFFFFF", outlineWidth: 2, outlineColor: "#202020", position: "bottom-right", margin: 24 });
+    assert.deepEqual(configurationValues(values).settings, values);
+    assert.doesNotMatch(help, /; default /u);
+});
+
+test("CLI messages identify JSON keys, missing values and types without changing core wording", () => {
+    const { validateSettings } = require("../../../src/core/settings.js");
+    const input = { ...settings, size: "36", customText: null, textColor: [], margin: false };
+    delete input.font;
+    const result = runOutcome([], [], [], validateSettings(input).issues);
+    const before = JSON.stringify(result);
+    const writes = [];
+    assert.equal(reportHeadless(result, (text) => writes.push(text), (code) => code), 2);
+    assert.deepEqual(JSON.parse(writes[1]).issues.map((issue) => issue.message), [
+        "`customText` must be a JSON string, not null.", "`font` is missing.",
+        "`size` must be a JSON number, not a string.", "`textColor` must be a JSON string, not an array.",
+        "`margin` must be a JSON number, not a boolean."
+    ]);
+    assert.ok(writes[0].includes("`font` is missing."));
+    assert.equal(JSON.stringify(result), before);
+    const other = runOutcome([], [], [], [...validateSettings({ ...settings, size: 401, textColor: {}, "extra\nkey": true }).issues,
+        { code: "typeface", stage: "settings", field: "font", message: "This Mac has no matching typeface." }]);
+    const output = [];
+    reportHeadless(other, (text) => output.push(text), (code) => code);
+    assert.deepEqual(JSON.parse(output[1]).issues.map((issue) => issue.message), [
+        '"extra\\nkey" is not a recognized setting.', "`size` must be a whole number from 8 to 400.",
+        "`textColor` must be a JSON string, not an object.", "`font`: This Mac has no matching typeface."
+    ]);
+});
+
+
+test("local settings file URLs decode before absolute resolution and native file reading", () => {
+    for (const url of ["file:///settings%20R%C4%ABga%25.json", "FILE://LOCALHOST/settings%20R%C4%ABga%25.json"]) {
+        const read = [], resolved = [];
+        const command = cliCommand(["--headless", url, "photo.jpg"], {
+            absolute(path) { resolved.push(path); return path.startsWith("/") ? path : `/cwd/${path}`; },
+            read(path) { read.push(path); return settings; }
+        });
+        assert.deepEqual(resolved, ["/settings Rīga%.json", "photo.jpg"]);
+        assert.deepEqual(read, ["/settings Rīga%.json"]);
+        assert.deepEqual(command.invocation.settings, settings);
+    }
+    const names = [];
+    cliCommand(["--headless", "./settings:one.json", "photo.jpg"], { absolute: (path) => path, read: (path) => { names.push(path); return settings; } });
+    assert.deepEqual(names, ["./settings:one.json"]);
+});
+
+test("remote, incomplete or undecodable settings URLs are refused before file access", () => {
+    for (const value of ["https://example.invalid/settings.json", "file://example.invalid/settings.json", "file://localhost", "file:/settings.json",
+        "file:///bad%.json", "file:///bad%00.json", "urn:settings:one"]) {
+        assert.throws(() => cliCommand(["--headless", value, "photo.jpg"], {
+            absolute() { throw new Error("must not resolve a refused URL"); }, read() { throw new Error("must not read a refused URL"); }
+        }), (error) => error.issues[0].code === "settings-file" && error.issues[0].stage === "request" && /valid local file URL/u.test(error.message));
+    }
+});
+
+
+test("setup cancellation exits1 even when a tool refusal also exists", () => {
+    const result = runOutcome([], [], [], [{ code: "operation", stage: "setup", message: "Tool unavailable." }, { code: "canceled", stage: "setup", message: "Stopped." }]);
+    assert.equal(result.state, "canceled"); assert.equal(exitCode(result), 1);
+});
+
+
+test("receipt serialization omits every stack key without changing outcomes or other diagnostic data", () => {
+    const result = runOutcome([{ source: "/source.png", state: "failed", issues: [{ code: "fault", stage: "stamping", message: "Keep this reason.",
+        diagnostic: { stack: "private image trace", command: "keep command", facts: { stack: "nested trace", count: 0, flag: false, empty: null } } }] }]);
+    result.stack = "private run trace";
+    result.diagnostics.push({ code: "observer-fault", message: "Keep observer detail.", stack: "private observer trace", nested: [{ stack: "array trace", value: "stack is ordinary text" }] });
+    const before = JSON.stringify(result), output = [];
+    reportHeadless(result, (text, ignored, stderr) => { if (!stderr) { output.push(text); } }, () => 1);
+    const receipt = JSON.parse(output[0]);
+    assert.equal(Object.hasOwn(receipt, "stack"), false);
+    assert.deepEqual(receipt.images[0].issues[0].diagnostic, { command: "keep command", facts: { count: 0, flag: false, empty: null } });
+    assert.deepEqual(receipt.diagnostics, [{ code: "observer-fault", message: "Keep observer detail.", nested: [{ value: "stack is ordinary text" }] }]);
+    assert.equal(receipt.images[0].issues[0].message, "Keep this reason.");
+    assert.equal(JSON.stringify(result), before);
 });

@@ -26,8 +26,8 @@ const SETTINGS = {
 
 const TAKEN = {
     DateTimeOriginal: "2026:09:09 14:30:05",
-    GPSLatitude: 56.9496,
-    GPSLongitude: 24.1052
+    EXIFGPSLatitude: "56/1 56/1 1464/25", EXIFGPSLatitudeRef: "N",
+    EXIFGPSLongitude: "24/1 6/1 468/25", EXIFGPSLongitudeRef: "E"
 };
 
 /*

@@ -6,10 +6,14 @@ const { IssueError } = require("./errors.js");
  * no reason. It is refused where the settings are read rather than once per
  * photograph, because it is a fact about the request and not about any file.
  */
+const VISIBLE_CHARACTER = /[^\s\p{Cf}\p{Cc}\u3164\u2800\u115F\u1160\uFFA0]/u;
+function hasVisibleText(text) { return text.search(VISIBLE_CHARACTER) >= 0; }
+function normalizeCustomText(text) { return text.replace(/\r\n?/gu, "\n"); }
+
 function stampsNothing(settings) {
     return settings.dateFormat === "none" &&
         settings.coordinateFormat === "none" &&
-        settings.customText.trim() === "";
+        !hasVisibleText(settings.customText);
 }
 
 const EMPTY_STAMP_MESSAGE = "Choose a date/time format, include GPS coordinates, " +
@@ -29,4 +33,4 @@ function requireStampContent(settings) {
     return settings;
 }
 
-module.exports = { stampsNothing, contentProblem, requireStampContent };
+module.exports = { hasVisibleText, normalizeCustomText, stampsNothing, contentProblem, requireStampContent };

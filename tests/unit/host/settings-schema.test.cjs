@@ -21,7 +21,7 @@ test("the declared typeface default is preferred only when this machine offers i
     assert.equal(defaultSettings([]).font, "");
     const settings = defaultSettings(["Menlo"]);
     delete settings.font;
-    assert.deepEqual(validateSettings(settings).issues, [{ field: "font", code: "text", stage: "settings", message: "Typeface must be text." }]);
+    assert.deepEqual(validateSettings(settings).issues, [{ field: "font", code: "text", stage: "settings", message: "Typeface must be text.", diagnostic: { missing: true } }]);
 });
 
 test("setting issues return their shared receipt context without throwing", () => {

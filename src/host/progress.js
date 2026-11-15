@@ -33,7 +33,7 @@ const SILENT = Object.freeze({
     close: nothing
 });
 
-function lifecycle(state, each) {
+function lifecycle(state, each, requiredStop) {
     return {
         /*
          * Latch a stop whether a surface reports it directly or raises cancellation
@@ -42,6 +42,8 @@ function lifecycle(state, each) {
          * consumes it, even if the user releases the control during an image stage.
          */
         stopped() {
+            // Required control failures must reach the run, not optional-observer isolation.
+            state.stopped ||= requiredStop();
             each((sink) => {
                 state.stopped ||= sink.stopped?.() ?? false;
             });
@@ -76,7 +78,7 @@ function lifecycle(state, each) {
     };
 }
 
-function createProgress(sinks) {
+function createProgress(sinks, requiredStop = never) {
 
     const state =
         { images: 0, done: 0, description: "", detail: "", stopped: false, closed: false, diagnostics: [] };
@@ -84,7 +86,7 @@ function createProgress(sinks) {
     const say = () => each(
         (sink) => sink.report(state.done, state.description, state.detail)
     );
-    const life = lifecycle(state, each);
+    const life = lifecycle(state, each, requiredStop);
 
     return { ...imageProgress(state, say, life.stopped), ...life, diagnostics: state.diagnostics };
 }

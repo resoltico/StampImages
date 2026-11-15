@@ -145,3 +145,20 @@ test("field regression: correction opens with the first invalid editor focused",
     const caption = specFor(defaultAnswers(FONTS), [{ key: "customText", message: "Correct caption" }]);
     present([CANCEL], caption, (alert) => { assert.equal(alert.window.initialFirstResponder?.kind, "textview"); });
 });
+
+test("the production form initializes both its note and multiline caption at the first line", () => {
+    const bridge = createFakeObjC();
+    const made = [];
+    const original = bridge.ns.NSTextView.alloc.initWithFrame;
+    bridge.ns.NSTextView.alloc.initWithFrame = (rect) => { const view = original(rect); made.push(view); return view; };
+    bridge.state.duringModal = (alert) => {
+        alert.window.visible = true;
+        bridge.state.observers[0].callback();
+    };
+    const spec = formSpec(defaultAnswers(["Menlo"]), [], { count: 1, fonts: ["Menlo"] });
+    presentForm(bridge, spec);
+    assert.equal(made.length, 2);
+    assert.ok(made.every((view) => view.rect.left === 0 && view.rect.bottom === 0), "text documents use clip-local coordinates");
+    assert.ok(made.every((view) => view.scrolledRange.location === 0 && view.scrolledRange.length === 0));
+    assert.deepEqual(bridge.state.observers, []);
+});

@@ -1,8 +1,7 @@
 "use strict";
 
 /*
- * A selected folder means the images inside it, and the stamped copy lands where the
- * person pointed rather than in whichever subfolder happened to sort first.
+ * A selected folder discovers images recursively; each copy lands beside its original.
  */
 
 const assert = require("node:assert/strict");
@@ -40,16 +39,14 @@ test("a selected folder becomes the images inside it, in folder order", () => {
     assert.deepEqual(rejected, []);
 });
 
-test("the stamped copies go in the folder that was selected", () => {
-    // Not in the subfolder whose name happened to sort first, which is where
-    // "beside the first image" would have put it.
+test("folder-discovered copies go beside each original", () => {
     const tree = treeOf({
         "/Trip": ["Aalborg"],
         "/Trip/Aalborg": ["2.png"]
     });
     const { images } = collectImageFiles(appWith(["/Trip"]), ["/Trip"], tree);
 
-    assert.deepEqual(images.map((image) => image.folder), ["/Trip/"]);
+    assert.deepEqual(images.map((image) => image.folder), ["/Trip/Aalborg/"]);
 });
 
 test("a file selected by hand still goes beside itself", () => {
@@ -140,4 +137,12 @@ test("folder discovery counts selected folders, not images or descendant folders
     assert.equal(collectImageFiles(app, ["/direct.jpg"], tree).selectedFolders, 0);
     assert.equal(collectImageFiles(app, ["/Trip"], tree).selectedFolders, 1);
     assert.equal(collectImageFiles(app, ["/Trip", "/Other", "/direct.jpg"], tree).selectedFolders, 2);
+});
+
+
+test("same names in different descendants keep separate destination groups", () => {
+    const tree = treeOf({ "/Trip": ["A", "B"], "/Trip/A": ["same.jpg"], "/Trip/B": ["same.jpg"] });
+    const result = collectImageFiles(appWith(["/Trip"]), ["/Trip"], tree);
+    assert.deepEqual(result.images.map((image) => image.folder), ["/Trip/A/", "/Trip/B/"]);
+    assert.equal(result.selectedFolders, 1);
 });

@@ -1,12 +1,12 @@
 "use strict";
-const { OperationError } = require("../core/errors.js");
+const { isGrayImage } = require("../core/source-policy.js");
+const { imageFacts } = require("./fidelity.js");
 
 const { buildCompositeArgv, buildFlattenArgv } = require("../backend/commands.js");
-const { buildMetadataCopyArgv } = require("../backend/metadata-copy.js");
+const { buildMetadataCopyArgv, metadataCopyResult } = require("../backend/metadata-copy.js");
 const { savingPath } = require("../core/output-format.js");
 const { runArgv } = require("./shell.js");
 const { verifyFileWritten } = require("./filesystem-probes.js");
-const { sizeOf } = require("./tinting.js");
 
 /*
  * Putting the stamp on the photograph, and saving what comes out.
@@ -31,7 +31,7 @@ function composite(job, base, stamp, token) {
         job.app,
         buildCompositeArgv(
             job.tools.vips,
-            { base: base.path, overlay: stamp.path },
+            { base: base.path, overlay: stamp.path, ...(isGrayImage(base) ? { compositingSpace: base.interpretation } : {}) },
             stamped,
             stamp.at
         ),
@@ -61,9 +61,9 @@ function saveCopy(job, stamped, target, source) {
             : buildFlattenArgv(job.tools.vips, stamped, written),
         "saving the stamped copy"
     );
-    if (source.gainMap) {
-        runArgv(job.app, buildMetadataCopyArgv(job.tools.exiftool, source.metadataSource, target), "retaining image metadata");
-    }
+    verifyFileWritten(job.app, target, "the stamped copy");
+    const copied = runArgv(job.app, buildMetadataCopyArgv(job.tools.exiftool, source.metadataSource, target, source.size), "retaining image metadata");
+    const metadata = metadataCopyResult(copied, source.metadataSource, target);
     verifyFileWritten(job.app, target, "the stamped copy");
 
     /*
@@ -73,15 +73,9 @@ function saveCopy(job, stamped, target, source) {
      * The header is enough -- decoding every pixel of every copy would double
      * the run to catch a failure nothing has produced.
      */
-    const saved = sizeOf(job, target);
-
-    if (saved.width !== source.size.width || saved.height !== source.size.height) {
-        throw new OperationError(
-            `The stamped copy is ${saved.width} by ${saved.height} pixels ` +
-                `where ${source.size.width} by ${source.size.height} were ` +
-                `expected:\n\n${target}`
-        );
-    }
+    const expected = { width: source.size.width, height: source.size.height };
+    const { bands, interpretation, hasAlpha } = imageFacts(job, target, expected);
+    return { bands, interpretation, hasAlpha, ...metadata };
 }
 
 module.exports = { composite, saveCopy };

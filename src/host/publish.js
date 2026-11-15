@@ -1,4 +1,5 @@
 "use strict";
+const { requireOriginal } = require("./publication-name.js");
 const { requireValidatedArtifact, isPublished } = require("../core/artifacts.js");
 const { keep, clearAway } = require("./recovery.js");
 const { confirm } = require("./settling.js");
@@ -9,7 +10,7 @@ const { claimAvailable } = require("./destination.js");
 function confirmed(context) {
     const { job, paths, claimed, area } = context;
     const issueStart = job.cleanupIssues.length;
-    const outcome = { state: "unconfirmed", claimedIdentity: claimed.identity, claimedSize: claimed.size, staging: area };
+    const outcome = { state: "unconfirmed", original: context.facts, claimedIdentity: claimed.identity, claimedSize: claimed.size, staging: area };
     try {
         // No checkpoint between confirmation and recording the confirmed destination.
         confirm(job, paths, outcome);
@@ -25,17 +26,24 @@ function publicationCode(error) {
     return issue.code === ISSUE.operation ? ISSUE.publication : issue.code;
 }
 
-function retainedAfterStop(context) {
+function retainedAfterStop(context, cause) {
     const { job, paths, area } = context;
+    requireOriginal(job.publication, { staged: paths.staged, expected: context.facts, cause, candidate: area ? { folder: area.directory } : null });
     const issues = [{ code: ISSUE.canceled, stage: "publication", diagnostic: context.diagnostic, message: `Stopped before saving. Keep this finished copy from its temporary workspace before restarting:\n${paths.staged}` }];
     try { issues.push(...clearAway(job.app, { staging: area })); }
     catch (error) { issues.push(...issuesOf(error, "cleanup")); }
     return new UserCanceled({ recovery: paths.staged, issues });
 }
 
+function publicationDiagnostic(context, error) {
+    const diagnostic = context.diagnostic ?? issuesOf(error, "publication")[0].diagnostic;
+    const message = typeof diagnostic?.message === "string" && diagnostic.message.trim() ? diagnostic.message : errorMessage(error);
+    return { ...diagnostic, message };
+}
+
 function failedPublication(context, error) {
     const { job, paths, claimed, area } = context;
-    if (error?.recovery) { throw error; }
+    if (error && Object.hasOwn(error, "recovery")) { throw error; }
     if (isPublished(job.publication.facts(paths.final), {
         claimedIdentity: claimed.identity, claimedSize: claimed.size
     })) {
@@ -44,22 +52,28 @@ function failedPublication(context, error) {
         else { saved.issues.push(...issuesOf(error, "publication")); }
         return saved;
     }
-    if (isUserCanceled(error)) { throw retainedAfterStop(context); }
+    if (isUserCanceled(error)) { throw retainedAfterStop(context, error); }
     try { job.progress.phase("Keeping the finished copy"); }
     catch (checkpoint) {
-        if (isUserCanceled(checkpoint)) { throw retainedAfterStop(context); }
+        if (isUserCanceled(checkpoint)) { throw retainedAfterStop(context, checkpoint); }
         throw checkpoint;
     }
+    requireOriginal(job.publication, { staged: paths.staged, expected: context.facts, cause: error, candidate: area ? { folder: area.directory } : null });
     const failure = keep(job, paths, { reasons: [errorMessage(error)], staging: area });
     throw new IssueError(failure.message, { cause: failure, recovery: failure.recovery, issues: [{ code: publicationCode(error), stage: "publication",
-        message: "The image could not be saved to its requested destination.", diagnostic: context.diagnostic ?? issuesOf(error, "publication")[0].diagnostic }, ...failure.issues.slice(1)] });
+        message: "The image could not be saved to its requested destination.", diagnostic: publicationDiagnostic(context, error) }, ...failure.issues.slice(1)] });
+}
+
+function originalFacts(publication, staged) {
+    try { return publication.facts(staged); }
+    catch (error) { return requireOriginal(publication, { staged, expected: { identity: "", size: -1 }, cause: error }); }
 }
 
 /** Exact native claims retry positively classified collisions using the same validated image. */
 function publishImage(job, staged, destination) {
     requireValidatedArtifact(job.artifacts, staged);
-    const facts = job.publication.facts(staged);
-    const paths = { staged, final: destination, intended: destination };
+    const facts = originalFacts(job.publication, staged);
+    const paths = { staged, final: destination, intended: destination, original: facts };
     if (!facts.identity || facts.size <= 0) {
         throw keep(job, paths, { reasons: ["The validated image identity could not be measured."], staging: null });
     }

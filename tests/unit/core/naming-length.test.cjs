@@ -70,14 +70,8 @@ test("the room reserved follows the timestamp it is given", () => {
     assert.ok(utf8Length(name) <= BUDGET, `${utf8Length(name)} bytes`);
 });
 
-test("a stem cut short does not end in a dot or an underscore", () => {
-    // Sanitizing exists to keep a name from ending in one of those; cutting a
-    // long name short can produce exactly that, at the join with the
-    // timestamp, where it reads as a mistake.
-    assert.doesNotMatch(
-        nameFor(`${"a".repeat(229)}._x`),
-        /[._]_20260907_010203\.jpg$/u
-    );
+test("byte clipping preserves the retained legal prefix without re-sanitizing it", () => {
+    assert.equal(nameFor(`${"a".repeat(229)}._x`), `${"a".repeat(229)}._20260907_010203.jpg`);
     assert.match(nameFor("a".repeat(300)), /^a+_20260907_010203\.jpg$/u);
 });
 

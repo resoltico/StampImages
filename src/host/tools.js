@@ -1,9 +1,11 @@
 "use strict";
-const { hostError } = require("./cancellation.js");
-const { isUserCanceled } = require("../core/errors.js");
+const { OperationError } = require("../core/errors.js");
+
 const { PRINTENV } = require("../core/executables.js");
 const { shellQuote } = require("../core/shell.js");
-const { tryArgv } = require("./shell.js");
+const { runArgv } = require("./shell.js");
+const { isUserCanceled } = require("../core/errors.js");
+const { hostError } = require("./cancellation.js");
 const { isExecutable } = require("./filesystem-probes.js");
 
 /*
@@ -19,11 +21,6 @@ const { isExecutable } = require("./filesystem-probes.js");
 const TOOL_SEARCH_PATH =
     "/opt/homebrew/bin:/usr/local/bin:/opt/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
 
-/*
- * The required external tools inspect metadata and render images. Installed
- * typefaces are queried through the native font catalog, not an external
- * fontconfig command.
- */
 const TOOL_NAMES = ["vips", "vipsheader", "exiftool"];
 
 const ENVIRONMENT_OVERRIDES = {
@@ -33,11 +30,16 @@ const ENVIRONMENT_OVERRIDES = {
 };
 
 /*
- * printenv fails for a name that is not set, which is the same answer as a
- * name set to nothing.
+ * Read overrides once. Exit 1 means the name is unset; a provided value is
+ * retained for diagnostics and must name an absolute regular executable file.
  */
 function optionalEnvironment(app, name) {
-    return String(tryArgv(app, [PRINTENV, name])).trim();
+    try { return { state: "provided", value: String(runArgv(app, [PRINTENV, name], "reading the requested tool override")) }; }
+    catch (error) {
+        if (isUserCanceled(error)) { throw error; }
+        if (error.cause?.errorNumber === 1) { return { state: "absent" }; }
+        throw error;
+    }
 }
 
 function searchPath(app, executableName) {
@@ -52,7 +54,7 @@ function searchPath(app, executableName) {
         return found && isExecutable(app, found) ? found : "";
     } catch (caught) {
         const error = hostError(caught);
-        if (isUserCanceled(error)) { throw error; }
+        if (isUserCanceled(error) || error instanceof TypeError || error instanceof ReferenceError) { throw error; }
         return "";
     }
 }
@@ -66,7 +68,8 @@ function candidatePaths(executableName) {
 }
 
 /*
- * Returns the path to the tool, or an empty string if it cannot be found.
+ * Return the located path with its override provenance, or an empty path
+ * when automatic discovery finds no tool. Explicit invalid overrides refuse.
  */
 function findTool(app, executableName) {
     const override = optionalEnvironment(
@@ -74,15 +77,22 @@ function findTool(app, executableName) {
         ENVIRONMENT_OVERRIDES[executableName]
     );
 
-    if (override) { return isExecutable(app, override) ? override : ""; }
+    if (override.state === "provided") {
+        const path = override.value.trim();
+        const requested = { name: ENVIRONMENT_OVERRIDES[executableName], value: override.value };
+        if (!path || !isExecutable(app, path)) {
+            throw new OperationError(`${requested.name}=${JSON.stringify(requested.value)} is not an absolute regular executable file.`);
+        }
+        return { path, override: requested };
+    }
 
     for (const candidate of candidatePaths(executableName)) {
         if (isExecutable(app, candidate)) {
-            return candidate;
+            return { path: candidate, override: null };
         }
     }
 
-    return searchPath(app, executableName);
+    return { path: searchPath(app, executableName), override: null };
 }
 
 module.exports = { TOOL_NAMES, TOOL_SEARCH_PATH, findTool };

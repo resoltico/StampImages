@@ -98,11 +98,13 @@ test("an explicit missing-field diagnostic from vipsheader remains single-image"
 });
 
 test("gray with alpha is expanded for a color caption and its intermediate is owned", () => {
-    const {host} = jobOn({bands: 2, stored: "gray"});
+    const {host} = jobOn({bands: 2, stored: "gray", headerFacts: { [`${WORKSPACE}/color-1.v`]: { bands: 4, stored: "color" } }});
     const job = {...makeJob(host, {textColor: "#FF3B30", outlineWidth: 0}), workspace: WORKSPACE};
     const intermediates = [];
     const result = preparePhotograph(job, {path: "/photo.png"}, "1", intermediates);
 
     assert.equal(result.expanded, true);
+    assert.equal(result.photograph.interpretation, "srgb");
+    assert.equal(result.photograph.hasAlpha, true);
     assert.deepEqual(intermediates, [`${WORKSPACE}/oriented-1.v`, `${WORKSPACE}/color-1.v`]);
 });

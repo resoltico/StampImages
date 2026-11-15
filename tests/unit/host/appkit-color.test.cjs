@@ -60,8 +60,8 @@ test("a color that could not be read is marked, keeping what was typed", () => {
     const { controls } = build(spec);
 
     assert.equal(controls.outlineColor.stringValue, "c7dae", "what was typed");
-    assert.equal(controls.outlineColor.drawsBackground, true);
-    assert.equal(controls.outlineColor.backgroundColor.name, "systemRed");
+    const tint = controls.outlineColor.superview.subviews.find((child) => child.relativeTo === controls.outlineColor);
+    assert.equal(tint.fillColor.name, "systemRed");
 });
 
 test("the text row is marked too, when there is too much of it", () => {
@@ -70,6 +70,7 @@ test("the text row is marked too, when there is too much of it", () => {
     const spec = specFor({ ...defaultAnswers(FONTS), customText: "x".repeat(501) }, [{ key: "customText", message: "Your own text: 500 characters or fewer." }]);
     const { controls } = build(spec);
 
-    assert.equal(controls.customText.text.drawsBackground, true);
-    assert.equal(controls.customText.text.backgroundColor.name, "systemRed");
+    const tint = controls.customText.text.superview.subviews.find((child) => child.relativeTo === controls.customText.text);
+    assert.equal(tint.fillColor.name, "systemRed");
+    assert.deepEqual(tint.frame, controls.customText.text.frame);
 });

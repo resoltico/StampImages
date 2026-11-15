@@ -77,9 +77,33 @@ Inspect originals before consent, then capture and independently inspect private
 bytes before metadata/profile extraction and decoding. Keep original paths for
 reporting. `src/core/artifacts.js` owns artifact retention; workspace cleanup must
 not delete unresolved validated copies. Processing stays within the owned
-workspace lifetime. `src/core/inscription.js` decides what an image can say before
-rendering. Outcomes own actual saved/recovery mappings; progress counters do not
+workspace lifetime. `src/host/directory-entry-names.js` owns raw POSIX entry names;
+Foundation name APIs can normalize POSIX-created FAT32 names. Normalization selects
+candidates only; return literal entries after regular identity/size and chosen-parent
+rechecks. Mandatory stream cleanup remains a cleanup issue through publication
+preservation and stops later work. `src/core/inscription.js` decides what an image can say before
+rendering. The application supplies a required-once `metadataReady` handoff to the
+stamp port, copying known omission/invalidity arrays before rendering so later
+failures do not erase them. Validated-copy appearance and GPS-retention facts are
+reported only after the finished copy is checked. ExifTool projection carriers and
+reader-view notices remain private adapter data. Outcomes own actual saved/recovery mappings; progress counters do not
 establish publication.
+
+Metadata copying consumes a captured source and its fresh private Vips render,
+not an arbitrary existing target. Source-owned IPTC packets keep their bytes and
+timezone absence; bounded Nikon repairs require matching existing raw vendor
+facts. Conflicting target data is not replaced. Rendered pixels and profiles remain
+target-owned; generic capture copying still excludes source MakerNotes. See
+[producer-metadata-program.js](src/backend/producer-metadata-program.js) for the
+joint checked operation and its component rules.
+
+Readers of original captured bytes may compare already-recorded diagnostics only
+when scoped reader-view proof resolves them. A fresh source view may defer only an
+already-pending exact WebP wrapper diagnostic until mandatory TIFF/GPS repair proof.
+Cached pre-repair target diagnostics may be resolved only by verified target repair;
+fresh post-repair result readers are strict, even for matching warning text. Collect
+diagnostics after the final lazy getter. Metadata-only views never replace pixel
+input or the actual target profile.
 
 Shared facts and wording belong to `src/core/run-summary.js` and
 `src/core/run-report.js`. Dialog controls, Details, version lines and CLI transport
@@ -111,7 +135,7 @@ the sibling repository.
 - Settings form: the message line is `Choose the stamp settings, then Create.`; the
   note opens with `<N images> → <outputs>, saved in <place>` and `Save locations:`.
   Corrections say `Correct the highlighted setting, listed below.` and the note lists
-  them first. Range hints use an en dash and a unit (`8–400 pt`); color presets add
+  them first. Range hints use an en dash and a unit (`8–400 pixels` for size); color presets add
   `or type #RRGGBB`.
 - Selection review: `<N items> in your selection cannot be included.`, then
   `Not included:` with `<name>: <reason sentence>` and `in <folder>`, ending
@@ -124,9 +148,12 @@ the sibling repository.
   version. `Show in Finder` reveals every saved or recovered copy; `Details` shows
   `key: value` lines and `Back` returns to the summary.
 - Command line: the same commands and exit statuses; usage errors name the problem
-  and print only the run line; `--help` lists `field — Name: values; default X`;
-  stderr sections are separated by one blank line; receipts share the state and
-  issue-code vocabulary in [HEADLESS.md](HEADLESS.md).
+  and print only the run line; `--help` lists the required fields and a complete, ready-to-copy JSON example;
+  prose precedes the one receipt attempt, and stderr sections are separated by
+  one blank line; receipts share the state and
+  issue-code vocabulary in [HEADLESS.md](HEADLESS.md), omit structured stack keys,
+  and are checked against the matching receipt schema without mutating internal
+  or GUI diagnostics.
 - Documents: README (users), INSTALL.txt (release asset), HEADLESS.md (command
   line), SECURITY.md (trust and file safety), QA.md (verification) and this file,
   with matching section order in both repositories. Documents describe the current

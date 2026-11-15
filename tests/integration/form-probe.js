@@ -3,13 +3,27 @@ const { formSpec } = require("../../src/host/quick-action/form.js");
 const { readAnswers } = require("../../src/host/quick-action/settings-model.js");
 const { defaultAnswers } = require("../../src/host/quick-action/settings-model.js");
 const { buildForm } = require("../../src/host/quick-action/appkit-form.js");
+const { detailsAlert, layoutDetails, runDetailsModal } = require("../../src/host/quick-action/details-dialog.js");
+const { build: buildProgressPanel, allowWindows } = require("../../src/host/quick-action/panel.js");
 const { WIDGETS, readControls } = require("../../src/host/quick-action/appkit.js");
+const { appkitBridge } = require("../../src/host/quick-action/appkit-bridge.js");
 const { unbindChoices } = require("../../src/host/quick-action/appkit-choice.js");
 
 const SMALLEST_VISIBLE_HEIGHT = 744;
 
 function assertNativeStamp(condition, message) {
     if (!condition) { throw new Error(message); }
+}
+
+const { checkInvalidTint } = require("./invalid-tint.js");
+
+function checkInvalidControls(built, spec, path) {
+    for (const row of spec.rows) {
+        if (row.invalid) {
+            const entry = built.controls[row.key];
+            checkInvalidTint(row.optional ? entry.popup : entry.text ?? entry, row.key, path);
+        }
+    }
 }
 
 function measureStampForm(built, spec) {
@@ -66,8 +80,56 @@ function checkStampToggle(bridge, spec, built) {
     toggle.performClick(toggle);
 }
 
+function checkScrollPositions(view) {
+    if (view.isKindOfClass($.NSScrollView)) {
+        assertNativeStamp(Number(view.documentView.visibleRect.origin.x) === 0, "Text is horizontally scrolled.");
+        assertNativeStamp(Number(view.documentView.visibleRect.origin.y) === 0, "Text does not start at its first line.");
+        assertNativeStamp(Number(view.verticalScroller.doubleValue) === 0, "Text scroller does not start at zero.");
+    }
+    const children = view.subviews;
+    for (let index = 0; index < Number(children.count); index += 1) { checkScrollPositions(children.objectAtIndex(index)); }
+}
+
+function checkCaptionGeometry(caption) {
+    const editor = caption.text;
+    const clip = caption.control.contentView;
+    assertNativeStamp(editor.superview.isEqual(clip), "Caption editor is not in its scroll clip.");
+    assertNativeStamp(Number(editor.frame.origin.x) === 0 && Number(editor.frame.origin.y) === 0, "Caption editor has form coordinates inside its clip.");
+    assertNativeStamp(Math.abs(Number(editor.frame.size.width) - Number(caption.control.contentSize.width)) < 1, "Caption editor does not track its clip width.");
+    const visible = $.NSIntersectionRect(editor.frame, clip.bounds);
+    assertNativeStamp(Number(visible.size.width) > 0 && Number(visible.size.height) > 0, "Caption has no visible mouse/render region.");
+}
+
+function checkScrolledCaption(caption, path) {
+    const editor = caption.text, scroll = caption.control;
+    const original = String(ObjC.unwrap(editor.string));
+    const middle = (Number(editor.frame.size.height) - Number(scroll.contentSize.height)) / 2;
+    assertNativeStamp(middle > 0, "The long caption control did not exceed its clip.");
+    scroll.contentView.scrollToPoint($.NSMakePoint(0, middle));
+    scroll.reflectScrolledClipView(scroll.contentView);
+    assertNativeStamp(Number(scroll.verticalScroller.doubleValue) > 0, "Caption scroll did not move.");
+    checkInvalidTint(editor, "customText-scrolled", path);
+    assertNativeStamp(Boolean(editor.editable) && String(ObjC.unwrap(editor.string)) === original, "Tint changed caption editing or text.");
+    scroll.contentView.scrollToPoint($.NSMakePoint(0, 0));
+    scroll.reflectScrolledClipView(scroll.contentView);
+}
+
+function writeStampPreview(content, path) {
+    const bitmap = content.bitmapImageRepForCachingDisplayInRect(content.bounds);
+    content.cacheDisplayInRectToBitmapImageRep(content.bounds, bitmap);
+    const png = bitmap.representationUsingTypeProperties(4, $.NSDictionary.dictionary);
+    assertNativeStamp(png.writeToFileAtomically(path, true), `Could not write ${path}`);
+}
+
+function checkStampRendering(built, spec, name, path) {
+    checkCaptionGeometry(built.controls.customText);
+    checkInvalidControls(built, spec, path);
+    if (name === "invalid-long-caption") { checkScrolledCaption(built.controls.customText, path); }
+    checkScrollPositions(built.view);
+}
+
 function stampFormSnapshot(folder, scenario, appearance) {
-    const bridge = { objc: ObjC, ns: $ };
+    const bridge = appkitBridge(ObjC, $);
     const spec = formSpec(scenario.answers, scenario.problems, scenario.context);
     const built = buildForm(bridge, spec, WIDGETS);
     const alert = WIDGETS.makeAlert($, spec);
@@ -79,6 +141,8 @@ function stampFormSnapshot(folder, scenario, appearance) {
         if (scenario.name === "date-only") { checkStampToggle(bridge, spec, built); }
         const content = alert.window.contentView;
         content.layoutSubtreeIfNeeded;
+        layoutDetails($, alert, [built.details, ...spec.rows.filter((row) => row.kind === "text").map((row) => built.controls[row.key].control)]);
+        checkStampRendering(built, spec, scenario.name, `${folder}/${scenario.name}-${appearance}`);
         // Against the smallest screen a supported Mac has, not the screen this
         // runs on: a CI runner's virtual display is smaller than any Mac's.
         // 1366 x 768 is the 11-inch MacBook Air of early 2015, which macOS 12
@@ -86,17 +150,110 @@ function stampFormSnapshot(folder, scenario, appearance) {
         const height = Number(alert.window.frame.size.height);
         assertNativeStamp(height <= SMALLEST_VISIBLE_HEIGHT,
             `${scenario.name}: the form is ${height} points tall, more than ${SMALLEST_VISIBLE_HEIGHT}`);
-        const bitmap = content.bitmapImageRepForCachingDisplayInRect(content.bounds);
-        content.cacheDisplayInRectToBitmapImageRep(content.bounds, bitmap);
-        const png = bitmap.representationUsingTypeProperties(4, $.NSDictionary.dictionary);
         const path = `${folder}/${scenario.name}-${appearance}.png`;
-        assertNativeStamp(png.writeToFileAtomically(path, true), `Could not write ${path}`);
+        writeStampPreview(content, path);
         console.log(`Native stamp form checked: ${path}`);
     } finally {
         unbindChoices(spec, built.controls);
         alert.window.close;
     }
 }
+
+function checkStopControl(appearance) {
+    const view = buildProgressPanel($, ObjC);
+    view.panel.appearance = $.NSAppearance.appearanceNamed(appearance);
+    const accessible = $.NSAccessibilityUnignoredDescendant(view.stop);
+    assertNativeStamp(String(ObjC.unwrap(accessible.accessibilityRole)) === "AXButton", "Stop is not an accessibility button.");
+    view.stop.setButtonType(1);
+    assertNativeStamp(String(ObjC.unwrap(accessible.accessibilityRole)) === "AXCheckBox", "The legacy toggle negative control did not expose a checkbox.");
+    view.stop.setButtonType(7);
+    assertNativeStamp($.NSApplication.sharedApplication.sendActionToFrom(view.stop.action, view.stop.target, view.stop), "Stop action was not handled.");
+    assertNativeStamp(!view.stop.enabled && String(ObjC.unwrap(view.stop.title)) === "Stopping…", "Stop request feedback is missing.");
+    assertNativeStamp(Number(view.stop.cell.cellSize.width) <= Number(view.stop.frame.size.width), "Stopping feedback is clipped.");
+    view.panel.close;
+}
+
+const MODAL_SCROLL_DELAY = 0.1;
+const SCROLL_TOLERANCE = 0.001;
+
+function modalScrollFixture(form) {
+    if (!form) {
+        const alert = detailsAlert($, { title: "Native modal scroll check", summary: "Read full details.",
+            detail: Array.from({ length: 40 }, (ignored, index) => `${index}: Generated native modal details.`).join("\n"), buttons: ["OK"] });
+        return { alert, scrolls: [alert.accessoryView], close: () => undefined };
+    }
+    const fonts = ["Menlo"];
+    const answers = { ...defaultAnswers(fonts), customText: Array.from({ length: 12 }, (ignored, index) => `Draft caption ${index}`).join("\n") };
+    const spec = formSpec(answers, [], { count: 80, fonts, folders: Array.from({ length: 80 }, (ignored, index) => `/Pictures/Folder${index}/`) });
+    const built = buildForm({ objc: ObjC, ns: $ }, spec, WIDGETS);
+    const alert = WIDGETS.makeAlert($, spec);
+    alert.accessoryView = built.view;
+    alert.window.initialFirstResponder = built.controls.customText.text;
+    return { alert, scrolls: [built.details, built.controls.customText.control], close: () => unbindChoices(spec, built.controls) };
+}
+
+function checkModalScroll(appearance, initialize, form = false) {
+    const restore = allowWindows($);
+    const { alert, scrolls, close } = modalScrollFixture(form);
+    alert.window.appearance = $.NSAppearance.appearanceNamed(appearance);
+    const state = { phase: 0, desired: 0, initial: null, failure: null, callback: null, busy: false };
+    let timer = null;
+    state.callback = ObjC.block(["void", ["id"]], () => {
+        if (state.busy || state.phase === 2) { return; }
+        state.busy = true;
+        try {
+            if (state.phase === 0) {
+                state.initial = scrolls.map((scroll) => Number(scroll.verticalScroller.doubleValue));
+                if (initialize) { assertNativeStamp(state.initial.every((value) => value === 0), "Shown modal details did not start at zero."); }
+                else { assertNativeStamp(state.initial.every((value) => value >= 0 && value <= 1), "The pre-modal-only control did not show a real scroller."); }
+                state.phase = 1;
+                state.desired = scrolls.map((scroll, index) => {
+                    const middle = (Number(scroll.documentView.frame.size.height) - Number(scroll.contentSize.height)) / 2;
+                    scroll.contentView.scrollToPoint($.NSMakePoint(0, middle));
+                    scroll.reflectScrolledClipView(scroll.contentView);
+                    const value = Number(scroll.verticalScroller.doubleValue);
+                    assertNativeStamp(value > 0, `Scroll ${index} did not move: value=${value}, doc=${JSON.stringify(scroll.documentView.frame)}, clipHeight=${Number(scroll.contentSize.height)}, vertical=${Boolean(scroll.documentView.verticallyResizable)}`);
+                    return value;
+                });
+            } else {
+                assertNativeStamp(scrolls.every((scroll, index) => Math.abs(Number(scroll.verticalScroller.doubleValue) - state.desired[index]) < SCROLL_TOLERANCE), "Initialization fought later user scrolling.");
+                state.phase = 2;
+
+                $.NSApplication.sharedApplication.abortModal;
+            }
+        } catch (error) {
+            state.phase = 2;
+            state.failure = { error };
+
+            try { $.NSApplication.sharedApplication.abortModal; } catch (abortFailure) { state.failure.abortFailure = abortFailure; }
+        } finally { state.busy = false; }
+    });
+    try {
+        timer = $.NSTimer.timerWithTimeIntervalRepeatsBlock(MODAL_SCROLL_DELAY, true, state.callback);
+        $.NSRunLoop.currentRunLoop.addTimerForMode(timer, $.NSModalPanelRunLoopMode);
+        if (initialize) { runDetailsModal({ objc: ObjC, ns: $ }, alert, scrolls); }
+        else {
+            // Retired pre-modal reset is a measured control, not a requirement
+            // that future AppKit versions must preserve the old defect.
+            layoutDetails($, alert, scrolls);
+            Number(alert.runModal);
+        }
+        if (state.failure) { throw state.failure.error; }
+        assertNativeStamp(state.phase === 2, "The actual modal lifecycle was not exercised.");
+
+        console.log(JSON.stringify({ modalInitialization: initialize ? "visible-update" : "pre-modal-only", appearance, form, initialScroller: state.initial, laterUserScrollRetained: true }));
+    } finally {
+        state.phase = 2;
+
+        if (timer) { timer.invalidate; }
+
+        alert.window.close;
+        close();
+        state.callback = null;
+        restore();
+    }
+}
+
 
 function run(input) {
     ObjC.import("AppKit");
@@ -111,11 +268,19 @@ function run(input) {
             problems: [], context: { ...context, count: 12 } },
         { name: "folders", answers, problems: [], context: { ...context, count: 231, selectedFolders: 2 } },
         { name: "corrections", answers: invalid, problems: readAnswers(invalid, fonts).problems, context },
+        { name: "all-invalid-controls", answers: { ...answers, coordinateFormat: "56.9496, 24.1052", customText: "Caption" },
+            problems: Object.keys(answers).map((key) => ({ key, message: "Correct this setting." })), context },
+        { name: "invalid-long-caption", answers: { ...answers, customText: Array.from({ length: 40 }, (ignored, index) => `Caption line ${index}: generated correction text.`).join("\n") },
+            problems: [{ key: "customText", message: "Custom text must be 500 characters or fewer." }], context },
         { name: "caption-only", answers: { ...answers, dateFormat: "Do not stamp the date", customText: "A caption\nAnother line" },
             problems: [], context }
     ];
     for (const symbol of ["NSAppearanceNameAqua", "NSAppearanceNameDarkAqua"]) {
         const appearance = ObjC.unwrap($[symbol]);
+        checkStopControl(appearance);
+        checkModalScroll(appearance, false);
+        checkModalScroll(appearance, true);
+        checkModalScroll(appearance, true, true);
         for (const scenario of scenarios) { stampFormSnapshot(String(input[0]), scenario, appearance); }
     }
     return "macOS native stamp form integration passed";
