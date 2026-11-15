@@ -92,6 +92,21 @@ and unmapped-loader diagnostics. A metadata-write failure must publish no copy. 
 and ICC across six encoder families, upright 6/8 JPEG/TIFF pixels and EXIF/XMP
 dimensions, opaque alpha and an independent unmarked-source caption control.
 
+`formats.sh` runs [capture-copy-regressions.cjs](tests/integration/capture-copy-regressions.cjs)
+with literal, generated IIM packets and Nikon external Scan directories. Checks
+preserve packet bytes and timezone absence in two timezones, exercise joint
+producer repairs, and compare source hashes, pixels, profiles and raw vendor facts.
+Conflicting target facts and unavailable input facts must refuse. Malformed ICC
+has its own accepted/unconverted positive. Cached old wrapper diagnostics may be
+resolved; fresh post-repair wrapper warnings and same-text excluded-group probe
+diagnostics must refuse. Process-success
+write, readback and late-reader failure controls must publish no copy.
+
+`measurements.sh` retains its source/page/scalar guards and exercises the live
+staged-file `-a` path with positive-but-wrong width and band facts: each must refuse
+without publication. Duplicate dumps must use all four independent scalar fields
+and preserve alpha. These checks establish fidelity, not batch throughput.
+
 Probe entrypoints import production modules and are built by
 `tools/build-probe.mjs` using the production scoped bundler. Ordinary end-to-end tests invoke
 `dist/Stamp-Images.jxa` itself. Use independent source bytes, expected pixels and
