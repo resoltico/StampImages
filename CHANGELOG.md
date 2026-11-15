@@ -2,12 +2,14 @@
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-11-15
+
 - Licensed under AGPL-3.0-only instead of MPL-2.0; distributors must offer corresponding source. See [commercial licensing](LICENSE-COMMERCIAL.md).
 - The `empty-stamp` issue now uses stage `settings` and field `customText`; update consumers matching the old request stage.
 - Setup refusals use receipt state `invalid` and exit 3; invalid command-line settings/typefaces are checked first and exit 2.
 - Canceled runs now always exit 1, including setup. SIGINT/SIGTERM and cancellation in filesystem, tool or workspace probes request the same cooperative stop.
 - `elapsed` now counts image processing only, excluding setup, source inspection, settings and review dialogs.
-- Receipts add `locationRetained` for validated finished copies and omit stack traces; selection entries are documented with `reason`, issues with `message`.
+- Receipts add `locationRetained` for validated finished copies and omit stack traces.
 - Contributors need Node 26.13.1 and npm 12.2.2; restore development dependencies with `npm ci --ignore-scripts`.
 - Contributions follow the [contribution terms](CONTRIBUTING.md#contribution-terms), which also permit commercial licensing by Ervins Strauhmanis.
 - Older ExifTool builds may need upgrading; setup checks every tool and names unusable overrides and their values.
@@ -24,7 +26,7 @@
 - Missing and invalid metadata have distinct notes and survive later failures. Blank/all-zero dates are missing; impossible/nonzero year-0000 dates are invalid, with first-valid capture-date fallback.
 - Completion reminds you when embedded GPS remains, including caption-only copies and visible coordinates switched off; this does not assert that coordinates are valid.
 - Invisible-only captions are refused; CRLF normalizes, and mixed-direction multiline text keeps its direction and left alignment. Excessive margins stay on the selected side.
-- Text size hints explain image pixels and larger-photo sizing. Color emoji may appear as silhouettes, and some native weight names can render alike.
+- Text size hints explain image pixels and larger-photo sizing.
 - Localized Font Book family and face names are accepted when they identify an installed catalog choice.
 - The Quick Action uses Finder’s current selection when no input files are supplied.
 - Forms mark every invalid control consistently in both appearances. Scrollable details and captions open at the top and preserve later user scrolling.

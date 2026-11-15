@@ -63,8 +63,8 @@ compare receipt basename buffers to raw directory entries for NFC/NFD, case and
 normalization collisions, hidden/legal stem spelling, matching extension case,
 long byte-budget names, and accented recovery names. Folder checks verify copies
 beside each original, per-folder collisions and exclusions on repeated runs.
-Ownership controls cover name-readback refusal, original replacement during copy
-and after name lookup, explicit no-recovery faults and confirmed-output retention. CLI and lifecycle probes
+Ownership controls cover name-readback refusal, workspace-copy replacement during
+copy and after name lookup, explicit no-recovery faults and confirmed-output retention. CLI and lifecycle probes
 also cover strict settings, statuses, source capture, recovery and cancellation.
 Signal controller unit checks cover native adapter ownership and complete saved
 signal actions. Actual command-line SIGINT/SIGTERM/repeat runs must produce canceled
@@ -97,12 +97,12 @@ with literal, generated IIM packets and Nikon external Scan directories. Checks
 preserve packet bytes and timezone absence in two timezones, exercise joint
 producer repairs, and compare source hashes, pixels, profiles and raw vendor facts.
 Conflicting target facts and unavailable input facts must refuse. Malformed ICC
-has its own accepted/unconverted positive. Cached old wrapper diagnostics may be
+has its own accepted/unconverted positive. Cached pre-repair wrapper diagnostics may be
 resolved; fresh post-repair wrapper warnings and same-text excluded-group probe
 diagnostics must refuse. Process-success
 write, readback and late-reader failure controls must publish no copy.
 
-`measurements.sh` retains its source/page/scalar guards and exercises the live
+`measurements.sh` checks source/page/scalar guards and exercises the live
 staged-file `-a` path with positive-but-wrong width and band facts: each must refuse
 without publication. Duplicate dumps must use all four independent scalar fields
 and preserve alpha. These checks establish fidelity, not batch throughput.
@@ -187,6 +187,7 @@ caption is checked again after scrolling its real clip.
 Stored-name prerequisites rename an owned Node-created ASCII file through ordinary
 C rename, then check source-backed readback against independent raw Buffer names,
 dev/inode/size and payload. They run on local, HFS+, FAT32 and exFAT even when a
-provider lacks exclusive claims. Existing real-image/collision/recovery assertions
-remain. Required close-only and primary-plus-close failures stop later images while
-preserving causes, validated originals, claimed entries and every cleanup issue.
+provider lacks exclusive claims. Real-image, collision and recovery assertions
+cover the same publication paths. Required close-only and primary-plus-close
+failures stop later images while preserving causes, validated workspace copies,
+claimed entries and every cleanup issue.

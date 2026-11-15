@@ -12,8 +12,8 @@ npm ci --ignore-scripts
 npm run release
 ```
 
-`npm run release` regenerates `dist/` and runs the full gate. `npm run quality`
-runs the gate without regenerating, which is what CI does, so that a stale
+`npm run release` regenerates `dist/` and runs the source-quality gate.
+`npm run quality` runs that gate without regenerating, which is what CI does, so that a stale
 committed artifact fails instead of shipping.
 
 The macOS integration gate needs the real tools and is run separately:
@@ -38,9 +38,8 @@ all upstream ESLint and Stryker dependency ranges exclude every affected version
 The qs override fixes GHSA-6pq8-jhm2-2vcw in typed-rest-client, whose pinned
 qs 6.15.1 is affected; remove it when its range excludes affected versions.
 
-The Homebrew tools are not pinned at all — CI installs the current ones on
-every run, so a breaking change there surfaces as a failing integration job
-rather than as a silent drift.
+Native CI installs current Homebrew tools without version pins, so incompatible
+upstream changes surface in integration checks.
 
 ## Source and ownership boundaries
 
@@ -140,8 +139,9 @@ the sibling repository.
 - Selection review: `<N items> in your selection cannot be included.`, then
   `Not included:` with `<name>: <reason sentence>` and `in <folder>`, ending
   `Continue with <N images>?`.
-- Completion: `Created …` or `No … was created.`, prefixed `Finished with issues.`
-  or `Stopped.`; copies saved elsewhere are counted in the headline, and refusals
+- Completion: plain stops say `Stopped. No stamped copy was created.` and omit
+  empty Details. Other runs say `Created …` or `No … was created.`, prefixed
+  `Finished with issues.` or `Stopped.`; copies saved elsewhere are counted in the headline, and refusals
   agreed to in the review do not add `Finished with issues.`. The detail lists the
   non-zero counts, `Saved to:`, notes, failures, recoveries, `Not started`,
   `Not included from your selection:`, `Elapsed:` and, in the dialog only, the

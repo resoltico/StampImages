@@ -9,7 +9,7 @@ Source and releases: https://github.com/resoltico/StampImages
 
 ## Requirements
 
-- macOS 12.3 or later, with Shortcuts.
+- macOS 12.3 or later; Shortcuts is needed for the Finder Quick Action.
 - `exiftool` and `vips` (which includes `vipsheader`), installed with Homebrew:
 
 ```sh
@@ -65,10 +65,9 @@ Stamped copies retain standard EXIF capture fields and GPS, writable XMP/IPTC,
 and color profiles. Orientation and dimension metadata describe the upright copy.
 Proprietary maker data already retained by the image backend is preserved; not every
 vendor-specific field or embedded preview can be transferred.
-Original IPTC packets retain their bytes and timezone absence when the format supports
-them; unavailable packet storage is refused. A fresh render’s relocated NikonScan
-directory is repaired only when all existing raw maker facts match the captured
-source and its vendor data can be read without warnings.
+Original IPTC packets keep their bytes and timezone absence when the output format
+supports them; unsupported metadata storage refuses the copy. See
+[HEADLESS.md](HEADLESS.md#settings-file) for metadata and rendering limits.
 
 ## Settings
 
@@ -123,7 +122,8 @@ centered axes stay centered, and completion explains a reduced margin.
 ## Images and copies
 
 Supported formats are JPEG, PNG, HEIC/HEIF, TIFF, WebP and AVIF, in RGB or
-grayscale, with a matching filename extension. Convert other color models, such as
+grayscale, using a supported filename extension. The detected content determines
+the output encoding. Convert other color models, such as
 CMYK, before stamping. Animated and multi-image files, GIF, vectors, documents and
 camera RAW are refused, as are files whose content turns out to be damaged.
 Ultra HDR JPEG photos are stamped as standard-range JPEG copies, without gain maps.
@@ -143,7 +143,7 @@ Selecting a stamped copy directly stamps it again.
 
 Destination folders need read/search access as well as write access to verify the
 stored filename. An uncertain name leaves the created entry untouched and retains
-the validated original in its private workspace; see [file safety](SECURITY.md#file-safety-boundary).
+the validated stamped copy in its private workspace; see [file safety](SECURITY.md#file-safety-boundary).
 
 A copy keeps its source's format, chosen from the image content rather than its
 extension: a PNG named `photo.jpg` becomes `photo_stamped.png`. PNG and TIFF are
@@ -162,12 +162,12 @@ retained GPS metadata even for caption-only copies. The CLI receipt carries
 metadata, including coordinates, and color profiles. HDR copies omit their gain
 maps. This is not an anonymization tool.
 
-Stamp Images reads only the images you select, works in a private temporary
-folder, and never opens an original for writing. Nothing is sent over the
+Stamp Images processes selected images and folder discoveries in private temporary
+workspaces, and never opens an original for writing. Nothing is sent over the
 network. Recovery normally uses Downloads under the intended name, or a checked
 temporary copy, and completion shows the actual stored name. If a created copy's
-name cannot be verified, the original stays in its workspace when it can still be
-verified; otherwise no recovery path is claimed. [SECURITY.md](SECURITY.md)
+name cannot be verified, the validated workspace copy stays in place when it can
+still be verified; otherwise no recovery path is claimed. [SECURITY.md](SECURITY.md)
 describes the file-safety rules in full.
 
 ## Command line
@@ -177,6 +177,17 @@ osascript -l JavaScript Stamp-Images.jxa -- --headless settings.json photo.jpg f
 ```
 
 Command-line runs open no dialogs and do not use remembered settings.
+
+| Aspect | Finder Quick Action | Command line |
+| --- | --- | --- |
+| Images and folders | Shortcut input, or Finder's current selection when no files are supplied | Explicit image or folder paths |
+| Settings | Form; appearance is remembered, custom text is not | Required JSON settings file; remembered settings are not used |
+| Interaction | Review, settings, progress and completion dialogs | No dialogs |
+| Stop | Cancel dialogs or request Stop during processing | SIGINT or SIGTERM at a safe checkpoint |
+| Results | Completion details and Show in Finder | Plain-language stderr report, JSON receipt attempt and exit status |
+
+Both interfaces use the same image, metadata and file-safety rules.
+
 [HEADLESS.md](HEADLESS.md) specifies the settings file, the JSON receipt and the
 exit statuses.
 
@@ -204,6 +215,6 @@ only](LICENSE) (`AGPL-3.0-only`). You may use it, including commercially, and co
 modify and share it under those terms; it comes without any warranty. If you
 distribute the script or a modified version, keep its notices and make the
 corresponding source available as the license requires; the generated JXA names
-the source for its version. Dependencies keep their own licenses. A separate
-commercial licensing route is intended but not yet offered; see
+the source for its version. Dependencies keep their own licenses. No separate
+commercial license is currently offered through this repository; see
 [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md).

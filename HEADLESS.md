@@ -90,9 +90,10 @@ every weight name: Hiragino Sans W3/W6 can render at the same weight.
 
 ## Receipt and exit status
 
-Every handled request attempts the plain-language report on stderr before one JSON
-object ending in a newline on stdout. `stack` keys are omitted at serialization; other
-structured diagnostic data is retained. Read both the receipt and the exit status. Recovered copies appear under
+Apart from help and version output, every handled request attempts the
+plain-language report on stderr before one JSON object ending in a newline on
+stdout. `stack` keys are omitted at serialization; other structured diagnostic
+data is retained. Read both the receipt and the exit status. Recovered copies appear under
 “Saved elsewhere” with a one-line cause; “Could not stamp” lists failed copies
 only, and other cleanup or run problems have their own section.
 
@@ -111,7 +112,7 @@ only, and other cleanup or run problems have their own section.
 | `excluded` | Earlier stamped copies found in selected folders and left alone |
 | `issues` | Problems affecting the request as a whole |
 | `diagnostics` | Optional-surface, cleanup and prior-workspace diagnostics |
-| `elapsed` | Human-readable processing time, from the first image's preparation to completion; excludes dialogs and is absent before processing |
+| `elapsed` | Human-readable batch processing time, including output planning, through completion; excludes tool setup, source inspection and dialogs, and is absent before processing |
 
 Exit 3 identifies failed setup, including required tools or native capabilities
 that are unavailable. A cancellation exits 1 in every phase. After settings and
@@ -131,20 +132,19 @@ and child commands keep their inherited signal behavior.
 
 Prior workspaces left retained or unreadable, and safely reclaimed stale
 workspaces, appear in a `Temporary work` report section when their exact workspace
-paths are known. Their existing diagnostic object shape is unchanged;
-`workspace-reclaimed` records successful reclamation with stage `workspace` and
-`diagnostic.path`. These informational diagnostics do not change run state.
+paths are known. `workspace-reclaimed` records successful reclamation with stage
+`workspace` and `diagnostic.path`. These informational diagnostics do not change run state.
 
 Output and recovery basenames come from literal native directory entries, coupled
 to the claimed regular-file identity and size. Normalization selects candidates
 but never changes the reported name; the chosen parent spelling is retained.
 Destination folders require read/search access. Unavailable or ambiguous listings
 report uncertainty instead of guessing a name. Creation preserves source spelling
-where the filesystem permits it. A name-verification refusal keeps the validated original
+where the filesystem permits it. A name-verification refusal keeps the validated stamped copy
 in its private workspace and reports claim uncertainty without inventing a public
-output path. A missing or replaced original is a fatal fault with no asserted
-recovery path; a confirmed public output remains saved when original cleanup
-cannot safely proceed.
+output path. A missing or replaced workspace copy is a fatal fault with no asserted
+recovery path; a confirmed public output remains saved when cleanup of the
+workspace copy cannot safely proceed.
 
 Folder discoveries are saved beside each original rather than in the selected top
 folder. A matching source extension retains its spelling/case; content mismatches
@@ -165,7 +165,7 @@ The same diagnostic shape applies to run-level diagnostics.
 | `saved` | Stamped and saved; `output` is the copy's full path |
 | `recovered` | Saved somewhere else; `recovery` is the actual location |
 | `nothing-to-stamp` | The image has none of the requested content; `reason` explains |
-| `failed` | Not stamped; `issues` explain |
+| `failed` | Processing or publication failed; `issues` explain |
 | `canceled` | Stop interrupted this image |
 | `not-started` | An earlier stop or fault ended the run first |
 
@@ -199,12 +199,12 @@ Unbuilt and nothing-to-stamp records omit them:
 | --- | --- |
 | `crowded` | The margin was reduced to keep the stamp on the selected side of the image |
 | `expanded` | A grayscale original was saved with RGB channels, determined from the actual final copy |
-| `unconverted` | The image's color profile could not be read; colors were drawn in sRGB |
+| `unconverted` | Caption colors could not be converted to the image's profile; sRGB caption values were used |
 | `substituted` | Some characters were not in the typeface and were drawn in another one |
 | `locationRetained` | Verified finished metadata contains GPS tags, including incomplete/invalid coordinates; this does not mean the coordinates are valid |
 
 A `recovery` path may be in Downloads, a temporary copy, or the retained workspace;
-the record's issues say which. A copy whose validation faulted stays in its
+the record's issues say which. A copy that encountered a software fault during validation stays in its
 workspace and is reported as a workspace issue, not as a recovered image.
 
 ## Issue codes

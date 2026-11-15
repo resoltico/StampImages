@@ -28,21 +28,21 @@ pipes and links are never replaced or written inside. Native identity and size
 confirm the output and its literal directory-entry basename before the workspace
 copy is released. Destination folders require read/search access for that name
 verification; unavailable or ambiguous listings do not fall back to a canonical
-or guessed path. The original is rechecked before copied recovery and before removal.
-Required directory-stream cleanup failures stop later images while preserving
-validated work and the original failure/cancellation cause. A volume without
+or guessed path. The validated workspace copy is rechecked before copied recovery
+and before its removal. Required directory-stream cleanup failures stop later
+images while preserving validated work and the original failure/cancellation cause. A volume without
 either exclusive route fails over to recovery instead of exposing
 a partial file.
 
-If a copy cannot be published, it is recovered to `~/Downloads` under its intended
-name with the same exclusive rules, or failing that to a confirmed copy in the system
+If normal publication fails, recovery normally tries `~/Downloads` under the
+intended name with the same exclusive rules, then a confirmed copy in the system
 temporary directory. Only a confirmed recovery releases the workspace copy; otherwise
 the workspace is retained and its location reported. If a created copy's stored
 name cannot be verified, that claimed entry is left untouched and the verified
-original stays in its workspace; no additional recovery copy is attempted. Missing,
-replaced or uninspectable originals are not asserted as recoveries or removed. A
+stamped copy stays in its workspace; no additional recovery copy is attempted. Missing,
+replaced or uninspectable workspace copies are not asserted as recoveries or removed. A
 confirmed output can remain saved with a fatal cleanup fault and a retained
-workspace when original cleanup cannot safely proceed. A candidate whose validation
+workspace when cleanup of the workspace copy cannot safely proceed. A candidate whose validation
 faulted is reported as unconfirmed, never as a validated recovery. Stop keeps saved
 copies and retains a finished, unpublished copy in its workspace. Temporary storage
 is not permanent: move needed recovered or retained work promptly.
@@ -63,8 +63,8 @@ captured source. Source-owned IPTC packets and bounded Nikon directory repairs
 never authorize changing rendered pixels or profiles, or replacing conflicting
 target vendor data. A copy is not anonymized: review
 its metadata before sharing it when location or camera details are sensitive.
-The repository commits no real photographs or coordinates; its fixtures are
-generated.
+Image fixtures are generated and use synthetic capture metadata; personal
+photographs and their capture metadata are not committed.
 
 Remembered settings, under `com.resoltico.StampImages`, hold appearance only.
 Custom text is never stored.
@@ -83,8 +83,8 @@ and verifying attestations need network access. Diagnostics can contain source a
 output paths and the underlying commands; review them before sharing.
 
 ExifTool's raw-copy program is fixed source; paths are passed as UserParam data,
-never interpolated into native code. It writes only the private candidate. Any
-scoped metadata-reader view or legacy WebP reader repair is memory-only: it does
+never interpolated into native code. It writes only the private candidate. Source
+metadata-reader views and source WebP wrapper repairs are memory-only: they do
 not replace source pixels, source files, or the actual target profile/maker data.
 Raw GPS must match a fresh target readback before publication. Unsupported physical
 GPS structures or a failed required setter/readback refuse the copy.

@@ -1,4 +1,4 @@
-STAMP IMAGES 2.0.0 - SHORTCUTS INSTALLATION
+STAMP IMAGES 3.0.0 - SHORTCUTS INSTALLATION
 
 Source, releases and build attestation:
 
@@ -42,18 +42,19 @@ Use it
 ======
 
 Select images or folders in Finder and run Stamp Images. Review any items that
-cannot be included, choose the settings, then click Create. Copies of images
-found in a selected folder are saved in that folder; copies of images selected
-directly are saved beside them, as name_stamped.jpg. Originals are never
-modified. Ultra HDR JPEG photos produce standard-range JPEG copies without
-gain maps; capture metadata and color profiles are retained.
+cannot be included, choose the settings, then click Create. Copies are saved
+beside each original, including images found in selected subfolders, with names
+such as name_stamped.jpg. Originals are never modified. Ultra HDR JPEG photos
+produce standard-range JPEG copies without gain maps; capture metadata and color profiles are retained.
 
 Turning GPS off changes only what the stamp shows: every copy keeps the
 location metadata its original carries.
 
-If a copy cannot be saved where it belongs, it is saved to Downloads, or
-failing that to a temporary copy, and completion shows where. Move recovered
-work somewhere permanent promptly: macOS can clear temporary storage.
+If normal saving fails, recovery normally tries Downloads and then a checked
+temporary copy. If a created copy’s name or ownership cannot be confirmed,
+validated work is retained in place when it can still be verified; no recovery
+path is guessed. Completion reports any confirmed recovery or retained workspace.
+Move needed work somewhere permanent promptly: macOS can clear temporary storage.
 
 README.md in the repository describes the settings, supported images and
 output in full. HEADLESS.md describes command-line use.
@@ -85,5 +86,5 @@ https://www.gnu.org/licenses/agpl-3.0.html. It comes without any warranty.
 Keep license and source notices and make the corresponding source available as
 the license requires when you distribute the script or a modified version. The
 JXA header names the source for its version. Dependencies retain their own
-licenses. A separate commercial licensing route is intended but not yet
-offered; see LICENSE-COMMERCIAL.md in the source repository.
+licenses. No separate commercial license is currently offered through this
+repository; see LICENSE-COMMERCIAL.md in the source repository.
